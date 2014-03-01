@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  From http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/devnet/hds/pdfs/adobe-media-manifest-specification.pdf
+  with fixes to make xsd validation happy, and to make binding code generated for <manifest> element be more sane
+-->
+
+<xs:schema targetNamespace="http://ns.adobe.com/f4m/1.0"
+           elementFormDefault="qualified"
+           xmlns="http://ns.adobe.com/f4m/1.0"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:f4m="http://ns.adobe.com/f4m/1.0"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:jxb="http://java.sun.com/xml/ns/jaxb"
+           xsi:schemaLocation="http://java.sun.com/xml/ns/jaxb http://java.sun.com/xml/ns/jaxb/bindingschema_2_0.xsd"
+           jxb:version="1.0">
+
+	<xs:element name="manifest">
+		<xs:complexType>
+			<xs:choice>
+				<xs:element name="id" type="xs:string" minOccurs="0" />
+				<xs:element name="label" type="xs:string" minOccurs="0" />
+				<xs:element name="duration" type="xs:decimal" minOccurs="0" />
+				<xs:element name="mimeType" type="xs:string" minOccurs="0" />
+				<xs:element name="streamType" type="streamType" minOccurs="0" />
+				<xs:element name="deliveryType" type="deliveryType" minOccurs="0" />
+				<xs:element name="startTime" type="xs:dateTime" minOccurs="0" />
+				<xs:element name="lang" type="xs:string" minOccurs="0" />
+				<xs:element name="baseURL" type="xs:anyURI" minOccurs="0" />
+				<xs:element name="drmAdditionalHeader" type="drmAdditionalHeader" minOccurs="0" maxOccurs="unbounded" />
+				<xs:element name="drmAdditionalHeaderSet" type="drmAdditionalHeader" minOccurs="0" maxOccurs="unbounded" />
+				<xs:element name="bootstrapInfo" type="bootstrapInfo" minOccurs="0" maxOccurs="unbounded" />
+				<xs:element name="dvrInfo" type="dvrInfo" minOccurs="0" />
+				<xs:element name="media" type="media" minOccurs="1" maxOccurs="unbounded" />
+				<xs:element name="bestEffortFetchInfo" type="bestEffortFetchInfo" minOccurs="0" />
+				<xs:element name="adaptiveSet" type="adaptiveSet" minOccurs="0" maxOccurs="unbounded" />
+				<xs:element name="cueInfo" type="cueInfo" minOccurs="0" maxOccurs="unbounded" />
+			</xs:choice>
+			<xs:attribute name="version" type="xs:string" default="1.0" />
+		</xs:complexType>
+
+		<xs:unique name="unique-drmAdditionalHeader-id">
+			<xs:selector xpath="f4m:drmAdditionalHeader" />
+			<xs:field xpath="@id" />
+		</xs:unique>
+
+		<xs:unique name="unique-drmAdditionalHeaderSet-id">
+			<xs:selector xpath="f4m:drmAdditionalHeaderSet" />
+			<xs:field xpath="@id" />
+		</xs:unique>
+
+		<xs:unique name="unique-bootstrapInfo-id">
+			<xs:selector xpath="f4m:bootstrapInfo" />
+			<xs:field xpath="@id" />
+		</xs:unique>
+	</xs:element>
+	
+	<xs:complexType name="adaptiveSet">
+		<xs:sequence>
+			<xs:element name="media" type="media" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:simpleType name="streamType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="live" />
+			<xs:enumeration value="recorded " />
+			<xs:enumeration value="liveOrRecorded" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:simpleType name="deliveryType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="streaming" />
+			<xs:enumeration value="progressive" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:complexType name="drmAdditionalHeader">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="id" type="xs:string" />
+				<xs:attribute name="url" type="xs:anyURI" />
+				<xs:attribute name="startTimestamp" type="xs:decimal" />
+				<xs:attribute name="prefetchDeadline" type="xs:decimal" />
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+
+	<xs:complexType name="drmAdditionalHeaderSet">
+		<xs:sequence>
+			<xs:element name="drmAdditionalHeader" type="drmAdditionalHeader" minOccurs="0" maxOccurs="unbounded" />
+		</xs:sequence>
+		<xs:attribute name="id" type="xs:string" />
+	</xs:complexType>
+
+	<xs:complexType name="bootstrapInfo">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute name="id" type="xs:string" />
+				<xs:attribute name="profile" type="xs:string" use="required" />
+				<xs:attribute name="url" type="xs:anyURI" />
+				<xs:attribute name="fragmentDuration" type="xs:decimal" />
+				<xs:attribute name="segmentDuration" type="xs:decimal" />
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+
+	<xs:complexType name="dvrInfo">
+		<xs:attribute name="id" type="xs:string" />
+		<xs:attribute name="url" type="xs:anyURI" />
+		<xs:attribute name="beginOffset" type="xs:decimal" />
+		<xs:attribute name="endOffset" type="xs:decimal" />
+		<xs:attribute name="windowDuration" type="xs:decimal" />
+		<xs:attribute name="offline" type="xs:boolean" />
+	</xs:complexType>
+
+	<xs:complexType name="bestEffortFetchInfo">
+		<xs:attribute name="id" type="xs:string" />
+		<xs:attribute name="fragmentDuration" type="xs:decimal" />
+		<xs:attribute name="segmentDuration" type="xs:decimal" />
+	</xs:complexType>
+
+	<xs:complexType name="cueInfo">
+		<xs:sequence>
+		<xs:element name="cue">
+			<xs:complexType>
+				<xs:attribute name="id" type="xs:string" />
+				<xs:attribute name="type" type="xs:string" />
+				<xs:attribute name="time" type="xs:decimal" />
+				<xs:attribute name="duration" type="xs:decimal" />
+				<xs:attribute name="programId" type="xs:decimal" />
+				<xs:attribute name="availNum" type="xs:decimal" />
+				<xs:attribute name="availsExpected" type="xs:decimal" />
+			</xs:complexType>
+		</xs:element>
+		</xs:sequence>
+		<xs:attribute name="id" type="xs:string" />
+	</xs:complexType>
+
+	<xs:complexType name="media">
+		<xs:all>
+			<xs:element name="moov" type="xs:string" minOccurs="0" />
+			<xs:element name="metadata" type="xs:base64Binary" minOccurs="0" />
+			<xs:element name="xmpMetadata" type="xs:string" minOccurs="0" />
+		</xs:all>
+		<xs:attribute name="url" type="xs:anyURI" />
+		<xs:attribute name="bitrate" type="xs:positiveInteger" />
+		<xs:attribute name="drmAdditionalHeaderId" type="xs:string" />
+		<xs:attribute name="drmAdditionalHeaderSetId" type="xs:string" />
+		<xs:attribute name="bootstrapInfoId" type="xs:string" />
+		<xs:attribute name="bestEffortFetchInfoId" type="xs:string" />
+		<xs:attribute name="streamId" type="xs:string" />
+		<xs:attribute name="width" type="xs:decimal" />
+		<xs:attribute name="height" type="xs:decimal" />
+		<xs:attribute name="groupspec" type="xs:string" />
+		<xs:attribute name="multicastStreamName" type="xs:string" />
+		<xs:attributeGroup ref="mediaContent" />
+		<xs:attribute name="href" type="xs:anyURI" />
+		<xs:attribute name="videoCodec " type="xs:string" />
+	</xs:complexType>
+
+	<xs:attributeGroup name="mediaContent">
+		<xs:attribute name="type" type="mediaType" />
+		<xs:attribute name="alternate" type="xs:boolean" default="false" />
+		<xs:attribute name="label" type="xs:string" />
+		<xs:attribute name="lang" type="xs:string" />
+		<xs:attribute name="audioCodec" type="xs:string" />
+	</xs:attributeGroup>
+
+	<xs:simpleType name="mediaType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="audio" />
+			<xs:enumeration value="audio+video" />
+			<xs:enumeration value="data" />
+			<xs:enumeration value="text" />
+			<xs:enumeration value="video" />
+			<xs:enumeration value="video-keyframe-only" />
+		</xs:restriction>
+	</xs:simpleType>
+
+	<xs:complexType name="smpteTimecodes">
+		<xs:sequence>
+			<xs:element name="smpteTimecode" minOccurs="1" maxOccurs="unbounded">
+				<xs:complexType>
+					<xs:attribute name="smpte" type="xs:string" />
+					<xs:attribute name="timestamp" type="xs:decimal" />
+					<xs:attribute name="date" type="xs:date" />
+					<xs:attribute name="timezone" type="xs:string" />
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>
