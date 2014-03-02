@@ -116,6 +116,18 @@ System.err.println("bad start code 0x"+Integer.toHexString(startCode));
 		}
 	}
 
+	/**
+	 * Attempts to find the next occurrence of either the 3-byte sequence
+	 * 0x000001 or the 4-byte sequence 0x00000001 in the context's buffer.
+	 * 
+	 * Returns true, and leaves the readerIndex at the location of the
+	 * sequence when found, or returns false and leaves the buffer's
+	 * readerIndex at the location scanned to so far otherwise.  This
+	 * method does not alter the buffer's mark (so the caller may use this
+	 * to track where in the buffer the NAL unit started).  When false is
+	 * returned, the caller is expected to invoke this method again once it
+	 * has received more data and added it to the context's buffer.
+	 */
 	private boolean scanForNalEnd(H264Context hCtx) {
 		int code = 0xffffffff;
 		CompositeByteBuf buf = hCtx.getBuf();
@@ -124,7 +136,13 @@ System.err.println("bad start code 0x"+Integer.toHexString(startCode));
 			code <<= 8;
 			code |= buf.readUnsignedByte();
 			count++;
+			// test the bottom 3 bytes of 'code', masking-out the
+			// high byte,
 			if ((code & 0xffffff) == 0x000001) {
+				// if 'code' is still '1' when considering the
+				// high byte too, then this is a 4-byte code,
+				// otherwise the high byte must contain data,
+				// and this is a 3-byte code,
 				int codeLength = code == 1 ? 4 : 3;
 				buf.readerIndex(buf.readerIndex() - codeLength);
 				return true;
