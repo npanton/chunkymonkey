@@ -5,7 +5,6 @@ import java.util.Map;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer.PesNalUnitLocator;
@@ -87,7 +86,7 @@ System.err.println("  cont ignored");
 	private void dataArrived(H264Context hCtx, ByteBuf data) {
 		hCtx.getBuf().writeBytes(data);
 		while (true) {
-			CompositeByteBuf buf = hCtx.getBuf();
+			ByteBuf buf = hCtx.getBuf();
 			if (!hCtx.nalStarted()) {
 				int startCode = buf.readUnsignedMedium();
 				if (startCode == 0) {
@@ -130,7 +129,7 @@ System.err.println("bad start code 0x"+Integer.toHexString(startCode));
 	 */
 	private boolean scanForNalEnd(H264Context hCtx) {
 		int code = 0xffffffff;
-		CompositeByteBuf buf = hCtx.getBuf();
+		ByteBuf buf = hCtx.getBuf();
 		int count = 0;
 		while (buf.isReadable()) {
 			code <<= 8;
@@ -166,15 +165,14 @@ System.err.println("  end: no more data");
 			return;
 		}
 		PesNalUnitLocator loc = new PesNalUnitLocator(hCtx.getPesPacket().getLocator(), hCtx.nextUnitIndex());
-		CompositeByteBuf buf = hCtx.getBuf();
+		ByteBuf buf = hCtx.getBuf();
 		int end = buf.readerIndex();
 		buf.resetReaderIndex();
 		int len = end - buf.readerIndex();
 //System.err.println("end implied, len="+len);
 		NALUnit u = new NALUnit(loc, hCtx.getBuf().slice(hCtx.getBuf().readerIndex(), len));
 		handle(hCtx, u);
-		// TODO: some way to reset the buffer we already have?
-		hCtx.setBuf(Unpooled.compositeBuffer());
+		buf.clear();
 	}
 
 	private void handle(H264Context ctx, NALUnit u) {

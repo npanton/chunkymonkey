@@ -1,23 +1,20 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
-import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket;
 
 public class H264Context implements ElementryContext {
-	private CompositeByteBuf buf = Unpooled.compositeBuffer();
+	private ByteBuf buf = Unpooled.buffer();
 	private boolean ignoreRest;
 	private PESPacket pesPacket;
 	private int unitIndex = 0;
 	private SeqParamSet lastSeqParamSet;
 	private boolean nalStarted;
 
-	public CompositeByteBuf getBuf() {
+	public ByteBuf getBuf() {
 		return buf;
-	}
-	public void setBuf(CompositeByteBuf buf) {
-		this.buf = buf;
 	}
 	public boolean isIgnoreRest() {
 		return ignoreRest;
