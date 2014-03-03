@@ -1,7 +1,5 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
-import org.jcodec.codecs.h264.H264Utils;
-
 import io.netty.buffer.ByteBuf;
 import uk.co.badgersinfoil.chunkymonkey.aac.BitBuf;
 
@@ -24,6 +22,11 @@ public class H264BitBuf extends BitBuf {
 		return res;
 	}
 	public int readSE() {
-		return H264Utils.golomb2Signed(readUE());
+		return golomb2Signed(readUE());
+	}
+
+	private static int golomb2Signed(int val) {
+		int sign = ((val & 0x1) << 1) - 1;
+		return ((val >> 1) + (val & 0x1)) * sign;
 	}
 }
