@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.aac;
 
+/*
 import net.sourceforge.jaad.aac.ChannelConfiguration;
 import net.sourceforge.jaad.aac.DecoderConfig;
 import net.sourceforge.jaad.aac.Profile;
@@ -12,6 +13,7 @@ import net.sourceforge.jaad.aac.syntax.ElementListener;
 import net.sourceforge.jaad.aac.syntax.FIL;
 import net.sourceforge.jaad.aac.syntax.PCE;
 import net.sourceforge.jaad.aac.syntax.SyntacticElements;
+*/
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.adts.ADTSFrame;
 import uk.co.badgersinfoil.chunkymonkey.adts.AdtsFrameConsumer;
@@ -27,7 +29,7 @@ public class AacAdtsFrameConsumer implements AdtsFrameConsumer {
 		// AAC parsing is hard.  Dropped hand-spun code for hacked jaad to get off the ground,
 		//AacParser parser = new AacParser(adtsframe.samplingFrequency());
 		//parser.parser(adtsframe.payload());
-		
+/*
 		DecoderConfig config = new DecoderConfig();
 		config.setChannelConfiguration(ChannelConfiguration.forInt(adtsframe.channelConfig().getIndex()));
 		config.setProfile(Profile.forInt(adtsframe.profile().getIndex()));
@@ -58,10 +60,11 @@ public class AacAdtsFrameConsumer implements AdtsFrameConsumer {
 				}
 			}
 		};
+*/
 		try {
-			SyntacticElements syn = new SyntacticElements(config);
-			syn.setElementListener(elementListener);
-			syn.decode(new BitStream(adtsframe.payload()));
+//			SyntacticElements syn = new SyntacticElements(config);
+//			syn.setElementListener(elementListener);
+//			syn.decode(new BitStream(adtsframe.payload()));
 			// AAC-HE upsamples the core AAC-LC stream,
 			// resulting in 2048 samples per
 			// frame, but the advertised sampling frequency
