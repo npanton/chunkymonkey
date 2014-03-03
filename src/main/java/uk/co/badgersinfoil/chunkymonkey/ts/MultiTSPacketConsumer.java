@@ -6,7 +6,7 @@ import java.util.List;
 
 public class MultiTSPacketConsumer implements TSPacketConsumer {
 	
-	List<TSPacketConsumer> list = new ArrayList<>();
+	private List<TSPacketConsumer> list = new ArrayList<>();
 	
 	public MultiTSPacketConsumer(TSPacketConsumer... consumers) {
 		Collections.addAll(list, consumers);
