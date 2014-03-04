@@ -9,7 +9,7 @@ import org.junit.runners.JUnit4;
 import static org.junit.Assert.*;
 
 @RunWith(JUnit4.class)
-public class BitBufferTest {
+public class BitBufTest {
 	@Test
 	public void basic() {
 		ByteBuf bytes = Unpooled.wrappedBuffer(new byte[] {0b00000010, 0b01000000});
