@@ -162,7 +162,7 @@ System.err.println("  end: no more data");
 		}
 		PesNalUnitLocator loc = new PesNalUnitLocator(hCtx.getPesPacket().getLocator(), hCtx.nextUnitIndex());
 		ByteBuf buf = hCtx.getBuf();
-		int end = buf.readerIndex();
+		int end = buf.readerIndex() + buf.readableBytes();
 		buf.resetReaderIndex();
 		int len = end - buf.readerIndex();
 //System.err.println("end implied, len="+len);
