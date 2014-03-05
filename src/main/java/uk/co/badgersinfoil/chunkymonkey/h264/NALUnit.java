@@ -135,4 +135,29 @@ public class NALUnit {
 	public Locator getLocator() {
 		return locator;
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((buf == null) ? 0 : buf.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		NALUnit other = (NALUnit)obj;
+		if (buf == null) {
+			if (other.buf != null)
+				return false;
+		} else if (!buf.equals(other.buf))
+			return false;
+		return true;
+	}
 }
