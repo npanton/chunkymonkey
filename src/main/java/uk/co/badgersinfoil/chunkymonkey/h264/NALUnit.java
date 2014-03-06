@@ -91,21 +91,21 @@ public class NALUnit {
 	}
 
 	private Locator locator;
-	private ByteBuf buf;
+	private int header;
 
-	public NALUnit(Locator locator, ByteBuf buf) {
+	public NALUnit(Locator locator, int header) {
 		this.locator = locator;
-		this.buf = buf;
+		this.header = header;
 	}
 	
 	public int forbiddenZeroBit() {
-		return (buf.getByte(0) & 0b10000000) >> 7;
+		return (header & 0b10000000) >> 7;
 	}
 	public int nalRefIdc() {
-		return (buf.getByte(0) & 0b01100000) >> 5;
+		return (header & 0b01100000) >> 5;
 	}
 	public UnitType nalUnitType() {
-		return UnitType.forId((buf.getByte(0) & 0b00011111));
+		return UnitType.forId((header & 0b00011111));
 	}
 	
 	@Override
@@ -117,21 +117,6 @@ public class NALUnit {
 		return b.toString();
 	}
 
-	public ByteBuf getContent() {
-		ByteBuf result = Unpooled.buffer();
-		ByteBuf tmp = buf.slice();
-		tmp.skipBytes(1);
-		int history = 0xffffff;
-		while (tmp.isReadable()) {
-			int b = tmp.readUnsignedByte();
-			history = (history << 8) & 0xffffff | b;
-			if (history != 0x000003) {
-				result.writeByte(b);
-			}
-		}
-		return result;
-	}
-
 	public Locator getLocator() {
 		return locator;
 	}
@@ -140,7 +125,7 @@ public class NALUnit {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((buf == null) ? 0 : buf.hashCode());
+		result = prime * result + header;
 		return result;
 	}
 
@@ -153,10 +138,7 @@ public class NALUnit {
 		if (getClass() != obj.getClass())
 			return false;
 		NALUnit other = (NALUnit)obj;
-		if (buf == null) {
-			if (other.buf != null)
-				return false;
-		} else if (!buf.equals(other.buf))
+		if (header != other.header)
 			return false;
 		return true;
 	}

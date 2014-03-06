@@ -12,6 +12,7 @@ public class H264Context implements ElementryContext {
 	private int unitIndex = 0;
 	private SeqParamSet lastSeqParamSet;
 	private boolean nalStarted;
+	private NALUnit nalUnit;
 
 	public ByteBuf getBuf() {
 		return buf;
@@ -47,5 +48,11 @@ public class H264Context implements ElementryContext {
 	}
 	public void nalStarted(boolean b) {
 		nalStarted = b;
+	}
+	public void setNalUnit(NALUnit u) {
+		nalUnit = u;
+	}
+	public NALUnit getNalUnit() {
+		return nalUnit;
 	}
 }

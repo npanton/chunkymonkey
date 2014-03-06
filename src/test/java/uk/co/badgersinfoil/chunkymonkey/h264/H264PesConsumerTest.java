@@ -43,8 +43,10 @@ public class H264PesConsumerTest {
 		PESPacket pesPacket = mockPacket(content);
 		h264PesConsumer.start(ctx, pesPacket);
 		h264PesConsumer.end(ctx);
-		NALUnit expectedUnit = new NALUnit(null, hexToBuf("16" + "010203"));
-		verify(defaultConsumer).unit(eq(ctx), eq(expectedUnit));
+		NALUnit expectedUnit = new NALUnit(null, 0x16);
+		verify(defaultConsumer).start(eq(ctx), eq(expectedUnit));
+		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("010203")));
+		verify(defaultConsumer).end(eq(ctx));
 	}
 
 	@Test
@@ -61,8 +63,10 @@ public class H264PesConsumerTest {
 		TSPacket packet = mock(TSPacket.class);
 		h264PesConsumer.continuation(ctx, packet, payload);
 		h264PesConsumer.end(ctx);
-		NALUnit expectedUnit = new NALUnit(null, hexToBuf("16" + "010203040506"));
-		verify(defaultConsumer).unit(eq(ctx), eq(expectedUnit));
+		NALUnit expectedUnit = new NALUnit(null, 0x16);
+		verify(defaultConsumer).start(eq(ctx), eq(expectedUnit));
+		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("010203040506")));
+		verify(defaultConsumer).end(eq(ctx));
 	}
 
 	/**
@@ -73,6 +77,7 @@ public class H264PesConsumerTest {
 	 */
 	@Test
 	public void continuationVsDelimiter() throws Exception {
+		// given,
 		H264Context ctx = (H264Context)h264PesConsumer.createContext();
 		ByteBuf content = hexToBuf(
 				 "000001"    // start code
@@ -82,17 +87,23 @@ public class H264PesConsumerTest {
 				+"16"        // forbidden_zero_bit, nal_ref_idc, nal_unit_type
 				+"040506"    // more data
 			);
-		for (int i=3 ; i<content.readableBytes(); i++) {
+		TSPacket packet = mock(TSPacket.class);
+		for (int i=7 ; i<10; i++) {
 			PESPacket pesPacket = mockPacket(content.slice(0, i));
-			h264PesConsumer.start(ctx, pesPacket);
 			ByteBuf payload = content.slice(i, content.readableBytes() - i);
-			TSPacket packet = mock(TSPacket.class);
+			// when,
+			h264PesConsumer.start(ctx, pesPacket);
 			h264PesConsumer.continuation(ctx, packet, payload);
 			h264PesConsumer.end(ctx);
-			NALUnit expectedUnitOne = new NALUnit(null, hexToBuf("15" + "010203"));
-			verify(defaultConsumer, atLeastOnce()).unit(eq(ctx), eq(expectedUnitOne));
-			NALUnit expectedUnitTwo = new NALUnit(null, hexToBuf("16" + "040506"));
-			verify(defaultConsumer, atLeastOnce()).unit(eq(ctx), eq(expectedUnitTwo));
+			// then,
+			NALUnit expectedUnitOne = new NALUnit(null, 0x15);
+			verify(defaultConsumer, atLeastOnce()).start(eq(ctx), eq(expectedUnitOne));
+			verify(defaultConsumer, atLeastOnce()).data(eq(ctx), eq(hexToBuf("010203")));
+			verify(defaultConsumer, atLeastOnce()).end(eq(ctx));
+			NALUnit expectedUnitTwo = new NALUnit(null, 0x16);
+			verify(defaultConsumer, atLeastOnce()).start(eq(ctx), eq(expectedUnitTwo));
+			verify(defaultConsumer, atLeastOnce()).data(eq(ctx), eq(hexToBuf("040506")));
+			verify(defaultConsumer, atLeastOnce()).end(eq(ctx));
 		}
 	}
 

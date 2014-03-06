@@ -3,6 +3,7 @@ package uk.co.badgersinfoil.chunkymonkey.h264;
 import java.util.HashMap;
 import java.util.Map;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
@@ -104,11 +105,30 @@ System.err.println("bad start code 0x"+Integer.toHexString(startCode));
 			int len = end - buf.readerIndex();
 //System.err.println("end found, len="+len);
 			PesNalUnitLocator loc = new PesNalUnitLocator(hCtx.getPesPacket().getLocator(), hCtx.nextUnitIndex());
-			NALUnit u = new NALUnit(loc, hCtx.getBuf().slice(hCtx.getBuf().readerIndex(), len));
-			handle(hCtx, u);
-			buf.skipBytes(len);
+			NALUnit u = new NALUnit(loc, hCtx.getBuf().readUnsignedByte());
+			NalUnitConsumer consumer = getNalUnitConsumerFor(u.nalUnitType());
+			hCtx.setNalUnit(u);
+			consumer.start(hCtx, u);
+			consumer.data(hCtx, decodeContent(hCtx.getBuf().slice(hCtx.getBuf().readerIndex()-1, len)));
+			consumer.end(hCtx);
+			buf.skipBytes(len-1);
 			hCtx.nalStarted(false);
 		}
+	}
+	
+	private static ByteBuf decodeContent(final ByteBuf buf) {
+		ByteBuf result = Unpooled.buffer();
+		ByteBuf tmp = buf.slice();
+		tmp.skipBytes(1);
+		int history = 0xffffff;
+		while (tmp.isReadable()) {
+			int b = tmp.readUnsignedByte();
+			history = (history << 8) & 0xffffff | b;
+			if (history != 0x000003) {
+				result.writeByte(b);
+			}
+		}
+		return result;
 	}
 
 	/**
@@ -166,13 +186,13 @@ System.err.println("  end: no more data");
 		buf.resetReaderIndex();
 		int len = end - buf.readerIndex();
 //System.err.println("end implied, len="+len);
-		NALUnit u = new NALUnit(loc, hCtx.getBuf().slice(hCtx.getBuf().readerIndex(), len));
-		handle(hCtx, u);
+		NALUnit u = new NALUnit(loc, hCtx.getBuf().readUnsignedByte());
+		NalUnitConsumer consumer = getNalUnitConsumerFor(u.nalUnitType());
+		hCtx.setNalUnit(u);
+		consumer.start(hCtx, u);
+		consumer.data(hCtx, decodeContent(hCtx.getBuf().slice(hCtx.getBuf().readerIndex()-1, len)));
+		consumer.end(hCtx);
 		buf.clear();
-	}
-
-	private void handle(H264Context ctx, NALUnit u) {
-		getNalUnitConsumerFor(u.nalUnitType()).unit(ctx, u);
 	}
 
 	@Override

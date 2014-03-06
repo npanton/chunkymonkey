@@ -22,8 +22,10 @@ public class SeiNalUnitConsumer implements NalUnitConsumer {
 	}
 
 	@Override
-	public void unit(H264Context ctx, NALUnit u) {
-		ByteBuf buf = u.getContent();
+	public void start(H264Context ctx, NALUnit u) {
+	}
+	@Override
+	public void data(H264Context ctx, ByteBuf buf) {
 		int left;
 		while ((left = buf.readableBytes()) > 0) {
 			// TODO: not sure how best to identify that we need to
@@ -38,6 +40,9 @@ public class SeiNalUnitConsumer implements NalUnitConsumer {
 			getSeiConsumerForType(type).header(ctx, new SeiHeader(type, buf.slice(buf.readerIndex(), size)));
 			buf.skipBytes(size);
 		}
+	}
+	@Override
+	public void end(H264Context ctx) {
 	}
 
 	private void rbspTrailingBits(ByteBuf buf) {

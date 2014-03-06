@@ -1,9 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 
 public class ValidatingNalUnitConsumer implements NalUnitConsumer {
 
@@ -14,12 +12,12 @@ public class ValidatingNalUnitConsumer implements NalUnitConsumer {
 	}
 
 	@Override
-	public void unit(H264Context ctx, NALUnit u) {
-		if (u.nalUnitType() == UnitType.SEI) {
-			ByteBuf buf = u.getContent();
-//			int payloadType = read
-			rep.carp(u.getLocator(), "SEI 0x%s", ByteBufUtil.hexDump(buf));
-		}
-//		else rep.carp(u.getLocator(), "NALUnit "+u.nalUnitType());
+	public void start(H264Context ctx, NALUnit u) {
+	}
+	@Override
+	public void data(H264Context ctx, ByteBuf buf) {
+	}
+	@Override
+	public void end(H264Context ctx) {
 	}
 }
