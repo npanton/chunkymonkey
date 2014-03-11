@@ -46,7 +46,7 @@ public class MyPicTimingConsumer implements PicTimingConsumer {
 				MediaDuration offset = new MediaDuration(midnightTimestamp, clockTimestamp.units());
 				// FIXME: must accommodate skew!
 				expanded = clockTimestamp.plus(offset);
-System.out.println("expanded:"+expanded+" - "+ts.hoursValue()+":"+ts.minutesValue()+":"+ts.secondsValue()+"."+ts.nFrames()+"+"+ts.timeOffset());
+//System.out.println("expanded:"+expanded+" - "+ts.hoursValue()+":"+ts.minutesValue()+":"+ts.secondsValue()+"."+ts.nFrames()+"+"+ts.timeOffset());
 			}
 		}
 		PESPacket pesPacket = ctx.getPesPacket();

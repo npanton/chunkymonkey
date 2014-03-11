@@ -25,7 +25,16 @@ public class SeiNalUnitConsumer implements NalUnitConsumer {
 	public void start(H264Context ctx, NALUnit u) {
 	}
 	@Override
-	public void data(H264Context ctx, ByteBuf buf) {
+	public void data(H264Context ctx, ByteBuf buf, int offset, int length) {
+		// we could attempt to push-parse the SEI header list, but
+		// I assume SEI headers are not a significant amount of data,
+		// and take the lazy approach of just buffering the entire
+		// SEI NAL unit and then parse the headers at the end.
+		ctx.seiBuffer().writeBytes(buf, offset, length);
+	}
+	@Override
+	public void end(H264Context ctx) {
+		ByteBuf buf = ctx.seiBuffer();
 		int left;
 		while ((left = buf.readableBytes()) > 0) {
 			// TODO: not sure how best to identify that we need to
@@ -40,9 +49,7 @@ public class SeiNalUnitConsumer implements NalUnitConsumer {
 			getSeiConsumerForType(type).header(ctx, new SeiHeader(type, buf.slice(buf.readerIndex(), size)));
 			buf.skipBytes(size);
 		}
-	}
-	@Override
-	public void end(H264Context ctx) {
+		buf.clear();
 	}
 
 	private void rbspTrailingBits(ByteBuf buf) {

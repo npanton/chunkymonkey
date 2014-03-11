@@ -15,7 +15,7 @@ public class ValidatingNalUnitConsumer implements NalUnitConsumer {
 	public void start(H264Context ctx, NALUnit u) {
 	}
 	@Override
-	public void data(H264Context ctx, ByteBuf buf) {
+	public void data(H264Context ctx, ByteBuf buf, int offset, int length) {
 	}
 	@Override
 	public void end(H264Context ctx) {

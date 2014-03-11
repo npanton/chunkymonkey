@@ -45,7 +45,25 @@ public class H264PesConsumerTest {
 		h264PesConsumer.end(ctx);
 		NALUnit expectedUnit = new NALUnit(null, 0x16);
 		verify(defaultConsumer).start(eq(ctx), eq(expectedUnit));
-		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("010203")));
+		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("010203")), eq(0), eq(3));
+		verify(defaultConsumer).end(eq(ctx));
+	}
+
+	@Test
+	public void emulationPrevention() throws Exception {
+		H264Context ctx = (H264Context)h264PesConsumer.createContext();
+		ByteBuf content = hexToBuf(
+				 "000001"    // start code
+				+"16"        // forbidden_zero_bit, nal_ref_idc, nal_unit_type
+				+"01020000030003"    // data
+			);
+		PESPacket pesPacket = mockPacket(content);
+		h264PesConsumer.start(ctx, pesPacket);
+		h264PesConsumer.end(ctx);
+		NALUnit expectedUnit = new NALUnit(null, 0x16);
+		verify(defaultConsumer).start(eq(ctx), eq(expectedUnit));
+		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("01020000")), eq(0), eq(3));
+		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("0003")), eq(0), eq(3));
 		verify(defaultConsumer).end(eq(ctx));
 	}
 
@@ -65,7 +83,11 @@ public class H264PesConsumerTest {
 		h264PesConsumer.end(ctx);
 		NALUnit expectedUnit = new NALUnit(null, 0x16);
 		verify(defaultConsumer).start(eq(ctx), eq(expectedUnit));
-		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("010203040506")));
+		// FIXME: assert that the correct data got there in the
+		//        end, rather than the specifics of how it got
+		//        sliced up by the NAL Unit parser
+		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("010203")), eq(0), eq(3));
+		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("040506")), eq(0), eq(3));
 		verify(defaultConsumer).end(eq(ctx));
 	}
 
@@ -98,11 +120,11 @@ public class H264PesConsumerTest {
 			// then,
 			NALUnit expectedUnitOne = new NALUnit(null, 0x15);
 			verify(defaultConsumer, atLeastOnce()).start(eq(ctx), eq(expectedUnitOne));
-			verify(defaultConsumer, atLeastOnce()).data(eq(ctx), eq(hexToBuf("010203")));
+			verify(defaultConsumer, atLeastOnce()).data(eq(ctx), eq(hexToBuf("010203")), eq(0), eq(3));
 			verify(defaultConsumer, atLeastOnce()).end(eq(ctx));
 			NALUnit expectedUnitTwo = new NALUnit(null, 0x16);
 			verify(defaultConsumer, atLeastOnce()).start(eq(ctx), eq(expectedUnitTwo));
-			verify(defaultConsumer, atLeastOnce()).data(eq(ctx), eq(hexToBuf("040506")));
+			verify(defaultConsumer, atLeastOnce()).data(eq(ctx), eq(hexToBuf("040506")), eq(0), eq(3));
 			verify(defaultConsumer, atLeastOnce()).end(eq(ctx));
 		}
 	}

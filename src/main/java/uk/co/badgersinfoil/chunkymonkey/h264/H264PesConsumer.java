@@ -3,6 +3,7 @@ package uk.co.badgersinfoil.chunkymonkey.h264;
 import java.util.HashMap;
 import java.util.Map;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
@@ -17,6 +18,7 @@ import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
  */
 public class H264PesConsumer implements PESConsumer {
 
+	private static final ByteBuf FAKE_ZERO_BYTES = Unpooled.wrappedBuffer(new byte[] {0x00, 0x00});
 	private Map<UnitType,NalUnitConsumer> nalUnitConsumers = new HashMap<>();
 	private NalUnitConsumer defaultNalUnitConsumer = NalUnitConsumer.NULL;
 	
@@ -79,94 +81,198 @@ System.err.println("  cont ignored");
 		}
 		dataArrived(hCtx, payload);
 	}
+	
+	public static enum ParseState {
+		START,
+		START_ONE_ZERO,
+		START_TWO_ZERO,
+		START_THREE_ZERO,
+		UNIT_HEADER,
+		IN_UNIT,
+		IN_UNIT_ONE_ZERO,
+		IN_UNIT_TWO_ZERO,
+		IN_UNIT_THREE_ZERO
+	}
 
-	private void dataArrived(H264Context hCtx, ByteBuf data) {
-		hCtx.getBuf().writeBytes(data);
-		while (true) {
-			ByteBuf buf = hCtx.getBuf();
-			if (!hCtx.nalStarted()) {
-				int startCode = buf.readUnsignedMedium();
-				if (startCode == 0) {
-					startCode = buf.readUnsignedByte();
+	private void dataArrived(H264Context ctx, ByteBuf data) {
+		int zeroSeqStart = -1;
+		int dataStartOffset;
+		if (ctx.state() == ParseState.IN_UNIT) {
+			dataStartOffset = 0;
+		} else {
+			dataStartOffset = -1;
+		}
+		final int max = data.readableBytes();
+		outer: for (int i=0; i<max; i++) {
+			int b = data.getUnsignedByte(i);
+			switch (ctx.state()) {
+			case START:
+				switch (b) {
+				case 0x00:
+					ctx.state(ParseState.START_ONE_ZERO);
+					break;
+				default:
+					throw new RuntimeException("TODO: handle invalid start code properly");
 				}
-				if (startCode != 1) {
-System.err.println("bad start code 0x"+Integer.toHexString(startCode));
-					hCtx.setIgnoreRest(true);
+				break;
+			case START_ONE_ZERO:
+				switch (b) {
+				case 0x00:
+					ctx.state(ParseState.START_TWO_ZERO);
+					break;
+				default:
+					throw new RuntimeException("TODO: handle invalid start code properly");
 				}
-				hCtx.nalStarted(true);
-				hCtx.getBuf().markReaderIndex();
-			}
-			boolean found = scanForNalEnd(hCtx);
-			if (!found) {
+				break;
+			case START_TWO_ZERO:
+				switch (b) {
+				case 0x00:
+					ctx.state(ParseState.START_THREE_ZERO);
+					break;
+				case 0x01:
+					ctx.state(ParseState.UNIT_HEADER);
+					break;
+				default:
+					System.err.println("bad start code 0x"+Integer.toHexString(b));
+					ctx.setIgnoreRest(true);
+				}
+				break;
+			case START_THREE_ZERO:
+				if (b == 0x01) {
+					ctx.state(ParseState.UNIT_HEADER);
+				} else {
+					System.err.println("bad start code 0x"+Integer.toHexString(b));
+					ctx.setIgnoreRest(true);
+				}
+				break;
+			case UNIT_HEADER:
+				header(ctx, b);
+				ctx.state(ParseState.IN_UNIT);
+				dataStartOffset = i + 1;
+				break;
+			case IN_UNIT:
+				if (b == 0x00) {
+					ctx.state(ParseState.IN_UNIT_ONE_ZERO);
+					zeroSeqStart = i;
+				} else {
+					for (i++; i<max; i++) {
+						b = data.getUnsignedByte(i);
+						if (b == 0) {
+							i--;
+							continue outer;
+						}
+					}
+				}
+				break;
+			case IN_UNIT_ONE_ZERO:
+				if (b == 0x00) {
+					ctx.state(ParseState.IN_UNIT_TWO_ZERO);
+				} else {
+					if (i == 0) {
+						// the first 0x00 was in the
+						// previous buf, which has now
+						// gone.  send a zero through
+						// to consumer
+						data(ctx, FAKE_ZERO_BYTES, 0, 1);
+						dataStartOffset = 0;
+					}
+					ctx.state(ParseState.IN_UNIT);
+				}
+				break;
+			case IN_UNIT_TWO_ZERO:
+				switch (b) {
+				case 0x00:
+					ctx.state(ParseState.IN_UNIT_THREE_ZERO);
+					break;
+				case 0x01:
+					endPrev(ctx);
+					if (dataStartOffset != -1) {
+						data(ctx, data, dataStartOffset, zeroSeqStart);
+					} // else the data was presumably
+					  // at the end of the previous buffer
+					ctx.state(ParseState.UNIT_HEADER);
+					break;
+				case 0x03:
+					// 'emulation prevention sequence'.
+					// deliver preceding zero-bytes, but
+					// not the 0x03 byte itself
+					if (i < 2) {
+						// the first 0x00 was in the
+						// previous buf, which has now
+						// gone.  send a zero through
+						// to consumer
+						data(ctx, FAKE_ZERO_BYTES, 0, 2-i);
+						dataStartOffset = 0;
+					}
+					if (dataStartOffset != -1) {
+						data(ctx, data, dataStartOffset, i);
+					} // else the data was presumably
+					  // at the end of the previous buffer
+					dataStartOffset = i + 1;
+					ctx.state(ParseState.IN_UNIT);
+					break;
+				default:
+					if (i < 2) {
+						// the first 0x00 was in the
+						// previous buf, which has now
+						// gone.  send a zero through
+						// to consumer
+						data(ctx, FAKE_ZERO_BYTES, 0, 2-i);
+						dataStartOffset = 0;
+					}
+					ctx.state(ParseState.IN_UNIT);
+					break;
+				}
+				break;
+			case IN_UNIT_THREE_ZERO:
+				switch (b) {
+				case 0x00:
+					// stay in this state
+					break;
+				case 0x01:
+					if (dataStartOffset != -1) {
+						data(ctx, data, dataStartOffset, zeroSeqStart);
+					}
+					endPrev(ctx);
+					ctx.state(ParseState.UNIT_HEADER);
+					break;
+				default:
+					System.err.println("bad byte value following three or more zero bytes: 0x"+Integer.toHexString(b)+" offset "+i+"\n"+ByteBufUtil.hexDump(data));
+					ctx.setIgnoreRest(true);
+					break outer;
+				}
 				break;
 			}
-			int end = buf.readerIndex();
-			buf.resetReaderIndex();
-			int len = end - buf.readerIndex();
-//System.err.println("end found, len="+len);
-			PesNalUnitLocator loc = new PesNalUnitLocator(hCtx.getPesPacket().getLocator(), hCtx.nextUnitIndex());
-			NALUnit u = new NALUnit(loc, hCtx.getBuf().readUnsignedByte());
-			NalUnitConsumer consumer = getNalUnitConsumerFor(u.nalUnitType());
-			hCtx.setNalUnit(u);
-			consumer.start(hCtx, u);
-			consumer.data(hCtx, decodeContent(hCtx.getBuf().slice(hCtx.getBuf().readerIndex()-1, len)));
-			consumer.end(hCtx);
-			buf.skipBytes(len-1);
-			hCtx.nalStarted(false);
 		}
-	}
-	
-	private static ByteBuf decodeContent(final ByteBuf buf) {
-		ByteBuf result = Unpooled.buffer();
-		ByteBuf tmp = buf.slice();
-		tmp.skipBytes(1);
-		int history = 0xffffff;
-		while (tmp.isReadable()) {
-			int b = tmp.readUnsignedByte();
-			history = (history << 8) & 0xffffff | b;
-			if (history != 0x000003) {
-				result.writeByte(b);
-			}
+		if (!ctx.isIgnoreRest() && ctx.state() == ParseState.IN_UNIT) {
+			data(ctx, data, dataStartOffset, data.readableBytes());
 		}
-		return result;
 	}
 
-	/**
-	 * Attempts to find the next occurrence of either the 3-byte sequence
-	 * 0x000001 or the 4-byte sequence 0x00000001 in the context's buffer.
-	 * 
-	 * Returns true, and leaves the readerIndex at the location of the
-	 * sequence when found, or returns false and leaves the buffer's
-	 * readerIndex at the location scanned to so far otherwise.  This
-	 * method does not alter the buffer's mark (so the caller may use this
-	 * to track where in the buffer the NAL unit started).  When false is
-	 * returned, the caller is expected to invoke this method again once it
-	 * has received more data and added it to the context's buffer.
-	 */
-	private boolean scanForNalEnd(H264Context hCtx) {
-		int code = 0xffffffff;
-		ByteBuf buf = hCtx.getBuf();
-		int count = 0;
-		while (buf.isReadable()) {
-			code <<= 8;
-			code |= buf.readUnsignedByte();
-			count++;
-			// test the bottom 3 bytes of 'code', masking-out the
-			// high byte,
-			if ((code & 0xffffff) == 0x000001) {
-				// if 'code' is still '1' when considering the
-				// high byte too, then this is a 4-byte code,
-				// otherwise the high byte must contain data,
-				// and this is a 3-byte code,
-				int codeLength = code == 1 ? 4 : 3;
-				buf.readerIndex(buf.readerIndex() - codeLength);
-				return true;
-			}
-		}
-		// rewind, so that we can try the last 2 bytes again next time
-		// TODO: alternatively, store 'code' state into hCtx
-		buf.readerIndex(buf.readerIndex() - Math.min(count, 2));
-		return false;
+	private void header(H264Context ctx, int b) {
+		PesNalUnitLocator loc = new PesNalUnitLocator(ctx.getPesPacket().getLocator(), ctx.nextUnitIndex());
+		NALUnit u = new NALUnit(loc, b);
+		NalUnitConsumer consumer = getNalUnitConsumerFor(u.nalUnitType());
+		ctx.setNalUnit(u);
+		ctx.setNalUnitConsumer(consumer);
+		consumer.start(ctx, u);
+	}
+
+	private void data(H264Context ctx, ByteBuf data, int dataStartOffset, int zeroSeqStart) {
+//		if (dataStartOffset == -1) {
+//			throw new IllegalStateException("Parser bug: dataStartOffset not yet initialized");
+//		}
+//		if (zeroSeqStart == -1) {
+//			throw new IllegalStateException("Parser bug: zeroSeqStart not yet initialized");
+//		}
+		NalUnitConsumer consumer = ctx.getNalUnitConsumer();
+		int len = zeroSeqStart - dataStartOffset;
+		consumer.data(ctx, data, dataStartOffset, len);
+	}
+
+	private void endPrev(H264Context ctx) {
+		NalUnitConsumer consumer = ctx.getNalUnitConsumer();
+		consumer.end(ctx);
 	}
 
 	@Override
@@ -176,23 +282,8 @@ System.err.println("bad start code 0x"+Integer.toHexString(startCode));
 System.err.println("  end: ignored");
 			return;
 		}
-		if (hCtx.getBuf().readableBytes() == 0) {
-System.err.println("  end: no more data");
-			return;
-		}
-		PesNalUnitLocator loc = new PesNalUnitLocator(hCtx.getPesPacket().getLocator(), hCtx.nextUnitIndex());
-		ByteBuf buf = hCtx.getBuf();
-		int end = buf.readerIndex() + buf.readableBytes();
-		buf.resetReaderIndex();
-		int len = end - buf.readerIndex();
-//System.err.println("end implied, len="+len);
-		NALUnit u = new NALUnit(loc, hCtx.getBuf().readUnsignedByte());
-		NalUnitConsumer consumer = getNalUnitConsumerFor(u.nalUnitType());
-		hCtx.setNalUnit(u);
-		consumer.start(hCtx, u);
-		consumer.data(hCtx, decodeContent(hCtx.getBuf().slice(hCtx.getBuf().readerIndex()-1, len)));
-		consumer.end(hCtx);
-		buf.clear();
+
+		endPrev(hCtx);
 	}
 
 	@Override

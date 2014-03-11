@@ -8,11 +8,14 @@ public class SeqParamSetNalUnitConsumer implements NalUnitConsumer {
 	public void start(H264Context ctx, NALUnit u) {
 	}
 	@Override
-	public void data(H264Context ctx, ByteBuf buf) {
-		SeqParamSet params = new SeqParamSet(buf);
-		ctx.lastSeqParamSet(params);
+	public void data(H264Context ctx, ByteBuf buf, int offset, int length) {
+		ctx.seqParamSetBuffer().writeBytes(buf, offset, length);
 	}
 	@Override
 	public void end(H264Context ctx) {
+		ByteBuf buf = ctx.seqParamSetBuffer();
+		SeqParamSet params = new SeqParamSet(buf);
+		ctx.lastSeqParamSet(params);
+		buf.clear();
 	}
 }

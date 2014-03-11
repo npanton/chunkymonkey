@@ -2,21 +2,22 @@ package uk.co.badgersinfoil.chunkymonkey.h264;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer.ParseState;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket;
 
 public class H264Context implements ElementryContext {
-	private ByteBuf buf = Unpooled.buffer();
 	private boolean ignoreRest;
 	private PESPacket pesPacket;
 	private int unitIndex = 0;
 	private SeqParamSet lastSeqParamSet;
 	private boolean nalStarted;
 	private NALUnit nalUnit;
+	private ParseState parseState;
+	private ByteBuf seiBuffer = Unpooled.buffer();
+	private ByteBuf seqParamSetBuffer = Unpooled.buffer();
+	private NalUnitConsumer consumer;
 
-	public ByteBuf getBuf() {
-		return buf;
-	}
 	public boolean isIgnoreRest() {
 		return ignoreRest;
 	}
@@ -33,6 +34,7 @@ public class H264Context implements ElementryContext {
 		return unitIndex++;
 	}
 	public void start() {
+		parseState = ParseState.START;
 		ignoreRest = false;
 		unitIndex = 0;
 		nalStarted = false;
@@ -54,5 +56,23 @@ public class H264Context implements ElementryContext {
 	}
 	public NALUnit getNalUnit() {
 		return nalUnit;
+	}
+	public ParseState state() {
+		return parseState;
+	}
+	public void state(ParseState state) {
+		parseState = state;
+	}
+	public ByteBuf seiBuffer() {
+		return seiBuffer ;
+	}
+	public ByteBuf seqParamSetBuffer() {
+		return seqParamSetBuffer;
+	}
+	public void setNalUnitConsumer(NalUnitConsumer consumer) {
+		this.consumer = consumer;
+	}
+	public NalUnitConsumer getNalUnitConsumer() {
+		return consumer;
 	}
 }
