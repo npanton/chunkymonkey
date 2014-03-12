@@ -22,9 +22,6 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 
 	@Override
 	public void packet(TSContext ctx, TSPacket packet) {
-		if (chunkId == null) {
-			return;
-		}
 		try {
 			FileChannel ch = getChunkChannel();
 			ByteBuf buf = packet.getBuffer();
@@ -60,7 +57,7 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 	}
 
 	public String getChunkId() {
-		return chunkId;
+		return chunkId==null ? "0-drop" : chunkId;
 	}
 
 	public void setChunkId(String chunkId) {

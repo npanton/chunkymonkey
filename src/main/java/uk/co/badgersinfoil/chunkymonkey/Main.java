@@ -34,6 +34,7 @@ import uk.co.badgersinfoil.chunkymonkey.hls.HLSContext;
 import uk.co.badgersinfoil.chunkymonkey.snickersnak.ChunkingTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.snickersnak.MyPCRWatchingTSConsumer;
 import uk.co.badgersinfoil.chunkymonkey.snickersnak.MyPicTimingConsumer;
+import uk.co.badgersinfoil.chunkymonkey.snickersnak.PesSwitchConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.FileTransportStreamParser;
 import uk.co.badgersinfoil.chunkymonkey.ts.TransportContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
@@ -158,10 +159,12 @@ public class Main {
 		nalUnitConsumers.put(UnitType.SEI, seiNalUnitConsumer);
 		SeqParamSetNalUnitConsumer seqParamSetNalUnitConsumer = new SeqParamSetNalUnitConsumer();
 		nalUnitConsumers.put(UnitType.SEQ_PARAMETER_SET, seqParamSetNalUnitConsumer);
+		PesSwitchConsumer h264Switch = new PesSwitchConsumer(new H264PesConsumer(nalUnitConsumers));
+		pcrWatcher.setH264Switch(h264Switch);
 		PESConsumer.MultiPesConsumer consumers
 			= new PESConsumer.MultiPesConsumer(
 				new ValidatingPesConsumer(rep),
-				new H264PesConsumer(nalUnitConsumers)
+				h264Switch
 			);
 		return new PesTSPacketConsumer(consumers);
 	}

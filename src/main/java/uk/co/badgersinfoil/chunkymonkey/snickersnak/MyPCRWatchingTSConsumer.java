@@ -21,6 +21,9 @@ public class MyPCRWatchingTSConsumer implements TSPacketConsumer {
 	private long chunkDurationPts = MyPicTimingConsumer.PTS_UNITS.rate() * chunkDurationSeconds;
 	private static final MediaDuration WRAP_CORRECTION = new MediaDuration(1L<<32, MyPicTimingConsumer.PTS_UNITS);
 	private static final SimpleDateFormat format = new SimpleDateFormat("'chunk_'Y-MM-dd'T'hh:mm:ss.SSS");
+	private PesSwitchConsumer h264Switch;
+	private long offsetValidityDuration = MyPicTimingConsumer.PTS_UNITS.rate();  // 1 second
+	private long offsetValidityEnd = -1;
 
 	public MyPCRWatchingTSConsumer(ChunkingTSPacketConsumer chunker) {
 		this.chunker = chunker;
@@ -48,12 +51,34 @@ System.err.println("*CHUNK* " + pcrClockOffset.value()+" pcr="+ts);
 				lastChunkId = chunkId;
 			}
 			lastPts = ts;
+			if (isAfter(ts, offsetValidityEnd)) {
+				// start parsing H264 data again, so that we
+				// will recalculate 'pcrClockOffset' when the
+				// next pic_timing header appears,
+				h264Switch.enabled(true);
+			}
 		}
+	}
+
+	/**
+	 * Returns true if ts1 is after ts2, assuming that the two timestamps
+	 * are relatively close to each other (within a few hours) so that it
+	 * can take into account timestamp counter wrap-around.
+	 */
+	private boolean isAfter(long ts1, long ts2) {
+		long diff = ts1 - ts2;
+		final long MAX_TS = 1L<<33;
+		return diff < 0 || diff > (MAX_TS / 2);
 	}
 
 	// TODO: some kind of context argument required?
 	public void setPcrClockOffset(MediaDuration pcrClockOffset) {
 		this.pcrClockOffset = pcrClockOffset;
+		if (lastPts != -1) {
+			// stop paying the cost of H264 parsing for a little while,
+			h264Switch.enabled(false);
+			offsetValidityEnd = lastPts + offsetValidityDuration;
+		}
 	}
 
 	@Override
@@ -71,5 +96,16 @@ System.err.println("*CHUNK* " + pcrClockOffset.value()+" pcr="+ts);
 	public void end(TSContext context) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	/**
+	 * Specifies the PesSwitchConsumer that allows this object to enable
+	 * and disable parsing of the H264 elementry stream in order to create
+	 * an association between H264 pic_timing values, and PCR values, or
+	 * to validate that a previously calculated association is still valid.
+	 */
+	public void setH264Switch(PesSwitchConsumer h264Switch) {
+		this.h264Switch = h264Switch;
+		h264Switch.enabled(true);
 	}
 }
