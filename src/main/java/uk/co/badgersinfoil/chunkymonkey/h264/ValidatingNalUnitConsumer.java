@@ -13,6 +13,9 @@ public class ValidatingNalUnitConsumer implements NalUnitConsumer {
 
 	@Override
 	public void start(H264Context ctx, NALUnit u) {
+		if (u.forbiddenZeroBit() != 0) {
+			rep.carp(u.getLocator(), "forbidden_zero_bit should always be 0, found: "+u.forbiddenZeroBit());
+		}
 	}
 	@Override
 	public void data(H264Context ctx, ByteBuf buf, int offset, int length) {
