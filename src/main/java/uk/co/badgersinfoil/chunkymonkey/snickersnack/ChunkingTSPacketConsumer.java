@@ -1,4 +1,4 @@
-package uk.co.badgersinfoil.chunkymonkey.snickersnak;
+package uk.co.badgersinfoil.chunkymonkey.snickersnack;
 
 import io.netty.buffer.ByteBuf;
 

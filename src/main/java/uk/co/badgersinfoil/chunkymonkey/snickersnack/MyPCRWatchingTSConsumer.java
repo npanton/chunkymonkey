@@ -1,4 +1,4 @@
-package uk.co.badgersinfoil.chunkymonkey.snickersnak;
+package uk.co.badgersinfoil.chunkymonkey.snickersnack;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
