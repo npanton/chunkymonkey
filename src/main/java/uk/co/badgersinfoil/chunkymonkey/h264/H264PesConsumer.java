@@ -177,6 +177,7 @@ System.err.println("  cont ignored");
 						dataStartOffset = 0;
 					}
 					ctx.state(ParseState.IN_UNIT);
+					zeroSeqStart = -1;
 				}
 				break;
 			case IN_UNIT_TWO_ZERO:
@@ -185,12 +186,14 @@ System.err.println("  cont ignored");
 					ctx.state(ParseState.IN_UNIT_THREE_ZERO);
 					break;
 				case 0x01:
-					endPrev(ctx);
-					if (dataStartOffset != -1) {
+					if (dataStartOffset != -1 && (zeroSeqStart-dataStartOffset) != 0) {
 						data(ctx, data, dataStartOffset, zeroSeqStart);
 					} // else the data was presumably
 					  // at the end of the previous buffer
+					endPrev(ctx);
+					dataStartOffset = i + 1;
 					ctx.state(ParseState.UNIT_HEADER);
+					zeroSeqStart = -1;
 					break;
 				case 0x03:
 					// 'emulation prevention sequence'.
@@ -210,6 +213,7 @@ System.err.println("  cont ignored");
 					  // at the end of the previous buffer
 					dataStartOffset = i + 1;
 					ctx.state(ParseState.IN_UNIT);
+					zeroSeqStart = -1;
 					break;
 				default:
 					if (i < 2) {
@@ -221,6 +225,7 @@ System.err.println("  cont ignored");
 						dataStartOffset = 0;
 					}
 					ctx.state(ParseState.IN_UNIT);
+					zeroSeqStart = -1;
 					break;
 				}
 				break;
@@ -235,6 +240,7 @@ System.err.println("  cont ignored");
 					}
 					endPrev(ctx);
 					ctx.state(ParseState.UNIT_HEADER);
+					zeroSeqStart = -1;
 					break;
 				default:
 					System.err.println("bad byte value following three or more zero bytes: 0x"+Integer.toHexString(b)+" offset "+i+"\n"+ByteBufUtil.hexDump(data));
@@ -244,8 +250,11 @@ System.err.println("  cont ignored");
 				break;
 			}
 		}
-		if (!ctx.isIgnoreRest() && ctx.state() == ParseState.IN_UNIT) {
-			data(ctx, data, dataStartOffset, data.readableBytes());
+		if (!ctx.isIgnoreRest() && dataStartOffset != -1) {
+			int end = zeroSeqStart == -1 ? data.readableBytes() : zeroSeqStart;
+			if (end - dataStartOffset != 0) {
+				data(ctx, data, dataStartOffset, end);
+			}
 		}
 	}
 
@@ -272,7 +281,16 @@ System.err.println("  cont ignored");
 
 	private void endPrev(H264Context ctx) {
 		NalUnitConsumer consumer = ctx.getNalUnitConsumer();
-		consumer.end(ctx);
+		if (inUnit(ctx.state())) {
+			consumer.end(ctx);
+		}
+	}
+
+	private boolean inUnit(ParseState state) {
+		return state == ParseState.IN_UNIT
+		    || state == ParseState.IN_UNIT_ONE_ZERO
+		    || state == ParseState.IN_UNIT_TWO_ZERO
+		    || state == ParseState.IN_UNIT_THREE_ZERO;
 	}
 
 	@Override

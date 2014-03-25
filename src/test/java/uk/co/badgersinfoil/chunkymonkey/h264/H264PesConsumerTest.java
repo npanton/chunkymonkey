@@ -2,14 +2,16 @@ package uk.co.badgersinfoil.chunkymonkey.h264;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import org.junit.Assert;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
@@ -19,15 +21,66 @@ import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
 
 @RunWith(MockitoJUnitRunner.class)
 public class H264PesConsumerTest {
-	@Mock
-	private NalUnitConsumer defaultConsumer;
+
+	/**
+	 * Mocks NalUnitConsumer in order to collect together the whole NAL
+	 * Unit body independant 
+	 */
+	private static class MockNalUnitConsumer implements NalUnitConsumer {
+		public static class UnitHolder {
+			public UnitHolder(NALUnit u) {
+				unit = u;
+			}
+			public NALUnit unit;
+			public ByteBuf data = Unpooled.buffer();
+			private boolean ended;
+
+			public void assertCompleteUnitWas(NALUnit expected, ByteBuf expectedData) {
+				Assert.assertEquals(expected, unit);
+				Assert.assertTrue("end() was not called", ended);
+				Assert.assertEquals(expectedData, data);
+			}
+		}
+		private boolean started;
+		private List<UnitHolder> units = new ArrayList<>();
+
+		@Override
+		public void start(H264Context ctx, NALUnit u) {
+			started = true;
+			units.add(new UnitHolder(u));
+		}
+		
+		@Override
+		public void end(H264Context ctx) {
+			Assert.assertTrue("start() not called before end()", started);
+			Assert.assertTrue("end() called with no payload delivered", lastUnit().data.readableBytes() > 0);
+			lastUnit().ended = true;
+			started = false;
+		}
+
+		@Override
+		public void data(H264Context ctx, ByteBuf buf, int offset, int length) {
+			Assert.assertTrue("length should be > 0", length > 0);
+			Assert.assertTrue("start() not called before data()", started);
+			lastUnit().data.writeBytes(buf, offset, length);
+		}
+		
+		private UnitHolder lastUnit() {
+			return unit(units.size()-1);
+		}
+		public UnitHolder unit(int i) {
+			return units.get(i);
+		}
+	}
+	private MockNalUnitConsumer defaultConsumer = new MockNalUnitConsumer();
 
 	private H264PesConsumer h264PesConsumer;
 
+	private static final Map<UnitType, NalUnitConsumer> nalUnitConsumers
+		= Collections.emptyMap();;
+
 	@Before
 	public void setup() {
-		Map<UnitType, NalUnitConsumer> nalUnitConsumers
-			= Collections.emptyMap();
 		h264PesConsumer = new H264PesConsumer(nalUnitConsumers);
 		h264PesConsumer.setDefaultNalUnitConsumer(defaultConsumer);
 	}
@@ -44,9 +97,7 @@ public class H264PesConsumerTest {
 		h264PesConsumer.start(ctx, pesPacket);
 		h264PesConsumer.end(ctx);
 		NALUnit expectedUnit = new NALUnit(null, 0x16);
-		verify(defaultConsumer).start(eq(ctx), eq(expectedUnit));
-		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("010203")), eq(0), eq(3));
-		verify(defaultConsumer).end(eq(ctx));
+		defaultConsumer.unit(0).assertCompleteUnitWas(expectedUnit, hexToBuf("010203"));
 	}
 
 	@Test
@@ -61,10 +112,7 @@ public class H264PesConsumerTest {
 		h264PesConsumer.start(ctx, pesPacket);
 		h264PesConsumer.end(ctx);
 		NALUnit expectedUnit = new NALUnit(null, 0x16);
-		verify(defaultConsumer).start(eq(ctx), eq(expectedUnit));
-		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("01020000")), eq(0), eq(3));
-		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("0003")), eq(0), eq(3));
-		verify(defaultConsumer).end(eq(ctx));
+		defaultConsumer.unit(0).assertCompleteUnitWas(expectedUnit, hexToBuf("010200000003"));
 	}
 
 	@Test
@@ -82,13 +130,7 @@ public class H264PesConsumerTest {
 		h264PesConsumer.continuation(ctx, packet, payload);
 		h264PesConsumer.end(ctx);
 		NALUnit expectedUnit = new NALUnit(null, 0x16);
-		verify(defaultConsumer).start(eq(ctx), eq(expectedUnit));
-		// FIXME: assert that the correct data got there in the
-		//        end, rather than the specifics of how it got
-		//        sliced up by the NAL Unit parser
-		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("010203")), eq(0), eq(3));
-		verify(defaultConsumer).data(eq(ctx), eq(hexToBuf("040506")), eq(0), eq(3));
-		verify(defaultConsumer).end(eq(ctx));
+		defaultConsumer.unit(0).assertCompleteUnitWas(expectedUnit, hexToBuf("010203040506"));
 	}
 
 	/**
@@ -110,7 +152,11 @@ public class H264PesConsumerTest {
 				+"040506"    // more data
 			);
 		TSPacket packet = mock(TSPacket.class);
-		for (int i=7 ; i<10; i++) {
+		for (int i=1 ; i<content.readableBytes(); i++) {
+			defaultConsumer = new MockNalUnitConsumer();
+			h264PesConsumer = new H264PesConsumer(nalUnitConsumers);
+			h264PesConsumer.setDefaultNalUnitConsumer(defaultConsumer);
+
 			PESPacket pesPacket = mockPacket(content.slice(0, i));
 			ByteBuf payload = content.slice(i, content.readableBytes() - i);
 			// when,
@@ -119,13 +165,9 @@ public class H264PesConsumerTest {
 			h264PesConsumer.end(ctx);
 			// then,
 			NALUnit expectedUnitOne = new NALUnit(null, 0x15);
-			verify(defaultConsumer, atLeastOnce()).start(eq(ctx), eq(expectedUnitOne));
-			verify(defaultConsumer, atLeastOnce()).data(eq(ctx), eq(hexToBuf("010203")), eq(0), eq(3));
-			verify(defaultConsumer, atLeastOnce()).end(eq(ctx));
+			defaultConsumer.unit(0).assertCompleteUnitWas(expectedUnitOne, hexToBuf("010203"));
 			NALUnit expectedUnitTwo = new NALUnit(null, 0x16);
-			verify(defaultConsumer, atLeastOnce()).start(eq(ctx), eq(expectedUnitTwo));
-			verify(defaultConsumer, atLeastOnce()).data(eq(ctx), eq(hexToBuf("040506")), eq(0), eq(3));
-			verify(defaultConsumer, atLeastOnce()).end(eq(ctx));
+			defaultConsumer.unit(1).assertCompleteUnitWas(expectedUnitTwo, hexToBuf("040506"));
 		}
 	}
 
