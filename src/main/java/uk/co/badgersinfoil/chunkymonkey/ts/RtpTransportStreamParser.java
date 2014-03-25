@@ -57,6 +57,7 @@ public class RtpTransportStreamParser {
 	}
 
 	private TSPacketConsumer consumer;
+	private UdpConnectionLocator connLocator;
 
 	public static class RtpPacket {
 
@@ -147,13 +148,13 @@ public class RtpTransportStreamParser {
 
 	public RtpTransportStreamParser(TSPacketConsumer consumer) {
 		this.consumer = consumer;
+		connLocator = new UdpConnectionLocator(5004);
 	}
 
 	public void recieve() throws IOException {
 		SocketAddress local = new InetSocketAddress(5004);
 		DatagramChannel ch = DatagramChannel.open(StandardProtocolFamily.INET).bind(local);
 		ByteBuffer dst = ByteBuffer.allocateDirect(1500);
-		UdpConnectionLocator connLocator = new UdpConnectionLocator(5004);
 		while (true) {
 			SocketAddress peer = ch.receive(dst);
 			if (peer == null) {
@@ -161,20 +162,24 @@ public class RtpTransportStreamParser {
 			} else {
 				dst.flip();
 				ByteBuf buf = Unpooled.wrappedBuffer(dst);
-				RtpPacket p = new RtpPacket(buf);
-				ByteBuf payload = p.payload();
-				int count = payload.readableBytes() / TSPacket.TS_PACKET_LENGTH;
-				RtpPacketLocator locator = new RtpPacketLocator(connLocator, p.timestamp(), p.sequenceNumber());
-				for (int i=0; i<count; i++) {
-					ByteBuf pk = payload.slice(i*TSPacket.TS_PACKET_LENGTH, TSPacket.TS_PACKET_LENGTH);
-					TSPacket packet = new TSPacket(locator, i, pk);
-					if (!packet.synced()) {
-						// TODO: better diagnostics.  re-sync?
-						throw new RuntimeException("Transport stream synchronisation lost @packet#"+i+" in "+locator);
-					}
-					consumer.packet(null, packet);
-				}
+				packet(peer, buf);
 			}
+		}
+	}
+
+	public void packet(SocketAddress peer, ByteBuf buf) {
+		RtpPacket p = new RtpPacket(buf);
+		ByteBuf payload = p.payload();
+		int count = payload.readableBytes() / TSPacket.TS_PACKET_LENGTH;
+		RtpPacketLocator locator = new RtpPacketLocator(connLocator, p.timestamp(), p.sequenceNumber());
+		for (int i=0; i<count; i++) {
+			ByteBuf pk = payload.slice(i*TSPacket.TS_PACKET_LENGTH, TSPacket.TS_PACKET_LENGTH);
+			TSPacket packet = new TSPacket(locator, i, pk);
+			if (!packet.synced()) {
+				// TODO: better diagnostics.  re-sync?
+				throw new RuntimeException("Transport stream synchronisation lost @packet#"+i+" in "+locator);
+			}
+			consumer.packet(null, packet);
 		}
 	}
 }
