@@ -20,7 +20,7 @@ public class MyPCRWatchingTSConsumer implements TSPacketConsumer {
 	private int chunkDurationSeconds = 8;
 	private long chunkDurationPts = MyPicTimingConsumer.PTS_UNITS.rate() * chunkDurationSeconds;
 	private static final MediaDuration WRAP_CORRECTION = new MediaDuration(1L<<32, MyPicTimingConsumer.PTS_UNITS);
-	private static final SimpleDateFormat format = new SimpleDateFormat("'chunk_'Y-MM-dd'T'hh:mm:ss.SSS");
+	private static final SimpleDateFormat format = new SimpleDateFormat("'chunk_'Y-MM-dd'T'HH:mm:ss.SSS");
 	private PesSwitchConsumer h264Switch;
 	private long offsetValidityDuration = MyPicTimingConsumer.PTS_UNITS.rate();  // 1 second
 	private long offsetValidityEnd = -1;
