@@ -309,7 +309,7 @@ public class H264PesConsumer implements PESConsumer {
 	public void end(ElementryContext ctx) {
 		H264Context hCtx = (H264Context)ctx;
 		if (hCtx.isIgnoreRest()) {
-System.err.println("  end: ignored");
+System.err.println("H264PesConsumer.end() - end of H264 PES packet we decided to ignore");
 			return;
 		}
 
