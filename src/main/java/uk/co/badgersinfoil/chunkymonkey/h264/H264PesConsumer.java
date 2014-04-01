@@ -76,7 +76,7 @@ public class H264PesConsumer implements PESConsumer {
 	public void continuation(ElementryContext ctx, TSPacket packet, ByteBuf payload) {
 		H264Context hCtx = (H264Context)ctx;
 		if (hCtx.isIgnoreRest()) {
-System.err.println("  cont ignored");
+//System.err.println("  cont ignored");
 			return;
 		}
 		dataArrived(hCtx, payload);
