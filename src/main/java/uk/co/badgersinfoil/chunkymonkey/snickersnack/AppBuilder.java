@@ -29,13 +29,15 @@ import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer.FilterEntry;
 
 public class AppBuilder {
 	
+	private String chunkDir;
+
 	// spring meh
 
 	public MultiTSPacketConsumer createConsumer() {
 		Reporter rep = new ConsoleReporter();
 		PIDFilterPacketConsumer pidFilter = new PIDFilterPacketConsumer(rep);
 		Map<Integer, StreamTSPacketConsumer> map = new HashMap<>();
-		ChunkingTSPacketConsumer chunker = new ChunkingTSPacketConsumer();
+		ChunkingTSPacketConsumer chunker = new ChunkingTSPacketConsumer(chunkDir);
 		MyPCRWatchingTSConsumer pcrWatcher = new MyPCRWatchingTSConsumer(chunker);
 		map.put(ProgramMapTable.STREAM_TYPE_H264, createH264Consumer(rep, chunker, pcrWatcher));
 		UnhandledStreamTSPacketConsumer defaultStreamProc = new UnhandledStreamTSPacketConsumer();
@@ -70,5 +72,9 @@ public class AppBuilder {
 				h264Switch
 			);
 		return new PesTSPacketConsumer(consumers);
+	}
+
+	public void chunkDir(String chunkDir) {
+		this.chunkDir = chunkDir;
 	}
 }

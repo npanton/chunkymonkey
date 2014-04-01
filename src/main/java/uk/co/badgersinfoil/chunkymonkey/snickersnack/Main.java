@@ -34,6 +34,9 @@ public class Main {
 
 	@Option(name = { "--multicast-group" })
 	public String multicastGroup;
+	
+	@Option(name = { "--chunk-dir" }, description = "Destination into which transport stream chunks are to be written", required=true )
+	public String chunkDir;
 
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		Main m = SingleCommand.singleCommand(Main.class).parse(args);
@@ -45,6 +48,7 @@ public class Main {
 
 	private void run() throws IOException, URISyntaxException {
 		AppBuilder b = new AppBuilder();
+		b.chunkDir(chunkDir);
 		MultiTSPacketConsumer consumer = b.createConsumer();
 		if (benchmarkFile != null) {			
 			benchmark(benchmarkFile, consumer);

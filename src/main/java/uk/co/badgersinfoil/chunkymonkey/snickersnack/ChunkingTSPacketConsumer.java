@@ -19,6 +19,11 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 	// TODO: move to a 'context' object
 	private FileChannel file;
 	private String chunkId;
+	private String chunkDir;
+
+	public ChunkingTSPacketConsumer(String chunkDir) {
+		this.chunkDir = chunkDir;
+	}
 
 	@Override
 	public void packet(TSContext ctx, TSPacket packet) {
@@ -33,7 +38,7 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 
 	private FileChannel getChunkChannel() throws IOException {
 		if (file == null) {
-			Path path = FileSystems.getDefault().getPath("/tmp", "chunks", getChunkId()+".ts");
+			Path path = FileSystems.getDefault().getPath(chunkDir, getChunkId()+".ts");
 			file = FileChannel.open(path, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
 		}
 		return file;
