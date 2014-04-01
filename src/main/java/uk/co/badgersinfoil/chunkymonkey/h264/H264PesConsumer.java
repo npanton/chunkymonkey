@@ -94,12 +94,24 @@ public class H264PesConsumer implements PESConsumer {
 		IN_UNIT_THREE_ZERO
 	}
 
+	/**
+	 * H264 'NAL Unit' push parser implementation.  Ongoing parse
+	 * state is externalised into the given H264Context object, so that
+	 * data for the parser to handle can be delivered over multiple
+	 * successive calls to this method, as it becomes available from the
+	 * lower levels of the protocol stack.
+	 */
 	private void dataArrived(H264Context ctx, ByteBuf data) {
 		int zeroSeqStart = -1;
 		int dataStartOffset;
 		if (ctx.state() == ParseState.IN_UNIT) {
+			// we were in the middle of emitting data when the last
+			// buffer ended, so we will continue emitting from the
+			// start of this buffer,
 			dataStartOffset = 0;
 		} else {
+			// 'dataStartOffset will need to be initialised
+			// properly when we parse the next NAL unit header,
 			dataStartOffset = -1;
 		}
 		final int max = data.readableBytes();
