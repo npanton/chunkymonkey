@@ -36,8 +36,9 @@ public class MyPCRWatchingTSConsumer implements TSPacketConsumer {
 			if (lastPts != -1) {
 				long diff = ts - lastPts;
 				if (diff < 0) {
-System.err.println("!wrap "+diff+": "+lastPts+" -> "+ts);
+System.err.print("!wrap "+diff+": "+lastPts+" -> "+ts+" - chaning pcrClockOffset from "+pcrClockOffset);
 					pcrClockOffset = pcrClockOffset.plus(WRAP_CORRECTION);
+System.err.println(" to "+pcrClockOffset);
 				}
 			}
 			long corrected = ts + pcrClockOffset.value();
