@@ -179,10 +179,10 @@ public class TSPacket {
 		}
 		public String toSexidecimalString() {
 			long nanos = toNanoseconds();
-			return String.format("%02d:%02d:%02d.%04d", nanos/(60*60*1000000L),
+			return String.format("%02d:%02d:%02d.%06d", nanos/(60*60*1000000L),
 			                                            (nanos/(60*1000000))%60,
 			                                            (nanos/1000000)%60,
-			                                            (nanos/1000)%1000);
+			                                            (nanos)%1000000);
 		}
 	}
 
