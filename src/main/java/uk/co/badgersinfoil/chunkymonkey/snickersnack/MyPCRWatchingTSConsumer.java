@@ -44,7 +44,6 @@ System.err.println(" to "+pcrClockOffset);
 			long corrected = ts + pcrClockOffset.value();
 			long chunkId = corrected / chunkDurationPts;
 			if (lastChunkId != chunkId) {
-System.err.println("*CHUNK* " + pcrClockOffset.value()+" pcr="+ts);
 				long scale = MyPicTimingConsumer.PTS_UNITS.rate();
 				Calendar c = new GregorianCalendar();
 				c.setTimeInMillis(corrected * 1000 / scale);
