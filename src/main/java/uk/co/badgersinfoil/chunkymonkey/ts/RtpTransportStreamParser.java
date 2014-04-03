@@ -162,12 +162,12 @@ public class RtpTransportStreamParser {
 			} else {
 				dst.flip();
 				ByteBuf buf = Unpooled.wrappedBuffer(dst);
-				packet(peer, buf);
+				packet(buf);
 			}
 		}
 	}
 
-	public void packet(SocketAddress peer, ByteBuf buf) {
+	public void packet(ByteBuf buf) {
 		RtpPacket p = new RtpPacket(buf);
 		ByteBuf payload = p.payload();
 		int count = payload.readableBytes() / TSPacket.TS_PACKET_LENGTH;

@@ -3,32 +3,29 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
 import java.net.NetworkInterface;
-import java.net.SocketAddress;
-import java.net.StandardProtocolFamily;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
 
 public class MulticastReciever {
-
-	private DatagramChannel ch;
-
+	private static final int MAX_DATAGRAM_LENGTH = 1500;
+	private MulticastSocket ms;
+	
 	public MulticastReciever(String multicastGroup, NetworkInterface interf) throws IOException {
-		SocketAddress local = new InetSocketAddress(5004);
-		ch = DatagramChannel.open(StandardProtocolFamily.INET).bind(local);
+		ms = new MulticastSocket(5004);
 		InetAddress group = InetAddress.getByName(multicastGroup);
-		ch.join(group , interf);
+		ms.joinGroup(group);
+		ms.setNetworkInterface(interf);
 	}
 
 	public void recieve(RtpTransportStreamParser parser) throws IOException {
-		ByteBuffer dst = ByteBuffer.allocateDirect(1500);
 		while (true) {
-			SocketAddress peer = ch.receive(dst);
-			dst.flip();
-			ByteBuf buf = Unpooled.wrappedBuffer(dst);
-			parser.packet(peer, buf);
+			ByteBuf buf = Unpooled.buffer(MAX_DATAGRAM_LENGTH);
+			DatagramPacket p = new DatagramPacket(buf.array() , MAX_DATAGRAM_LENGTH);
+			ms.receive(p);
+			buf.writerIndex(p.getLength());
+			parser.packet(buf);
 		}
 	}
 }
