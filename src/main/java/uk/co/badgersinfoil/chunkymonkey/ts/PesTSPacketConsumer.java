@@ -15,11 +15,31 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 		private PESConsumer pesConsumer;
 		private int pesPacketNo;
 		private ElementryContext eCtx;
+		private int lastContinuityCount = -1;
 
 		public PesStreamTSContext(ProgramTSContext progCtx, int elementryPID, ElementryContext eCtx) {
 			this.progCtx = progCtx;
 			this.elementryPID = elementryPID;
 			this.eCtx = eCtx;
+		}
+
+		public boolean isContinuous(TSPacket packet) {
+			// continuityCounter increases for each packet with a
+			// given PID that includes a payload
+			return lastContinuityCount == -1
+				|| (packet.adaptionControl().contentPresent()
+					? packet.continuityCounter() == nextContinuityCount()
+					: packet.continuityCounter() == lastContinuityCount);
+		}
+
+		private int nextContinuityCount() {
+			return (lastContinuityCount + 1) & 0xf;
+		}
+		public void setLastContinuityCount(int lastContinuityCount) {
+			this.lastContinuityCount = lastContinuityCount;
+		}
+		public int getLastContinuityCount() {
+			return lastContinuityCount;
 		}
 	}
 
@@ -68,6 +88,12 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 		if (packet.PID() != ctx.elementryPID) {
 			throw new Error("Bug: PID missmatch "+packet.PID() + "!=" + ctx.elementryPID);
 		}
+		if (!ctx.isContinuous(packet)) {
+// TODO: push error logging responsibility elsewhere,
+System.err.println(String.format("TS continuity error (PID %d) counter now %d, last value %d", packet.PID(), packet.continuityCounter(), ctx.getLastContinuityCount())+"\n  at "+packet.getLocator());
+			pesConsumer.continuityError(ctx.eCtx);
+		}
+		ctx.setLastContinuityCount(packet.continuityCounter());
 		boolean startIndicator = packet.payloadUnitStartIndicator();
 		if (startIndicator) {
 			if (ctx.payloadStarted) {

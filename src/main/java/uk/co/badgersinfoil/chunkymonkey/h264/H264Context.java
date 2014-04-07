@@ -17,6 +17,7 @@ public class H264Context implements ElementryContext {
 	private ByteBuf seiBuffer = Unpooled.buffer();
 	private ByteBuf seqParamSetBuffer = Unpooled.buffer();
 	private NalUnitConsumer consumer;
+	private boolean continuityError;
 
 	public boolean isIgnoreRest() {
 		return ignoreRest;
@@ -36,6 +37,7 @@ public class H264Context implements ElementryContext {
 	public void start() {
 		parseState = ParseState.START;
 		ignoreRest = false;
+		continuityError = false;
 		unitIndex = 0;
 		nalStarted = false;
 	}
@@ -74,5 +76,11 @@ public class H264Context implements ElementryContext {
 	}
 	public NalUnitConsumer getNalUnitConsumer() {
 		return consumer;
+	}
+	public void continuityError(boolean b) {
+		continuityError = b;
+	}
+	public boolean continuityError() {
+		return continuityError;
 	}
 }

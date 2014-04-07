@@ -3,7 +3,6 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import io.netty.buffer.ByteBuf;
 
 public interface PESConsumer {
@@ -15,6 +14,8 @@ public interface PESConsumer {
 		public void continuation(ElementryContext ctx, TSPacket packet, ByteBuf payload) { }
 		@Override
 		public void end(ElementryContext ctx) { }
+		@Override
+		public void continuityError(ElementryContext ctx) { }
 		@Override
 		public ElementryContext createContext() {
 			return null;
@@ -66,6 +67,14 @@ public interface PESConsumer {
 				e.consumer.end(e.ctx);
 			}
 		}
+		
+		@Override
+		public void continuityError(ElementryContext ctx) {
+			MultiElementryContext mCtx = (MultiElementryContext)ctx;
+			for (Entry e : mCtx.list) {
+				e.consumer.continuityError(e.ctx);
+			}
+		}
 
 		@Override
 		public ElementryContext createContext() {
@@ -80,5 +89,7 @@ public interface PESConsumer {
 	void end(ElementryContext ctx);
 
 	ElementryContext createContext();
+
+	void continuityError(ElementryContext ctx);
 
 }

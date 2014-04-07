@@ -52,6 +52,12 @@ public class SeiNalUnitConsumer implements NalUnitConsumer {
 		buf.clear();
 	}
 
+	@Override
+	public void continuityError(H264Context ctx) {
+		ByteBuf buf = ctx.seiBuffer();
+		buf.clear();
+	}
+
 	private void rbspTrailingBits(ByteBuf buf) {
 		short trailing = buf.readUnsignedByte();
 		if (trailing != 0b10000000) {

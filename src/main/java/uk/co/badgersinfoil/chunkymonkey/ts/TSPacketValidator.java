@@ -19,6 +19,9 @@ public class TSPacketValidator implements TSPacketConsumer {
 
 	@Override
 	public void packet(TSContext ctx, TSPacket packet) {
+		if (packet.transportErrorIndicator()) {
+			rep.carp(packet.getLocator(), "Transport error indicator flag present");
+		}
 		checkPCR(packet);
 		checkAdaptationFieldLength(packet);
 	}

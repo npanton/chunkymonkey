@@ -271,6 +271,7 @@ public class H264PesConsumer implements PESConsumer {
 	}
 
 	private void header(H264Context ctx, int b) {
+		ctx.continuityError(false);
 		PesNalUnitLocator loc = new PesNalUnitLocator(ctx.getPesPacket().getLocator(), ctx.nextUnitIndex());
 		NALUnit u = new NALUnit(loc, b);
 		NalUnitConsumer consumer = getNalUnitConsumerFor(u.nalUnitType());
@@ -286,6 +287,12 @@ public class H264PesConsumer implements PESConsumer {
 //		if (zeroSeqStart == -1) {
 //			throw new IllegalStateException("Parser bug: zeroSeqStart not yet initialized");
 //		}
+		if (ctx.continuityError()) {
+			// ignore further data for this NAL unit (but we may
+			// be able to continue parsing subsequent NAL Units
+			// later in the PES packet)
+			return;
+		}
 		NalUnitConsumer consumer = ctx.getNalUnitConsumer();
 		int len = zeroSeqStart - dataStartOffset;
 		consumer.data(ctx, data, dataStartOffset, len);
@@ -293,7 +300,7 @@ public class H264PesConsumer implements PESConsumer {
 
 	private void endPrev(H264Context ctx) {
 		NalUnitConsumer consumer = ctx.getNalUnitConsumer();
-		if (inUnit(ctx.state())) {
+		if (!ctx.continuityError() && inUnit(ctx.state())) {
 			consumer.end(ctx);
 		}
 	}
@@ -314,6 +321,16 @@ System.err.println("H264PesConsumer.end() - end of H264 PES packet we decided to
 		}
 
 		endPrev(hCtx);
+	}
+
+	@Override
+	public void continuityError(ElementryContext ctx) {
+		H264Context hCtx = (H264Context)ctx;
+		NalUnitConsumer consumer = hCtx.getNalUnitConsumer();
+		if (consumer != null) {
+			consumer.continuityError(hCtx);
+		}
+		hCtx.continuityError(true);
 	}
 
 	@Override

@@ -71,6 +71,10 @@ public class H264PesConsumerTest {
 		public UnitHolder unit(int i) {
 			return units.get(i);
 		}
+
+		@Override
+		public void continuityError(H264Context ctx) {
+		}
 	}
 	private MockNalUnitConsumer defaultConsumer = new MockNalUnitConsumer();
 

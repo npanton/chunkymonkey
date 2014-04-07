@@ -57,6 +57,13 @@ public class ValidatingPesConsumer implements PESConsumer {
 	}
 
 	@Override
+	public void continuityError(ElementryContext ctx) {
+		// TODO: in order to use Reporter instance, we need a Locator
+		//       object to describe where the discontinuity occurred,
+		//       but our API does not yet define this
+	}
+
+	@Override
 	public ElementryContext createContext() {
 		return new ValidatingElementryContext();
 	}

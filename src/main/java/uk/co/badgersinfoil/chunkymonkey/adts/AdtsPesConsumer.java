@@ -6,7 +6,6 @@ import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
-import uk.co.badgersinfoil.chunkymonkey.ts.TransportStreamParser;
 
 public class AdtsPesConsumer implements PESConsumer {
 
@@ -14,6 +13,7 @@ public class AdtsPesConsumer implements PESConsumer {
 		private ADTSFrame adtsFrame;
 		private PESPacket currentPesPacket;
 		private int frameNumber;
+		public boolean continuityError;
 	}
 
 	public class AdtsLocator implements Locator {
@@ -48,6 +48,7 @@ public class AdtsPesConsumer implements PESConsumer {
 		ADTSElementryContext adtsCtx = (ADTSElementryContext)ctx;
 		adtsCtx.currentPesPacket = pesPacket;
 		adtsCtx.frameNumber = 0;
+		adtsCtx.continuityError = false;
 		if (adtsCtx.adtsFrame != null) {
 			// TODO: use a Reporter instance?
 			System.err.println("last ADTS frame from previous PES packet not complete on new PES packet start");
@@ -79,13 +80,21 @@ public class AdtsPesConsumer implements PESConsumer {
 	@Override
 	public void continuation(ElementryContext ctx, TSPacket packet, ByteBuf buf) {
 		ADTSElementryContext adtsCtx = (ADTSElementryContext)ctx;
-		parsePacket(adtsCtx, buf);
+		if (!adtsCtx.continuityError) {
+			parsePacket(adtsCtx, buf);
+		}
 	}
 
 	@Override
 	public void end(ElementryContext ctx) {
 		ADTSElementryContext adtsCtx = (ADTSElementryContext)ctx;
 System.err.println("ADTS frames in this PES packet = "+(adtsCtx.frameNumber+1));
+	}
+
+	@Override
+	public void continuityError(ElementryContext ctx) {
+		ADTSElementryContext adtsCtx = (ADTSElementryContext)ctx;
+		adtsCtx.continuityError = true;
 	}
 
 	@Override

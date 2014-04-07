@@ -17,6 +17,7 @@ import uk.co.badgersinfoil.chunkymonkey.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.ts.FileTransportStreamParser;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.MulticastReciever;
+import uk.co.badgersinfoil.chunkymonkey.ts.RTPErrorHandler;
 import uk.co.badgersinfoil.chunkymonkey.ts.RtpTransportStreamParser;
 
 /**
@@ -57,6 +58,34 @@ public class Main {
 			NetworkInterface iface = NetworkInterface.getByIndex(0);
 			MulticastReciever recieve = new MulticastReciever(multicastGroup, iface);
 			RtpTransportStreamParser p = new RtpTransportStreamParser(consumer);
+			// TODO: move RTPErrorHandler impl elsewhere,
+			//       and make use of Reporter interface
+			p.setRTPErrorHandler(new RTPErrorHandler() {
+				@Override
+				public void unexpectedSsrc(long expectedSsrc, long actualSsrc) {
+					long ts = System.currentTimeMillis();
+					System.err.print(String.format("%tF %tT: ", ts, ts));
+					System.err.println("RTP unexpected SSRC "+actualSsrc+" (expexcting "+expectedSsrc+")");
+				}
+				@Override
+				public void unexpectedSequenceNumber(int expectedSeq, int actualSeq) {
+					long ts = System.currentTimeMillis();
+					System.err.print(String.format("%tF %tT: ", ts, ts));
+					System.err.println("RTP unexpected sequence number "+actualSeq+" (expecting "+expectedSeq+")");
+				}
+				@Override
+				public void timestampJumped(long lastTimestamp, long timestamp) {
+					long ts = System.currentTimeMillis();
+					System.err.print(String.format("%tF %tT: ", ts, ts));
+					System.err.println("RTP unexpected timestamp jump from "+lastTimestamp+" to "+timestamp);
+				}
+				@Override
+				public void timeWentBackwards(long lastTimestamp, long timestamp) {
+					long ts = System.currentTimeMillis();
+					System.err.print(String.format("%tF %tT: ", ts, ts));
+					System.err.println("RTP timestamp went backwards from "+lastTimestamp+" to "+timestamp);
+				}
+			});
 			recieve.recieve(p);
 		} else {
 			System.err.println("One of --multicast-group or --benchmark must be specified");

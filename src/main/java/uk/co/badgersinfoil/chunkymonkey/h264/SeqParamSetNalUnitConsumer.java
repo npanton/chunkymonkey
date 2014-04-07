@@ -18,4 +18,9 @@ public class SeqParamSetNalUnitConsumer implements NalUnitConsumer {
 		ctx.lastSeqParamSet(params);
 		buf.clear();
 	}
+	@Override
+	public void continuityError(H264Context ctx) {
+		ByteBuf buf = ctx.seqParamSetBuffer();
+		buf.clear();
+	}
 }

@@ -23,4 +23,8 @@ public class ValidatingNalUnitConsumer implements NalUnitConsumer {
 	@Override
 	public void end(H264Context ctx) {
 	}
+
+	@Override
+	public void continuityError(H264Context ctx) {
+	}
 }

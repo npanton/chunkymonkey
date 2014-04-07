@@ -37,6 +37,13 @@ public class PesSwitchConsumer implements PESConsumer {
 			delegate.end(ctx);
 		}
 	}
+
+	@Override
+	public void continuityError(ElementryContext ctx) {
+		if (enabled) {
+			delegate.continuityError(ctx);
+		}
+	}
 	
 	public boolean enabled() {
 		return enabled;
@@ -49,5 +56,4 @@ public class PesSwitchConsumer implements PESConsumer {
 	public ElementryContext createContext() {
 		return delegate.createContext();
 	}
-
 }

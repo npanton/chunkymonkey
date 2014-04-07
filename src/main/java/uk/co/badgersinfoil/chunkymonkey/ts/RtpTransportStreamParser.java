@@ -2,7 +2,6 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -10,7 +9,6 @@ import java.net.StandardProtocolFamily;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.Arrays;
-
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 
 public class RtpTransportStreamParser {
@@ -57,7 +55,11 @@ public class RtpTransportStreamParser {
 	}
 
 	private TSPacketConsumer consumer;
+	private RTPErrorHandler err = RTPErrorHandler.NULL;
 	private UdpConnectionLocator connLocator;
+	private long ssrc = -1;
+	private int lastSeq;
+	private long lastTimestamp = -1;
 
 	public static class RtpPacket {
 
@@ -150,6 +152,10 @@ public class RtpTransportStreamParser {
 		this.consumer = consumer;
 		connLocator = new UdpConnectionLocator(5004);
 	}
+	
+	public void setRTPErrorHandler(RTPErrorHandler err) {
+		this.err = err;
+	}
 
 	public void recieve() throws IOException {
 		SocketAddress local = new InetSocketAddress(5004);
@@ -169,6 +175,7 @@ public class RtpTransportStreamParser {
 
 	public void packet(ByteBuf buf) {
 		RtpPacket p = new RtpPacket(buf);
+		check(p);
 		ByteBuf payload = p.payload();
 		int count = payload.readableBytes() / TSPacket.TS_PACKET_LENGTH;
 		RtpPacketLocator locator = new RtpPacketLocator(connLocator, p.timestamp(), p.sequenceNumber());
@@ -181,5 +188,44 @@ public class RtpTransportStreamParser {
 			}
 			consumer.packet(null, packet);
 		}
+	}
+
+	private void check(RtpPacket p) {
+		if (ssrc == -1) {
+			ssrc = p.ssrc();
+		} else if (ssrc != p.ssrc()) {
+			err.unexpectedSsrc(ssrc, p.ssrc());
+		}
+		if (lastSeq != -1) {
+			int expected = nextSeq(lastSeq);
+			if (expected != p.sequenceNumber()) {
+				err.unexpectedSequenceNumber(expected, p.sequenceNumber());
+			}
+		}
+		lastSeq = p.sequenceNumber();
+		if (lastTimestamp != -1) {
+			// TODO: are there some tighter general constraints we
+			// can place on allowed ts differences?
+			long diff = p.timestamp() - lastTimestamp;
+			if (willWrapSoon(lastTimestamp) && diff < 0) {
+				diff += 0x100000000L;
+			}
+			if (diff < 0) {
+				err.timeWentBackwards(lastTimestamp, p.timestamp());
+			} else if (diff > 0x100000000L / 4) {
+				err.timestampJumped(lastTimestamp, p.timestamp());
+			}
+		}
+		lastTimestamp = p.timestamp();
+	}
+
+	private boolean willWrapSoon(long ts) {
+		// are we more than three quarters through the set of available
+		// timestamp counter values?
+		return ts > 0x100000000L * 3 / 4;
+	}
+
+	private int nextSeq(int seq) {
+		return (seq + 1) & 0xffff;
 	}
 }
