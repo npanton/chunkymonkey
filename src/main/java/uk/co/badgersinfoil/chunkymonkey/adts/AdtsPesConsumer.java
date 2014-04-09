@@ -66,6 +66,10 @@ public class AdtsPesConsumer implements PESConsumer {
 			} else {
 				adtsCtx.adtsFrame.append(buf);
 			}
+			if (adtsCtx.adtsFrame.isHeaderComplete() && adtsCtx.adtsFrame.syncWord() != 0xfff) {
+				// TODO: inform consumer and clear out adtsCtx
+				return;
+			}
 			if (adtsCtx.adtsFrame.isComplete()) {
 				consumer.frame(adtsCtx.adtsFrame);
 				// the remaining data, if any, is part of the next frame,
