@@ -15,6 +15,12 @@ public class MediaDuration {
 	public long value() {
 		return value;
 	}
+	public long toMillis() {
+		return units.toMillies(value);
+	}
+	public long toMicros() {
+		return units.toMicros(value);
+	}
 	
 	@Override
 	public String toString() {
@@ -22,6 +28,16 @@ public class MediaDuration {
 	}
 
 	public MediaDuration plus(MediaDuration duration) {
+		assertCompatible(duration);
+		return new MediaDuration(value+duration.value(), units);
+	}
+
+	public MediaDuration minus(MediaDuration duration) {
+		assertCompatible(duration);
+		return new MediaDuration(value-duration.value(), units);
+	}
+
+	private void assertCompatible(MediaDuration duration) {
 		if (!units.equals(duration.units())) {
 			// TODO: we could attempt conversion, or create some
 			// kind of composite object to keep track of durations
@@ -31,6 +47,5 @@ public class MediaDuration {
 				+" != "+duration.units().unitName()
 			);
 		}
-		return new MediaDuration(value+duration.value(), units);
 	}
 }

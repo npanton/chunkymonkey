@@ -14,18 +14,30 @@ import net.sourceforge.jaad.aac.syntax.FIL;
 import net.sourceforge.jaad.aac.syntax.PCE;
 import net.sourceforge.jaad.aac.syntax.SyntacticElements;
 */
+import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
+import uk.co.badgersinfoil.chunkymonkey.MediaUnits;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.adts.ADTSContext;
 import uk.co.badgersinfoil.chunkymonkey.adts.ADTSFrame;
 import uk.co.badgersinfoil.chunkymonkey.adts.AdtsFrameConsumer;
 
 public class AacAdtsFrameConsumer implements AdtsFrameConsumer {
 	
-	private boolean sbrPresent;
+	public class AacAdtsContext implements ADTSContext {
+		private boolean sbrPresent;
+		private MediaDuration duration = null;
+		@Override
+		public MediaDuration getDuration() {
+			return duration;
+		}
+	}
+
 	private Reporter rep = Reporter.NULL;
 
 	@Override
-	public void frame(final ADTSFrame adtsframe) {
-		sbrPresent = false;
+	public void frame(final ADTSContext adtsCtx, final ADTSFrame adtsframe) {
+		AacAdtsContext ctx = (AacAdtsContext)adtsCtx;
+		ctx.sbrPresent = false;
 		// AAC parsing is hard.  Dropped hand-spun code for hacked jaad to get off the ground,
 		//AacParser parser = new AacParser(adtsframe.samplingFrequency());
 		//parser.parser(adtsframe.payload());
@@ -73,15 +85,26 @@ public class AacAdtsFrameConsumer implements AdtsFrameConsumer {
 			// calculation even for HE-AAC as long as we
 			// just believe the given SR.
 			final int NOMINAL_SAMPLES_PER_AAC_FRAME = 1024;
-			duration += NOMINAL_SAMPLES_PER_AAC_FRAME;
-//			System.out.println("duration="+(duration * 1000000 / adtsframe.samplingFrequency().getFrequency())+"ns, samples="+duration+" sr="+adtsframe.samplingFrequency());
+			MediaUnits units = new MediaUnits(NOMINAL_SAMPLES_PER_AAC_FRAME,
+			                                  adtsframe.samplingFrequency().getFrequency(),
+			                                  "aac-frames");
+			MediaDuration frameDuration = new MediaDuration(1, units);
+			if (ctx.duration == null) {
+				ctx.duration = frameDuration;
+			} else {
+				ctx.duration = ctx.duration.plus(frameDuration);
+			}
 		} catch (Exception e) {
 			rep.carp(adtsframe.getLocator(), "AAC decode failure: %s", e);
 		};
 	}
-	private long duration = 0;
 
 	public void setReporter(Reporter rep) {
 		this.rep = rep;
+	}
+
+	@Override
+	public ADTSContext createContext() {
+		return new AacAdtsContext();
 	}
 }

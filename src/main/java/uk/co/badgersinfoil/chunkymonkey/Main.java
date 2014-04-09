@@ -124,6 +124,7 @@ public class Main {
 		aacAdtsFrameConsumer.setReporter(rep);
 		AdtsFrameConsumer adtsFrameConsumer = new AdtsFrameConsumer.Multi(new ValidatingAdtsFrameConsumer(rep), aacAdtsFrameConsumer);
 		AdtsPesConsumer adtsConsumer = new AdtsPesConsumer(adtsFrameConsumer);
+		adtsConsumer.setReportor(rep);
 		return new PesTSPacketConsumer(adtsConsumer);
 	}
 

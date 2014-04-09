@@ -2,18 +2,32 @@ package uk.co.badgersinfoil.chunkymonkey.adts;
 
 import io.netty.buffer.ByteBuf;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
+import uk.co.badgersinfoil.chunkymonkey.MediaTimestamp;
+import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.snickersnack.MyPicTimingConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket;
+import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket.Timestamp;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
 
 public class AdtsPesConsumer implements PESConsumer {
 
 	public class ADTSElementryContext implements ElementryContext {
+		private ADTSContext adtsContext;
 		private ADTSFrame adtsFrame;
 		private PESPacket currentPesPacket;
+		private MediaTimestamp lastPts;
 		private int frameNumber;
 		public boolean continuityError;
+		public MediaTimestamp currentPts;
+		public MediaDuration lastPesDuration;
+		public MediaDuration lastElapsedDuration;
+
+		public ADTSElementryContext(ADTSContext adtsContext) {
+			this.adtsContext = adtsContext;
+		}
 	}
 
 	public class AdtsLocator implements Locator {
@@ -38,9 +52,14 @@ public class AdtsPesConsumer implements PESConsumer {
 	}
 
 	private AdtsFrameConsumer consumer;
+	private Reporter rep = Reporter.NULL;
 
 	public AdtsPesConsumer(AdtsFrameConsumer consumer) {
 		this.consumer = consumer;
+	}
+	
+	public void setReportor(Reporter rep) {
+		this.rep = rep;
 	}
 
 	@Override
@@ -56,6 +75,30 @@ public class AdtsPesConsumer implements PESConsumer {
 		}
 		ByteBuf buf = pesPacket.getParsedPESPaload().getContent();
 		parsePacket(adtsCtx, buf);
+
+		if (adtsCtx.currentPesPacket.getParsedPESPaload().ptsDdsFlags().isPtsPresent()) {
+			Timestamp pts = adtsCtx.currentPesPacket.getParsedPESPaload().pts();
+			if (pts.isValid()) {
+				// TODO: move PTS_UNITS somewhere sensible
+				adtsCtx.currentPts = new MediaTimestamp(pts.getTs(), MyPicTimingConsumer.PTS_UNITS);
+			}
+		}
+		checkPtsVsMediaTime(adtsCtx, pesPacket);
+	}
+
+	private void checkPtsVsMediaTime(ADTSElementryContext adtsCtx,
+	                                 PESPacket pesPacket)
+	{
+		if (adtsCtx.currentPts != null && adtsCtx.lastPts != null) {
+			MediaDuration ptsDiff = adtsCtx.currentPts.diff(adtsCtx.lastPts);
+			if (adtsCtx.lastPesDuration != null) {
+				long ptsVsMedia = ptsDiff.toMicros() - adtsCtx.lastPesDuration.toMicros();
+				if (ptsVsMedia != 0) {
+					rep.carp(pesPacket.getLocator(), "PTS change (from %s to %s) unequal to duration of ADTS data in preceeding PES packet (%s); a difference of %dus", adtsCtx.lastPts, adtsCtx.currentPts, adtsCtx.lastPesDuration, ptsVsMedia);
+				} 
+			}
+			adtsCtx.lastPesDuration = null;
+		}
 	}
 
 	private void parsePacket(ADTSElementryContext adtsCtx, ByteBuf buf) {
@@ -71,7 +114,7 @@ public class AdtsPesConsumer implements PESConsumer {
 				return;
 			}
 			if (adtsCtx.adtsFrame.isComplete()) {
-				consumer.frame(adtsCtx.adtsFrame);
+				consumer.frame(adtsCtx.adtsContext, adtsCtx.adtsFrame);
 				// the remaining data, if any, is part of the next frame,
 				buf = adtsCtx.adtsFrame.trailingData();
 				adtsCtx.adtsFrame = null;
@@ -92,17 +135,24 @@ public class AdtsPesConsumer implements PESConsumer {
 	@Override
 	public void end(ElementryContext ctx) {
 		ADTSElementryContext adtsCtx = (ADTSElementryContext)ctx;
-System.err.println("ADTS frames in this PES packet = "+(adtsCtx.frameNumber+1));
+		if (adtsCtx.lastElapsedDuration == null) {
+			adtsCtx.lastPesDuration = adtsCtx.adtsContext.getDuration();
+		} else {
+			adtsCtx.lastPesDuration = adtsCtx.adtsContext.getDuration().minus(adtsCtx.lastElapsedDuration);
+		}
+		adtsCtx.lastElapsedDuration = adtsCtx.adtsContext.getDuration();
+		adtsCtx.lastPts = adtsCtx.currentPts;
 	}
 
 	@Override
 	public void continuityError(ElementryContext ctx) {
 		ADTSElementryContext adtsCtx = (ADTSElementryContext)ctx;
 		adtsCtx.continuityError = true;
+		adtsCtx.lastPts = null;
 	}
 
 	@Override
 	public ElementryContext createContext() {
-		return new ADTSElementryContext();
+		return new ADTSElementryContext(consumer.createContext());
 	}
 }

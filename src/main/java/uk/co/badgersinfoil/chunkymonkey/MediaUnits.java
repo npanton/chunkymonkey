@@ -14,6 +14,10 @@ public class MediaUnits {
 	public long toMillies(long value) {
 		return value * base * 1000 / scale;
 	}
+	public long toMicros(long value) {
+		return value * base * 1000000 / scale;
+	}
+
 	public long rate() {
 		return scale;
 	}
