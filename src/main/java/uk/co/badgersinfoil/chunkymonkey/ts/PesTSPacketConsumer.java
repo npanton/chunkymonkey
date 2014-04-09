@@ -104,7 +104,10 @@ System.err.println(String.format("TS continuity error (PID %d) counter now %d, l
 			Locator loc = new PESLocator(packet.getLocator(), ctx.elementryPID, ctx.pesPacketNo++);
 			PESPacket pesPacket = new PESPacket(loc, packet.getPayload());
 			pesConsumer.start(ctx.eCtx, pesPacket);
-		} else if (ctx.payloadStarted && packet.adaptionControl().contentPresent()) {
+		} else if (ctx.payloadStarted && packet.adaptionControl().contentPresent() && packet.getPayloadLength() > 0) {
+			// (in theory, contentPresent==true && payloadLength==0
+			// is not allowed, but non-conformant streams may
+			// present this combination)
 			pesConsumer.continuation(ctx.eCtx, packet, packet.getPayload());
 		}  // else, drop data for which we lack a PES header
 	}
