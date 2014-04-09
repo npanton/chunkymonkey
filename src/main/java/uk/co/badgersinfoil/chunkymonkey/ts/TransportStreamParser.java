@@ -29,8 +29,11 @@ public class TransportStreamParser {
 	}
 
 	public void parse(InputStream stream) throws IOException {
-		ByteBuf buf = Unpooled.buffer();
-		while (readPacket(stream, buf, TSPacket.TS_PACKET_LENGTH)) {
+		while (true) {
+			ByteBuf buf = Unpooled.buffer();
+			if (!readPacket(stream, buf, TSPacket.TS_PACKET_LENGTH)) {
+				return;
+			}
 			ByteBuf pk = buf.slice(buf.readerIndex(), TSPacket.TS_PACKET_LENGTH);
 			TSPacket packet = new TSPacket(locator, packetNo, pk);
 			if (!packet.synced()) {
@@ -41,8 +44,6 @@ public class TransportStreamParser {
 			//if (packet.adaptionControl().adaptionFieldPresent() && packet.getAdaptionField().pcrFlag()) {
 			//	System.out.println(packet.getAdaptionField().pcr());
 			//}
-			buf.skipBytes(TSPacket.TS_PACKET_LENGTH);
-			buf.discardSomeReadBytes();
 			packetNo++;
 		}
 	}
