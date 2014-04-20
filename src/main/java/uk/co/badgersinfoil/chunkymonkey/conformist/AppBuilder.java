@@ -2,7 +2,11 @@ package uk.co.badgersinfoil.chunkymonkey.conformist;
 
 import java.util.HashMap;
 import java.util.Map;
-import uk.co.badgersinfoil.chunkymonkey.ConsoleReporter;
+import java.util.concurrent.ScheduledExecutorService;
+import org.apache.http.ProtocolVersion;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.aac.AacAdtsFrameConsumer;
 import uk.co.badgersinfoil.chunkymonkey.adts.AdtsFrameConsumer;
@@ -14,6 +18,10 @@ import uk.co.badgersinfoil.chunkymonkey.h264.SeiHeaderConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiNalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeqParamSetNalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
+import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor;
+import uk.co.badgersinfoil.chunkymonkey.hls.HlsMediaPlaylistProcessor;
+import uk.co.badgersinfoil.chunkymonkey.hls.HlsSegmentProcessor;
+import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PATConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESConsumer;
@@ -24,15 +32,58 @@ import uk.co.badgersinfoil.chunkymonkey.ts.StreamProcRegistry;
 import uk.co.badgersinfoil.chunkymonkey.ts.StreamTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketValidator;
-import uk.co.badgersinfoil.chunkymonkey.ts.TransportContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.UnhandledStreamTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.ValidatingPesConsumer;
-import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer.FilterEntry;
 
 public class AppBuilder {
 
-	public MultiTSPacketConsumer createConsumer() {
-		Reporter rep = new ConsoleReporter();
+	public HlsMasterPlaylistProcessor build(ScheduledExecutorService scheduledExecutor, Reporter rep) {
+		CloseableHttpClient httpclient
+			= HttpClientBuilder.create()
+			                   .setUserAgent("conformist")
+			                   .build();
+		RequestConfig requestConfig = RequestConfig.custom()
+				.setConnectTimeout(1000)
+				.setSocketTimeout(1000)
+				.build();
+		HlsSegmentProcessor segProc = new HlsSegmentProcessor(rep, httpclient, createConsumer(rep));
+		segProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
+				new CacheControlHeaderCheck(rep, 60*60),
+//				new CorsHeaderChecker(rep),
+				new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
+				new ContentLengthCheck(rep),
+				new CacheValidatorCheck(rep),
+				new KeepAliveHeaderCheck(rep),
+				new ContentTypeHeaderCheck("video/MP2T", rep)
+			));
+		segProc.setConfig(requestConfig);
+		HlsMediaPlaylistProcessor mediaProc = new HlsMediaPlaylistProcessor(scheduledExecutor, httpclient, segProc);
+		mediaProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
+//			new CacheControlHeaderCheck(rep, 2),
+//			new CorsHeaderChecker(rep),
+			new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
+//			new ContentLengthCheck(rep),
+			new CacheValidatorCheck(rep),
+			new KeepAliveHeaderCheck(rep),
+			new ContentTypeHeaderCheck("application/vnd.apple.mpegurl", rep)
+		));
+		mediaProc.setReporter(rep);
+		mediaProc.setConfig(RequestConfig.custom().setConnectTimeout(1000).build());
+		HlsMasterPlaylistProcessor masterProc = new HlsMasterPlaylistProcessor(scheduledExecutor, httpclient, mediaProc);
+		masterProc.setResponseChecker(new HttpResponseChecker.Multi(
+			new MasterPlaylistResponseChecker(rep),
+			new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
+			new CacheControlHeaderCheck(rep, 2),
+			new CacheValidatorCheck(rep),
+			new KeepAliveHeaderCheck(rep),
+			new ContentTypeHeaderCheck("application/vnd.apple.mpegurl", rep)
+		));
+		masterProc.setReporter(rep);
+		masterProc.setConfig(RequestConfig.custom().setConnectTimeout(1000).build());
+		return masterProc;
+	}
+
+	public MultiTSPacketConsumer createConsumer(Reporter rep) {
 		PIDFilterPacketConsumer pidFilter = new PIDFilterPacketConsumer(rep);
 		Map<Integer, StreamTSPacketConsumer> map = new HashMap<>();
 		map.put(ProgramMapTable.STREAM_TYPE_ADTS, createAdtsConsumer(rep));
