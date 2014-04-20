@@ -43,8 +43,8 @@ public class AppBuilder {
 		StreamProcRegistry streamProcRegistry = new StreamProcRegistry(map, defaultStreamProc);
 		MultiTSPacketConsumer consumer = new MultiTSPacketConsumer(
 			new TSPacketValidator(rep),
-			pidFilter.filter(0, new FilterEntry(new PATConsumer(pidFilter, streamProcRegistry), new TransportContext()))
-			         .filter(0x1fff, new FilterEntry(TSPacketConsumer.NULL, null))
+			pidFilter.defaultFilter(0, new PATConsumer(pidFilter, streamProcRegistry))
+			         .defaultFilter(0x1fff, TSPacketConsumer.NULL)
 		);
 		return consumer;
 	}

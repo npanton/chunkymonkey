@@ -6,6 +6,27 @@ import java.util.List;
 
 public class MultiTSPacketConsumer implements TSPacketConsumer {
 	
+
+	public static class MultiTsContext implements TSContext {
+		public static class Entry {
+			public Entry(TSContext context,
+			             TSPacketConsumer consumer)
+			{
+				this.context = context;
+				this.consumer = consumer;
+			}
+			TSPacketConsumer consumer;
+			TSContext context;
+		}
+		public List<Entry> list = new ArrayList<>();
+		public MultiTsContext(TSContext parent, List<TSPacketConsumer> list) {
+			for (TSPacketConsumer consumer : list) {
+				this.list.add(new Entry(consumer.createContext(parent), consumer));
+			}
+		}
+
+	}
+
 	private List<TSPacketConsumer> list = new ArrayList<>();
 	
 	public MultiTSPacketConsumer(TSPacketConsumer... consumers) {
@@ -14,15 +35,22 @@ public class MultiTSPacketConsumer implements TSPacketConsumer {
 
 	@Override
 	public void packet(TSContext ctx, TSPacket packet) {
-		for (TSPacketConsumer c : list) {
-			c.packet(ctx, packet);
+		MultiTsContext mctx = (MultiTsContext)ctx;
+		for (MultiTsContext.Entry e : mctx.list) {
+			e.consumer.packet(e.context, packet);
 		}
 	}
 
 	@Override
 	public void end(TSContext ctx) {
-		for (TSPacketConsumer c : list) {
-			c.end(ctx);
+		MultiTsContext mctx = (MultiTsContext)ctx;
+		for (MultiTsContext.Entry e : mctx.list) {
+			e.consumer.end(e.context);
 		}
+	}
+
+	@Override
+	public TSContext createContext(TSContext parent) {
+		return new MultiTsContext(parent, list);
 	}
 }

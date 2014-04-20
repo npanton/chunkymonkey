@@ -17,6 +17,10 @@ public class ProgramTSContext implements TSContext {
 		this.ctx = ctx;
 	}
 
+	public TransportContext getTransportContext() {
+		return ctx;
+	}
+
 	public int getPid() {
 		return pid;
 	}

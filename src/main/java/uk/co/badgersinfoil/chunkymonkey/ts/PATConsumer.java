@@ -6,6 +6,21 @@ import uk.co.badgersinfoil.chunkymonkey.ts.ProgramAssociationTable.ProgramEntryK
 
 public class PATConsumer implements TSPacketConsumer {
 
+	public class PATContext implements TSContext, TransportContextProvider {
+
+		private TSContext parent;
+
+		public PATContext(TSContext parent) {
+			this.parent = parent;
+		}
+
+		@Override
+		public TransportContext getTransportContext() {
+			return ((TransportContextProvider)parent).getTransportContext();
+		}
+
+	}
+
 	private static final int PID_PAT = 0;
 	
 	private PIDFilterPacketConsumer filter;
@@ -18,6 +33,7 @@ public class PATConsumer implements TSPacketConsumer {
 
 	@Override
 	public void packet(TSContext ctx, TSPacket packet) {
+		TransportContext tctx = ((TransportContextProvider)ctx).getTransportContext();
 		if (packet.PID() != PID_PAT) {
 			throw new RuntimeException("PID expexcted to be 0, got: "+packet.PID());
 		}
@@ -26,20 +42,20 @@ public class PATConsumer implements TSPacketConsumer {
 		ProgramEntry entry = pat.entries();
 		while (entry.next()) {
 			if (entry.kind() == ProgramEntryKind.PROGRAM_MAP) {
-				FilterEntry current = filter.getCurrent(entry.programMapPid());
+				FilterEntry current = filter.getCurrent(tctx, entry.programMapPid());
 				if (current==null || current.getConsumer().equals(TSPacketConsumer.NULL) || isDifferentProgram(entry, current)) {
 					if (current != null) {
 						current.getConsumer().end(current.getContext());
 					}
 					PMTConsumer pmtConsumer = new PMTConsumer(filter, registery);
-					ProgramTSContext programCtx = pmtConsumer.createContext((TransportContext)ctx, entry);
-					filter.filter(entry.programMapPid(), new FilterEntry(pmtConsumer, programCtx));
+					ProgramTSContext programCtx = pmtConsumer.createContext(tctx, entry);
+					filter.filter(tctx, entry.programMapPid(), new FilterEntry(pmtConsumer, programCtx));
 				}
 			} else {
-				FilterEntry current = filter.getCurrent(entry.networkPid());
+				FilterEntry current = filter.getCurrent(tctx, entry.networkPid());
 				if (current==null || !current.getConsumer().equals(TSPacketConsumer.NULL)) {
 					System.out.println("PAT: network pid entries not yet handled ("+entry.networkPid()+")");
-					filter.filter(entry.networkPid(), new FilterEntry(TSPacketConsumer.NULL, null));
+					filter.filter(tctx, entry.networkPid(), new FilterEntry(TSPacketConsumer.NULL, null));
 				}
 			}
 		}
@@ -51,7 +67,12 @@ public class PATConsumer implements TSPacketConsumer {
 
 	@Override
 	public void end(TSContext ctx) {
-		ProgramTSContext c = (ProgramTSContext)ctx;
+		PATContext c = (PATContext)ctx;
 		
+	}
+
+	@Override
+	public TSContext createContext(TSContext parent) {
+		return new PATContext(parent);
 	}
 }

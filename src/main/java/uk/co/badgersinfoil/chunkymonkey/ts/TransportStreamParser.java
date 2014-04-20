@@ -29,10 +29,11 @@ public class TransportStreamParser {
 	}
 
 	public void parse(InputStream stream) throws IOException {
+		TSContext ctx = consumer.createContext(null);
 		while (true) {
 			ByteBuf buf = Unpooled.buffer();
 			if (!readPacket(stream, buf, TSPacket.TS_PACKET_LENGTH)) {
-				return;
+				break;
 			}
 			ByteBuf pk = buf.slice(buf.readerIndex(), TSPacket.TS_PACKET_LENGTH);
 			TSPacket packet = new TSPacket(locator, packetNo, pk);
@@ -40,12 +41,13 @@ public class TransportStreamParser {
 				// TODO: better diagnostics.  re-sync?
 				throw new RuntimeException("Transport stream synchronisation lost @packet#"+packetNo+" in "+locator);
 			}
-			consumer.packet(null, packet);
+			consumer.packet(ctx, packet);
 			//if (packet.adaptionControl().adaptionFieldPresent() && packet.getAdaptionField().pcrFlag()) {
 			//	System.out.println(packet.getAdaptionField().pcr());
 			//}
 			packetNo++;
 		}
+		consumer.end(ctx);
 	}
 
 	private boolean readPacket(InputStream in, ByteBuf buf, int packetSize) throws IOException {

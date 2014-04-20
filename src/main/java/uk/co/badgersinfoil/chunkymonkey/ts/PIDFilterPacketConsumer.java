@@ -2,17 +2,20 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.Map.Entry;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 
 public class PIDFilterPacketConsumer implements TSPacketConsumer {
-	private Map<Integer, FilterEntry> map = new HashMap<>();
+	private Map<Integer, TSPacketConsumer> defaultFilterMap = new HashMap<>();
 	private Reporter rep = Reporter.NULL;
 	
 	public static class FilterEntry {
 		private TSPacketConsumer consumer;
 		private TSContext context;
 		public FilterEntry(TSPacketConsumer consumer, TSContext context) {
+			if (context == null) {
+				throw new IllegalArgumentException("context must not be null");
+			}
 			this.consumer = consumer;
 			this.context = context;
 		}
@@ -30,8 +33,14 @@ public class PIDFilterPacketConsumer implements TSPacketConsumer {
 		this.rep = rep;
 	}
 	
-	public PIDFilterPacketConsumer filter(int pid, FilterEntry entry) {
-		map.put(pid, entry);
+	public PIDFilterPacketConsumer defaultFilter(int pid, TSPacketConsumer consumer) {
+		defaultFilterMap.put(pid, consumer);
+		return this;
+	}
+
+	public PIDFilterPacketConsumer filter(TSContext ctx, int pid, FilterEntry entry) {
+		TransportContext tctx = (TransportContext)ctx;
+		tctx.filter(pid, entry);
 		return this;
 	}
 	
@@ -41,21 +50,34 @@ public class PIDFilterPacketConsumer implements TSPacketConsumer {
 
 	@Override
 	public void packet(TSContext ctx, TSPacket packet) {
-		FilterEntry entry = map.get(packet.PID());
+		TransportContext tctx = (TransportContext)ctx;
+		FilterEntry entry = tctx.filterForPid(packet.PID());
 		if (entry == null) {
 			rep.carp(packet.getLocator(), "Unhandled PID: %d", packet.PID());
-			filter(packet.PID(), new FilterEntry(TSPacketConsumer.NULL, null));
+			filter(ctx, packet.PID(), new FilterEntry(TSPacketConsumer.NULL, null));
 		} else {
 			TSPacketConsumer consumer = entry.getConsumer();
 			consumer.packet(entry.getContext(), packet);
 		}
 	}
-	public FilterEntry getCurrent(int elementryPID) {
-		return map.get(elementryPID);
+	public FilterEntry getCurrent(TSContext ctx, int elementryPID) {
+		TransportContext tctx = (TransportContext)ctx;
+		return tctx.filterForPid(elementryPID);
+	}
+
+	public TSContext createContext(TSContext parent) {
+		TransportContext ctx = new TransportContext();
+		for (Entry<Integer, TSPacketConsumer> e : defaultFilterMap.entrySet()) {
+			TSPacketConsumer consumer = e.getValue();
+			TSContext tctx = consumer.createContext(ctx);
+			ctx.filter(e.getKey(), new FilterEntry(consumer, tctx));
+		}
+		return ctx;
 	}
 
 	@Override
-	public void end(TSContext context) {
+	public void end(TSContext ctx) {
+		TransportContext tctx = (TransportContext)ctx;
 		// TODO: don't think anything is required
 		// can we remove the need to provide this method implementation?
 	}

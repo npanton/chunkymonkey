@@ -98,4 +98,10 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 			close();
 		}
 	}
+
+	@Override
+	public TSContext createContext(TSContext parent) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

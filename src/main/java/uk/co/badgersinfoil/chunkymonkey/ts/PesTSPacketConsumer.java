@@ -125,4 +125,9 @@ System.err.println(String.format("TS continuity error (PID %d) counter now %d, l
 		ElementryContext eCtx = pesConsumer.createContext();
 		return new PesStreamTSContext(ctx, streamDesc.elementryPID(), eCtx);
 	}
+
+	@Override
+	public TSContext createContext(TSContext parent) {
+		throw new RuntimeException("Oops!  Use createContext(ProgramTSContext,StreamDescriptorIterator) instead");
+	}
 }

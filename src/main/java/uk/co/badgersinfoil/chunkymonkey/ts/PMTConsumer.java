@@ -1,10 +1,13 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
-import io.netty.buffer.ByteBufUtil;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramAssociationTable.ProgramEntry;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable.StreamDescriptorIterator;
 
 public class PMTConsumer implements TSPacketConsumer {
+
+	public class PMTContext implements TSContext {
+
+	}
 
 	private PIDFilterPacketConsumer filter;
 	private StreamProcRegistry registry;
@@ -46,7 +49,7 @@ public class PMTConsumer implements TSPacketConsumer {
 		StreamDescriptorIterator i = pmt.streamDescriptors();
 		while (i.hasNext()) {
 			StreamTSPacketConsumer newConsumer = registry.getStreamHandler(i.streamType());
-			PIDFilterPacketConsumer.FilterEntry entry = filter.getCurrent(i.elementryPID());
+			PIDFilterPacketConsumer.FilterEntry entry = filter.getCurrent(progCtx.getTransportContext(), i.elementryPID());
 			if (entry==null || !newConsumer.equals(entry.getConsumer())) {
 				if (entry != null && entry.getConsumer() != TSPacketConsumer.NULL) {
 System.err.println("replace "+entry.getConsumer()+" for PID "+i.elementryPID());
@@ -56,7 +59,7 @@ System.err.println("replace "+entry.getConsumer()+" for PID "+i.elementryPID());
 				StreamTSContext streamCtx = newConsumer.createContext(progCtx, i);
 				PIDFilterPacketConsumer.FilterEntry newEntry 
 					= new PIDFilterPacketConsumer.FilterEntry(newConsumer, streamCtx);
-				filter.filter(i.elementryPID(), newEntry);
+				filter.filter(progCtx.getTransportContext(), i.elementryPID(), newEntry);
 				progCtx.addStream(entry);
 			}
 			i.next();
@@ -70,5 +73,10 @@ System.err.println("replace "+entry.getConsumer()+" for PID "+i.elementryPID());
 	@Override
 	public void end(TSContext ctx) {
 		ProgramTSContext progCtx = (ProgramTSContext)ctx;
+	}
+
+	@Override
+	public TSContext createContext(TSContext parent) {
+		return new PMTContext();
 	}
 }

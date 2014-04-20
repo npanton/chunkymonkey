@@ -5,6 +5,10 @@ import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable.StreamDescriptorItera
 
 public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 	
+	public class UnhandledContext implements TSContext {
+
+	}
+
 	public static class UnhandledStreamTSPacketConsumerContext extends StreamTSContext {
 
 		private boolean flagged;
@@ -55,5 +59,10 @@ public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 	public StreamTSContext createContext(ProgramTSContext ctx,
 			StreamDescriptorIterator streamDesc) {
 		return new UnhandledStreamTSPacketConsumerContext(streamDesc.streamType());
+	}
+
+	@Override
+	public TSContext createContext(TSContext parent) {
+		return new UnhandledContext();
 	}
 }

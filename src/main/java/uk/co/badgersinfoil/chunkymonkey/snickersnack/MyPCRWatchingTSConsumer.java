@@ -108,4 +108,10 @@ System.err.println(" to "+pcrClockOffset);
 		this.h264Switch = h264Switch;
 		h264Switch.enabled(true);
 	}
+
+	@Override
+	public TSContext createContext(TSContext parent) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
