@@ -30,6 +30,7 @@ public class HlsMasterPlaylistProcessor {
 	private HttpResponseChecker responseChecker = HttpResponseChecker.NULL;
 	private Reporter rep = Reporter.NULL;
 	private RequestConfig config;
+	private boolean running;
 
 	public HlsMasterPlaylistProcessor(ScheduledExecutorService scheduler, HttpClient httpclient, HlsMediaPlaylistProcessor mediaPlaylistProcessor) {
 		this.scheduler = scheduler;
@@ -50,6 +51,7 @@ public class HlsMasterPlaylistProcessor {
 	}
 
 	public void start(final HlsMasterPlaylistContext ctx) {
+		running = true;
 		ctx.topLevelManifestFuture = scheduler.submit(new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
@@ -70,17 +72,19 @@ public class HlsMasterPlaylistProcessor {
 		} catch (Exception e) {
 			System.err.println("Loading top level manifest failed.  Will try again in 1 minute.");
 			e.printStackTrace();
-			scheduler.schedule(new Callable<Void>() {
-				@Override
-				public Void call() throws Exception {
-					try {
-						loadTopLevelManifest(ctx);
-					} catch (Throwable e) {
-						e.printStackTrace();
+			if (running) {
+				ctx.topLevelManifestFuture = scheduler.schedule(new Callable<Void>() {
+					@Override
+					public Void call() throws Exception {
+						try {
+							loadTopLevelManifest(ctx);
+						} catch (Throwable e) {
+							e.printStackTrace();
+						}
+						return null;
 					}
-					return null;
-				}
-			}, 1, TimeUnit.MINUTES);
+				}, 1, TimeUnit.MINUTES);
+			}
 			return;
 		}
 		// TODO: handle the unlikely case that the kind of
@@ -88,18 +92,20 @@ public class HlsMasterPlaylistProcessor {
 		if (isMasterPlaylist(playlist)) {
 			processMasterPlaylistEntries(ctx, playlist);
 			ctx.lastTopLevel = playlist;
-			// reload in 5 mins in case it changes
-			scheduler.schedule(new Callable<Void>() {
-				@Override
-				public Void call() throws Exception {
-					try {
-						loadTopLevelManifest(ctx);
-					} catch (Throwable e) {
-						e.printStackTrace();
+			if (running) {
+				// reload in 5 mins in case it changes
+				ctx.topLevelManifestFuture = scheduler.schedule(new Callable<Void>() {
+					@Override
+					public Void call() throws Exception {
+						try {
+							loadTopLevelManifest(ctx);
+						} catch (Throwable e) {
+							e.printStackTrace();
+						}
+						return null;
 					}
-					return null;
-				}
-			}, 5, TimeUnit.MINUTES);
+				}, 5, TimeUnit.MINUTES);
+			}
 		} else {
 			// this is not a real top-level manifest, but
 			// as a special case handle it anyway,
@@ -171,7 +177,9 @@ public class HlsMasterPlaylistProcessor {
 	}
 
 	public void stop(final HlsMasterPlaylistContext ctx) {
+		running = false;
 		ctx.topLevelManifestFuture.cancel(true);
+		// TODO: stop media playlist processing too
 	}
 
 	public void setConfig(RequestConfig config) {
