@@ -47,7 +47,7 @@ public class HlsMediaPlaylistProcessor {
 //				rep.carp(loc, "EXT-X-MEDIA-SEQUENCE went backwards %d to %d", ctx.lastMediaSequence, playlist.getMediaSequenceNumber());
 			}
 
-			int seqEnd = playlist.getMediaSequenceNumber()+playlist.getElements().size();
+			int seqEnd = playlist.getMediaSequenceNumber()+playlist.getElements().size()-1;
 			if (ctx.haveProcessedMediaSeq(seqEnd)) {
 				if (ctx.lastTargetDuration != null) {
 					long maxDelayMillis = ctx.lastTargetDuration * 1000 * 2;
