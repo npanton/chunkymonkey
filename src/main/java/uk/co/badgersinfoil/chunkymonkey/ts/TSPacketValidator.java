@@ -6,7 +6,7 @@ import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket.ProgramClockReference;
 
 public class TSPacketValidator implements TSPacketConsumer {
-	
+
 	public class ValidatorTSContext implements TSContext {
 		private Map<Integer,ProgramClockReference> lastPCRs = new HashMap<>();
 	}
@@ -14,7 +14,7 @@ public class TSPacketValidator implements TSPacketConsumer {
 	private static final int ADAPTATION_FIELD_MAX_LENGTH = 183;
 	private static final int ADAPTATION_FIELD_WITH_CONTENT_MAX_LENGTH = 182;
 	private Reporter rep;
-	
+
 	public TSPacketValidator(Reporter rep) {
 		this.rep = rep;
 	}
@@ -28,14 +28,10 @@ public class TSPacketValidator implements TSPacketConsumer {
 		checkPCR(vctx, packet);
 		checkAdaptationFieldLength(packet);
 	}
-	
+
 	private static final int PCR_MAX_INTERVAL_NANOS = 100000;
 
 	private void checkPCR(ValidatorTSContext vctx, TSPacket packet) {
-		// HLS requirement,
-//		if (packet.getLocator().getPacketNo() == 0 && packet.PID() != 0) {
-//			rep.carp(packet.getLocator(), "First packet should be PMT (i.e. PID 0), but has PID %d instead", packet.PID());
-//		}
 		if (packet.adaptionControl().adaptionFieldPresent() && packet.getAdaptationField().pcrFlag()) {
 			ProgramClockReference pcr = packet.getAdaptationField().pcr();
 			if (vctx.lastPCRs.containsKey(packet.PID())) {
