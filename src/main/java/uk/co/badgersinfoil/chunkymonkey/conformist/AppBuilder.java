@@ -21,6 +21,7 @@ import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMediaPlaylistProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsSegmentProcessor;
+import uk.co.badgersinfoil.chunkymonkey.hls.HlsTsPacketValidator;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PATConsumer;
@@ -94,6 +95,7 @@ public class AppBuilder {
 		StreamProcRegistry streamProcRegistry = new StreamProcRegistry(map, defaultStreamProc);
 		MultiTSPacketConsumer consumer = new MultiTSPacketConsumer(
 			new TSPacketValidator(rep),
+			new HlsTsPacketValidator(rep),
 			pidFilter.defaultFilter(0, new PATConsumer(pidFilter, streamProcRegistry))
 			         .defaultFilter(0x1fff, TSPacketConsumer.NULL)
 		);
