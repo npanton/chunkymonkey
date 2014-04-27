@@ -65,6 +65,7 @@ public class HlsMediaPlaylistProcessor {
 			rep.carp(loc, "EXT-X-TARGETDURATION changed? %d became %d", ctx.lastTargetDuration, playlist.getTargetDuration());
 		}
 		ctx.lastTargetDuration = (long)playlist.getTargetDuration();
+		checkDurations(loc, rep, playlist);
 		long delay = ctx.lastTargetDuration * 1000 / 2;
 		scheduler.schedule(new Callable<Void>() {
 			@Override
@@ -93,6 +94,31 @@ public class HlsMediaPlaylistProcessor {
 			}
 		}
 		ctx.startup = false;
+	}
+
+	/**
+	 * Report if any element has a duration more than 1 second different
+	 * than the playlist's specified EXT-X-TARGETDURATION.
+	 */
+	private void checkDurations(Locator loc, Reporter rep, Playlist playlist) {
+		Element firstProblemElement = null;
+		int problemCount = 0;
+		for (Element element : playlist) {
+			int diff = element.getDuration() - playlist.getTargetDuration();
+			// TODO: HLS spec allows for element durations to be
+			//       smaller than the target, but my current use
+			//       requires exact agreement -- make this check
+			//       configurable / pluggable
+			if (diff != 0) {
+				if (firstProblemElement == null) {
+					firstProblemElement = element;
+				}
+				problemCount++;
+			}
+		}
+		if (problemCount > 0) {
+			rep.carp(loc, "%d element(s) with duration different to EXT-X-TARGETDURATION=%d, first being %dsecond duration of %s", problemCount, playlist.getTargetDuration(), firstProblemElement.getDuration(), firstProblemElement.getURI());
+		}
 	}
 
 	private void processPlaylistElement(final HlsMediaPlaylistContext ctx,
