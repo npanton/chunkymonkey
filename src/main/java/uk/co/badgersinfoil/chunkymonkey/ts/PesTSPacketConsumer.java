@@ -107,7 +107,8 @@ System.err.println(String.format("TS continuity error (PID %d) counter now %d, l
 		} else if (ctx.payloadStarted && packet.adaptionControl().contentPresent() && packet.getPayloadLength() > 0) {
 			// (in theory, contentPresent==true && payloadLength==0
 			// is not allowed, but non-conformant streams may
-			// present this combination)
+			// present this combination, so we have deliberately
+			// excluded that case in the condition above)
 			pesConsumer.continuation(ctx.eCtx, packet, packet.getPayload());
 		}  // else, drop data for which we lack a PES header
 	}
