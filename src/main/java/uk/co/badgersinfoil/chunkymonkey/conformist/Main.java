@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.conformist;
 
+import io.netty.util.ResourceLeakDetector;
 import java.net.URI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -12,6 +13,8 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 		URI uri = new URI(args[0]);
+		ResourceLeakDetector.setEnabled(false);
+
 		AppBuilder b = new AppBuilder();
 		ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(4);
 		Reporter rep = new ConsoleReporter();
