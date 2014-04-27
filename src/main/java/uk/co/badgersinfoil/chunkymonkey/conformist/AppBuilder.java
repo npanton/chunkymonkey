@@ -106,7 +106,12 @@ public class AppBuilder {
 		AdtsFrameConsumer adtsFrameConsumer = new AdtsFrameConsumer.Multi(new ValidatingAdtsFrameConsumer(rep), aacAdtsFrameConsumer);
 		AdtsPesConsumer adtsConsumer = new AdtsPesConsumer(adtsFrameConsumer);
 		adtsConsumer.setReportor(rep);
-		return new PesTSPacketConsumer(adtsConsumer);
+		PESConsumer.MultiPesConsumer consumers
+			= new PESConsumer.MultiPesConsumer(
+				new ValidatingPesConsumer(rep),
+				adtsConsumer
+			);
+		return new PesTSPacketConsumer(consumers);
 	}
 
 	private PesTSPacketConsumer createH264Consumer(Reporter rep) {
