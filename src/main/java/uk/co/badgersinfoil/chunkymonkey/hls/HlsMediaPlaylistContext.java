@@ -15,6 +15,7 @@ public class HlsMediaPlaylistContext {
 	public long lastMediaSequenceEndChange;
 	private PlaylistInfo playlistInfo;
 	public long firstLoad;
+	public int lastMediaSequenceEndChangeProblems;
 
 	public HlsMediaPlaylistContext(HlsMasterPlaylistContext ctx,
 	                               URI manifest,

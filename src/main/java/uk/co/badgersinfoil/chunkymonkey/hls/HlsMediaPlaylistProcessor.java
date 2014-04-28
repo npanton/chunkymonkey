@@ -52,17 +52,20 @@ public class HlsMediaPlaylistProcessor {
 			int seqEnd = playlist.getMediaSequenceNumber()+playlist.getElements().size()-1;
 			if (ctx.haveProcessedMediaSeq(seqEnd)) {
 				if (ctx.lastTargetDuration != null) {
-					long maxDelayMillis = ctx.lastTargetDuration * 1000 * 2;
+					long maxDelayMillis = ctx.lastTargetDuration * 1000 * (2 + ctx.lastMediaSequenceEndChangeProblems*ctx.lastMediaSequenceEndChangeProblems);
 					long delay = now - ctx.lastMediaSequenceEndChange;
 					if (delay > maxDelayMillis) {
 						rep.carp(loc, "No additional segments in %d milliseconds", delay);
+						ctx.lastMediaSequenceEndChangeProblems++;
 					}
 				}
 			} else {
 				ctx.lastMediaSequenceEndChange = now;
+				ctx.lastMediaSequenceEndChangeProblems = 0;
 			}
 		} else {
 			ctx.lastMediaSequenceEndChange = now;
+			ctx.lastMediaSequenceEndChangeProblems = 0;
 		}
 		ctx.lastMediaSequence = playlist.getMediaSequenceNumber();
 		if (ctx.lastTargetDuration != null && ctx.lastTargetDuration != playlist.getTargetDuration()) {
