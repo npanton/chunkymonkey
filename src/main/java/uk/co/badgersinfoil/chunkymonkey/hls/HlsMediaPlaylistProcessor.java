@@ -69,7 +69,7 @@ public class HlsMediaPlaylistProcessor {
 			rep.carp(loc, "EXT-X-TARGETDURATION changed? %d became %d", ctx.lastTargetDuration, playlist.getTargetDuration());
 		}
 		ctx.lastTargetDuration = (long)playlist.getTargetDuration();
-		checkDurations(loc, rep, playlist);
+		checkDurations(ctx, loc, rep, playlist);
 		if (ctx.firstLoad == 0) {
 			ctx.firstLoad = now;
 		}
@@ -112,24 +112,28 @@ public class HlsMediaPlaylistProcessor {
 	 * Report if any element has a duration more than 1 second different
 	 * than the playlist's specified EXT-X-TARGETDURATION.
 	 */
-	private void checkDurations(Locator loc, Reporter rep, Playlist playlist) {
+	private void checkDurations(final HlsMediaPlaylistContext ctx, Locator loc, Reporter rep, Playlist playlist) {
 		Element firstProblemElement = null;
 		int problemCount = 0;
+		int seq = playlist.getMediaSequenceNumber();
 		for (Element element : playlist) {
-			int diff = element.getDuration() - playlist.getTargetDuration();
-			// TODO: HLS spec allows for element durations to be
-			//       smaller than the target, but my current use
-			//       requires exact agreement -- make this check
-			//       configurable / pluggable
-			if (diff != 0) {
-				if (firstProblemElement == null) {
-					firstProblemElement = element;
+			if (!ctx.haveProcessedMediaSeq(seq)) {
+				int diff = element.getDuration() - playlist.getTargetDuration();
+				// TODO: HLS spec allows for element durations to be
+				//       smaller than the target, but my current use
+				//       requires exact agreement -- make this check
+				//       configurable / pluggable
+				if (diff != 0) {
+					if (firstProblemElement == null) {
+						firstProblemElement = element;
+					}
+					problemCount++;
 				}
-				problemCount++;
 			}
+			seq++;
 		}
 		if (problemCount > 0) {
-			rep.carp(loc, "%d element(s) with duration different to EXT-X-TARGETDURATION=%d, first being %dsecond duration of %s", problemCount, playlist.getTargetDuration(), firstProblemElement.getDuration(), firstProblemElement.getURI());
+			rep.carp(loc, "%d new element(s) with duration different to EXT-X-TARGETDURATION=%d, first being %dsecond duration of %s", problemCount, playlist.getTargetDuration(), firstProblemElement.getDuration(), firstProblemElement.getURI());
 		}
 	}
 
