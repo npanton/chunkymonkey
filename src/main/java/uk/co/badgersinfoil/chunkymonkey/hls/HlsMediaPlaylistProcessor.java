@@ -59,6 +59,8 @@ public class HlsMediaPlaylistProcessor {
 			} else {
 				ctx.lastMediaSequenceEndChange = System.currentTimeMillis();
 			}
+		} else {
+			ctx.lastMediaSequenceEndChange = System.currentTimeMillis();
 		}
 		ctx.lastMediaSequence = playlist.getMediaSequenceNumber();
 		if (ctx.lastTargetDuration != null && ctx.lastTargetDuration != playlist.getTargetDuration()) {
