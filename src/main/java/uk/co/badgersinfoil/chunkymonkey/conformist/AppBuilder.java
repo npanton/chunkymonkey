@@ -12,6 +12,7 @@ import uk.co.badgersinfoil.chunkymonkey.aac.AacAdtsFrameConsumer;
 import uk.co.badgersinfoil.chunkymonkey.adts.AdtsFrameConsumer;
 import uk.co.badgersinfoil.chunkymonkey.adts.AdtsPesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.adts.ValidatingAdtsFrameConsumer;
+import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStreamProcessor;
 import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiHeaderConsumer;
@@ -38,7 +39,7 @@ import uk.co.badgersinfoil.chunkymonkey.ts.ValidatingPesConsumer;
 
 public class AppBuilder {
 
-	public HlsMasterPlaylistProcessor build(ScheduledExecutorService scheduledExecutor, Reporter rep) {
+	public HlsMasterPlaylistProcessor buildSingle(ScheduledExecutorService scheduledExecutor, Reporter rep) {
 		CloseableHttpClient httpclient
 			= HttpClientBuilder.create()
 			                   .setUserAgent("conformist")
@@ -84,7 +85,18 @@ public class AppBuilder {
 		return masterProc;
 	}
 
-	public MultiTSPacketConsumer createConsumer(Reporter rep) {
+	public HlsRedundantStreamProcessor buildRedundant(
+			ScheduledExecutorService scheduledExecutor, Reporter rep) {
+		HlsMasterPlaylistProcessor masterPlaylistProcessor
+			= buildSingle(scheduledExecutor, rep);
+		HlsRedundantStreamProcessor redundantProc
+			= new HlsRedundantStreamProcessor(scheduledExecutor,
+			                                  masterPlaylistProcessor,
+			                                  rep);
+		return redundantProc;
+	}
+
+	public TSPacketConsumer createConsumer(Reporter rep) {
 		PIDFilterPacketConsumer pidFilter = new PIDFilterPacketConsumer(rep);
 		Map<Integer, StreamTSPacketConsumer> map = new HashMap<>();
 		map.put(ProgramMapTable.STREAM_TYPE_ADTS, createAdtsConsumer(rep));
