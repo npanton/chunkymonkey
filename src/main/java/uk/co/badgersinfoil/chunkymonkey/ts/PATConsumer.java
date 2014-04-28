@@ -22,10 +22,10 @@ public class PATConsumer implements TSPacketConsumer {
 	}
 
 	private static final int PID_PAT = 0;
-	
+
 	private PIDFilterPacketConsumer filter;
 	private StreamProcRegistry registery;
-	
+
 	public PATConsumer(PIDFilterPacketConsumer filter, StreamProcRegistry registery) {
 		this.filter = filter;
 		this.registery = registery;
@@ -68,7 +68,7 @@ public class PATConsumer implements TSPacketConsumer {
 	@Override
 	public void end(TSContext ctx) {
 		PATContext c = (PATContext)ctx;
-		
+
 	}
 
 	@Override

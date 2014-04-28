@@ -41,6 +41,9 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 		public int getLastContinuityCount() {
 			return lastContinuityCount;
 		}
+		public ElementryContext getElementryContext() {
+			return eCtx;
+		}
 	}
 
 	public static class PESLocator implements Locator {
@@ -60,12 +63,16 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 			return parent;
 		}
 
+		public int getElementryPID() {
+			return elementryPID;
+		}
+
 		@Override
 		public String toString() {
 			return "PES Packet #"+pesPacketNumber+" (PID="+elementryPID+")\n  at "+parent.toString();
 		}
 	}
-	
+
 	private PESConsumer pesConsumer;
 
 //	private StreamContext ctx;
@@ -76,7 +83,7 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 //		this.pesConsumer = pesConsumer;
 //		this.ctx = ctx;
 //	}
-	
+
 	public PesTSPacketConsumer(PESConsumer pesConsumer) {
 		this.pesConsumer = pesConsumer;
 	}

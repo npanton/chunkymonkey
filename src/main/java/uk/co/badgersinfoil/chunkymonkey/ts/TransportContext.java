@@ -1,6 +1,8 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer.FilterEntry;
 
@@ -24,4 +26,11 @@ public class TransportContext implements TSContext, TransportContextProvider {
 		return this;
 	}
 
+	public List<TSContext> getContexts() {
+		List<TSContext> result = new ArrayList<TSContext>();
+		for (FilterEntry e : filterMap.values()) {
+			result.add(e.getContext());
+		}
+		return result;
+	}
 }

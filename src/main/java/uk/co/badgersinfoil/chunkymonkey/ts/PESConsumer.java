@@ -21,9 +21,9 @@ public interface PESConsumer {
 			return null;
 		}
 	};
-	
+
 	public static class MultiPesConsumer implements PESConsumer {
-		private static class MultiElementryContext implements ElementryContext {
+		public static class MultiElementryContext implements ElementryContext {
 			private List<Entry> list = new ArrayList<>();
 			public MultiElementryContext(List<PESConsumer> list) {
 				for (PESConsumer p : list) {
@@ -33,13 +33,20 @@ public interface PESConsumer {
 					this.list.add(e);
 				}
 			}
+			public List<ElementryContext> getContexts() {
+				List<ElementryContext> result = new ArrayList<ElementryContext>();
+				for (Entry e : list) {
+					result.add(e.ctx);
+				}
+				return result;
+			}
 		}
 		private static class Entry {
 			public PESConsumer consumer;
 			public ElementryContext ctx;
 		}
 		private List<PESConsumer> list = new ArrayList<PESConsumer>();
-		
+
 		public MultiPesConsumer(PESConsumer... list) {
 			Collections.addAll(this.list, list);
 		}
@@ -67,7 +74,7 @@ public interface PESConsumer {
 				e.consumer.end(e.ctx);
 			}
 		}
-		
+
 		@Override
 		public void continuityError(ElementryContext ctx) {
 			MultiElementryContext mCtx = (MultiElementryContext)ctx;
@@ -79,7 +86,7 @@ public interface PESConsumer {
 		@Override
 		public ElementryContext createContext() {
 			return new MultiElementryContext(list);
-		}		
+		}
 	}
 
 	void start(ElementryContext ctx, PESPacket pesPacket);

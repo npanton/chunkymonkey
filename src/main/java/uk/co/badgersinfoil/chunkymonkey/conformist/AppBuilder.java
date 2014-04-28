@@ -14,15 +14,16 @@ import uk.co.badgersinfoil.chunkymonkey.adts.AdtsPesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.adts.ValidatingAdtsFrameConsumer;
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStreamProcessor;
 import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer;
+import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiHeaderConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiNalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeqParamSetNalUnitConsumer;
-import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMediaPlaylistProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsSegmentProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsTsPacketValidator;
+import uk.co.badgersinfoil.chunkymonkey.hls.HlsValidatingPesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpExecutionWrapper;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
@@ -114,7 +115,7 @@ public class AppBuilder {
 			pidFilter.defaultFilter(0, new PATConsumer(pidFilter, streamProcRegistry))
 			         .defaultFilter(0x1fff, TSPacketConsumer.NULL)
 		);
-		return consumer;
+		return new HlsStreamPtsValidator(consumer, rep);
 	}
 
 	private PesTSPacketConsumer createAdtsConsumer(Reporter rep) {
@@ -125,6 +126,7 @@ public class AppBuilder {
 		adtsConsumer.setReportor(rep);
 		PESConsumer.MultiPesConsumer consumers
 			= new PESConsumer.MultiPesConsumer(
+				new HlsValidatingPesConsumer(rep),
 				new ValidatingPesConsumer(rep),
 				adtsConsumer
 			);
@@ -142,10 +144,10 @@ public class AppBuilder {
 		nalUnitConsumers.put(UnitType.SEQ_PARAMETER_SET, seqParamSetNalUnitConsumer);
 		PESConsumer.MultiPesConsumer consumers
 			= new PESConsumer.MultiPesConsumer(
+				new HlsValidatingPesConsumer(rep),
 				new ValidatingPesConsumer(rep),
 				new H264PesConsumer(nalUnitConsumers)
 			);
 		return new PesTSPacketConsumer(consumers);
 	}
-
 }

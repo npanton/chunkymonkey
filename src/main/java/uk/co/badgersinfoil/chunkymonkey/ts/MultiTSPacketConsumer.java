@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class MultiTSPacketConsumer implements TSPacketConsumer {
-	
+
 
 	public static class MultiTsContext implements TSContext {
 		public static class Entry {
@@ -16,7 +16,10 @@ public class MultiTSPacketConsumer implements TSPacketConsumer {
 				this.consumer = consumer;
 			}
 			TSPacketConsumer consumer;
-			TSContext context;
+			private TSContext context;
+			public TSContext getContext() {
+				return context;
+			}
 		}
 		public List<Entry> list = new ArrayList<>();
 		public MultiTsContext(TSContext parent, List<TSPacketConsumer> list) {
@@ -28,7 +31,7 @@ public class MultiTSPacketConsumer implements TSPacketConsumer {
 	}
 
 	private List<TSPacketConsumer> list = new ArrayList<>();
-	
+
 	public MultiTSPacketConsumer(TSPacketConsumer... consumers) {
 		Collections.addAll(list, consumers);
 	}
@@ -37,7 +40,7 @@ public class MultiTSPacketConsumer implements TSPacketConsumer {
 	public void packet(TSContext ctx, TSPacket packet) {
 		MultiTsContext mctx = (MultiTsContext)ctx;
 		for (MultiTsContext.Entry e : mctx.list) {
-			e.consumer.packet(e.context, packet);
+			e.consumer.packet(e.getContext(), packet);
 		}
 	}
 
@@ -45,7 +48,7 @@ public class MultiTSPacketConsumer implements TSPacketConsumer {
 	public void end(TSContext ctx) {
 		MultiTsContext mctx = (MultiTsContext)ctx;
 		for (MultiTsContext.Entry e : mctx.list) {
-			e.consumer.end(e.context);
+			e.consumer.end(e.getContext());
 		}
 	}
 
