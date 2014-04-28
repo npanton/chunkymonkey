@@ -1,14 +1,15 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
+import java.io.IOException;
 import java.io.InputStream;
-import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.util.Arrays;
 import net.chilicat.m3u8.Element;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
@@ -40,31 +41,22 @@ public class HlsSegmentProcessor {
 	                              Element element)
 	{
 		URI elementUri = ctx.manifest.resolve(element.getURI());
-//System.out.println("Getting segment "+seq+": " + elementUri);
 		HttpGet req = new HttpGet(elementUri);
 		if (getConfig() != null) {
 			req.setConfig(getConfig());
 		}
-		try {
-			CloseableHttpResponse resp = (CloseableHttpResponse)httpclient.execute(req);
-			URILocator manifestLoc = new URILocator(ctx.manifest);
-			URILocator loc = new URILocator(elementUri, manifestLoc);
-			manifestResponseChecker.check(loc, resp);
-			if (resp.getStatusLine().getStatusCode() != 200) {
-				rep.carp(new URILocator(elementUri), "Request failed %d %s - headers: %s", resp.getStatusLine().getStatusCode(), resp.getStatusLine().getReasonPhrase(), Arrays.toString(resp.getAllHeaders()));
-			} else {
+		URILocator manifestLoc = new URILocator(ctx.manifest);
+		final Locator loc = new URILocator(elementUri, manifestLoc);
+		new HttpExecutionWrapper<Void>(rep) {
+			@Override
+			protected Void handleResponse(HttpClientContext context, CloseableHttpResponse resp) throws IOException {
+				manifestResponseChecker.check(loc, resp, context);
 				InputStream stream = resp.getEntity().getContent();
 				TransportStreamParser parser = new TransportStreamParser(loc, consumer);
 				parser.parse(stream);
+				return null;
 			}
-			resp.close();
-		} catch (SocketTimeoutException e) {
-			// TODO: parent Locator
-			rep.carp(new URILocator(elementUri), "Loading segment %d failed after %d bytes: %s", seq, e.bytesTransferred, e.getMessage());
-		} catch (Exception e) {
-			// TODO: parent Locator
-			rep.carp(new URILocator(elementUri), "Loading segment %d failed: %s", seq, e.getMessage());
-		}
+		}.execute(httpclient, req, loc);
 	}
 
 	public void setConfig(RequestConfig config) {

@@ -1,6 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.conformist;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
@@ -14,7 +15,7 @@ public class CacheValidatorCheck implements HttpResponseChecker {
 	}
 
 	@Override
-	public void check(Locator loc, HttpResponse resp) {
+	public void check(Locator loc, HttpResponse resp, HttpClientContext ctx) {
 		if (!resp.containsHeader("ETag") && !resp.containsHeader("Last-Modified")) {
 			rep.carp(loc, "Response contains neither ETag nor Last-Modified cache validator headers");
 		}

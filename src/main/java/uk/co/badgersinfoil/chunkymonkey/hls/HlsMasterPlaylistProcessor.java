@@ -66,12 +66,14 @@ public class HlsMasterPlaylistProcessor {
 	}
 
 	private void loadTopLevelManifest(final HlsMasterPlaylistContext ctx) {
-		Playlist playlist;
+		Playlist playlist = null;
 		try {
 			playlist = requestManifest(ctx);
 		} catch (Exception e) {
 			System.err.println("Loading top level manifest failed.  Will try again in 1 minute.");
 			e.printStackTrace();
+		}
+		if (playlist == null) {
 			if (running) {
 				ctx.topLevelManifestFuture = scheduler.schedule(new Callable<Void>() {
 					@Override
@@ -149,31 +151,32 @@ public class HlsMasterPlaylistProcessor {
 		if (config != null) {
 			req.setConfig(config);
 		}
-		CloseableHttpResponse resp = (CloseableHttpResponse)httpclient.execute(req, context);
-		List<URI> redirects = context.getRedirectLocations();
-		if (redirects != null && !redirects.isEmpty()) {
-			URI finalUri = null;
-			try {
-				finalUri = URIUtils.resolve(ctx.getManifestSpecified(), context.getTargetHost(), redirects);
-				ctx.setManifestRedirectLocation(finalUri);
-			} catch (URISyntaxException e) {
-				e.printStackTrace();
+		final URILocator loc = new URILocator(ctx.getManifestLocation());
+		return new HttpExecutionWrapper<Playlist>(rep) {
+			@Override
+			protected Playlist handleResponse(HttpClientContext context, CloseableHttpResponse resp) throws IOException {
+				List<URI> redirects = context.getRedirectLocations();
+				if (redirects != null && !redirects.isEmpty()) {
+					URI finalUri = null;
+					try {
+						finalUri = URIUtils.resolve(ctx.getManifestSpecified(), context.getTargetHost(), redirects);
+						ctx.setManifestRedirectLocation(finalUri);
+					} catch (URISyntaxException e) {
+						e.printStackTrace();
+					}
+					rep.carp(new URILocator(ctx.getManifestSpecified(), loc), "Followed %d redirect(s) to: %s", redirects.size(), finalUri==null ? redirects.get(redirects.size()-1) : finalUri);
+				}
+				responseChecker.check(loc, resp, context);
+				InputStream stream = resp.getEntity().getContent();
+				try {
+					return Playlist.parse(stream);
+				} catch (ParseException e) {
+					throw new IOException(e);
+				} finally {
+					stream.close();
+				}
 			}
-			rep.carp(new URILocator(ctx.getManifestSpecified()), "Followed %d redirect(s) to: %s", redirects.size(), finalUri==null ? redirects.get(redirects.size()-1) : finalUri);
-		}
-		responseChecker.check(new URILocator(ctx.getManifestLocation()), resp);
-		if (resp.getStatusLine().getStatusCode() != 200) {
-			rep.carp(new URILocator(ctx.getManifestLocation()), "Request failed %d %s - headers: %s", resp.getStatusLine().getStatusCode(), resp.getStatusLine().getReasonPhrase(), Arrays.toString(resp.getAllHeaders()));
-			return null;
-		}
-
-		InputStream stream = resp.getEntity().getContent();
-		try {
-			return Playlist.parse(stream);
-		} finally {
-			stream.close();
-			resp.close();
-		}
+		}.execute(httpclient, req, loc);
 	}
 
 	public void stop(final HlsMasterPlaylistContext ctx) {

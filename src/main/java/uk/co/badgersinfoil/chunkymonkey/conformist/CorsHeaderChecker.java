@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
@@ -37,7 +38,7 @@ public class CorsHeaderChecker implements HttpResponseChecker {
 	}
 
 	@Override
-	public void check(Locator loc, HttpResponse resp) {
+	public void check(Locator loc, HttpResponse resp, HttpClientContext ctx) {
 		checkHeaderElements(loc, resp, "Access-Control-Allow-Headers", EXPECTED_ALLOW_HEADERS);
 		checkHeaderElements(loc, resp, "Access-Control-Expose-Headers", EXPECTED_EXPOSE_HEADERS);
 		checkHeaderElements(loc, resp, "Access-Control-Allow-Methods", EXPECTED_ALLOW_METHODS);

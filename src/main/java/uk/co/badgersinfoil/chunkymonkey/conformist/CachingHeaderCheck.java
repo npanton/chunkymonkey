@@ -7,12 +7,13 @@ import java.util.Set;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.DateUtils;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
 
-public class CacheControlHeaderCheck implements HttpResponseChecker {
+public class CachingHeaderCheck implements HttpResponseChecker {
 
 	private Reporter rep;
 	private int minMaxAge;
@@ -23,13 +24,13 @@ public class CacheControlHeaderCheck implements HttpResponseChecker {
 		);
 	}
 
-	public CacheControlHeaderCheck(Reporter rep, int minMaxAge) {
+	public CachingHeaderCheck(Reporter rep, int minMaxAge) {
 		this.rep = rep;
 		this.minMaxAge = minMaxAge;
 	}
 
 	@Override
-	public void check(Locator loc, HttpResponse resp) {
+	public void check(Locator loc, HttpResponse resp, HttpClientContext ctx) {
 		Integer maxAgeValue = null;
 		for (Header header : resp.getHeaders("Cache-Control")) {
 			for (HeaderElement el : header.getElements()) {

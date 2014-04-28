@@ -10,6 +10,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.URILocator;
@@ -153,7 +154,9 @@ public class HlsMediaPlaylistProcessor {
 			scheduleRetry(ctx);
 			return;
 		}
-		process(ctx, playlist);
+		if (playlist != null) {
+			process(ctx, playlist);
+		}
 	}
 
 	private void scheduleRetry(final HlsMediaPlaylistContext ctx) {
@@ -176,20 +179,21 @@ public class HlsMediaPlaylistProcessor {
 		if (getConfig() != null) {
 			req.setConfig(getConfig());
 		}
-		CloseableHttpResponse resp = (CloseableHttpResponse)httpclient.execute(req);
-		URILocator loc = new URILocator(ctx.manifest);
-		if (resp.getStatusLine().getStatusCode() != 200) {
-			rep.carp(loc, "Request failed %d %s - headers: %s", resp.getStatusLine().getStatusCode(), resp.getStatusLine().getReasonPhrase(), Arrays.toString(resp.getAllHeaders()));
-			return null;
-		}
-		manifestResponseChecker.check(loc, resp);
-		InputStream stream = resp.getEntity().getContent();
-		try {
-			return Playlist.parse(stream);
-		} finally {
-			stream.close();
-			resp.close();
-		}
+		final URILocator loc = new URILocator(ctx.manifest);
+		return new HttpExecutionWrapper<Playlist>(rep) {
+			@Override
+			protected Playlist handleResponse(HttpClientContext context, CloseableHttpResponse resp) throws IOException {
+				manifestResponseChecker.check(loc, resp, context);
+				InputStream stream = resp.getEntity().getContent();
+				try {
+					return Playlist.parse(stream);
+				} catch (ParseException e) {
+					throw new IOException(e);
+				} finally {
+					stream.close();
+				}
+			}
+		}.execute(httpclient, req, loc);
 	}
 
 	/**

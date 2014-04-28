@@ -23,6 +23,7 @@ import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMediaPlaylistProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsSegmentProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsTsPacketValidator;
+import uk.co.badgersinfoil.chunkymonkey.hls.HttpExecutionWrapper;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PATConsumer;
@@ -43,6 +44,7 @@ public class AppBuilder {
 		CloseableHttpClient httpclient
 			= HttpClientBuilder.create()
 			                   .setUserAgent("conformist")
+			                   .setRequestExecutor(HttpExecutionWrapper.CONN_INFO_SNARFING_REQUEST_EXECUTOR)
 			                   .build();
 		RequestConfig requestConfig = RequestConfig.custom()
 				.setConnectTimeout(1000)
@@ -50,10 +52,10 @@ public class AppBuilder {
 				.build();
 		HlsSegmentProcessor segProc = new HlsSegmentProcessor(rep, httpclient, createConsumer(rep));
 		segProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
-				new CacheControlHeaderCheck(rep, 60*60),
-//				new CorsHeaderChecker(rep),
+// llnw mess with Date hdr				new CachingHeaderCheck(rep, 1),
+				new CorsHeaderChecker(rep),
 				new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
-				new ContentLengthCheck(rep),
+// akamai chunks manifests?				new ContentLengthCheck(rep),
 				new CacheValidatorCheck(rep),
 				new KeepAliveHeaderCheck(rep),
 				new ContentTypeHeaderCheck("video/MP2T", rep)
@@ -61,10 +63,10 @@ public class AppBuilder {
 		segProc.setConfig(requestConfig);
 		HlsMediaPlaylistProcessor mediaProc = new HlsMediaPlaylistProcessor(scheduledExecutor, httpclient, segProc);
 		mediaProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
-//			new CacheControlHeaderCheck(rep, 2),
-//			new CorsHeaderChecker(rep),
+// llnw mess with Date hdr			new CachingHeaderCheck(rep, 1),
+			new CorsHeaderChecker(rep),
 			new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
-//			new ContentLengthCheck(rep),
+// akamai chunks manifests?			new ContentLengthCheck(rep),
 			new CacheValidatorCheck(rep),
 			new KeepAliveHeaderCheck(rep),
 			new ContentTypeHeaderCheck("application/vnd.apple.mpegurl", rep)
@@ -74,8 +76,9 @@ public class AppBuilder {
 		HlsMasterPlaylistProcessor masterProc = new HlsMasterPlaylistProcessor(scheduledExecutor, httpclient, mediaProc);
 		masterProc.setResponseChecker(new HttpResponseChecker.Multi(
 			new MasterPlaylistResponseChecker(rep),
+			new CorsHeaderChecker(rep),
 			new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
-			new CacheControlHeaderCheck(rep, 2),
+			new CachingHeaderCheck(rep, 2),
 			new CacheValidatorCheck(rep),
 			new KeepAliveHeaderCheck(rep),
 			new ContentTypeHeaderCheck("application/vnd.apple.mpegurl", rep)

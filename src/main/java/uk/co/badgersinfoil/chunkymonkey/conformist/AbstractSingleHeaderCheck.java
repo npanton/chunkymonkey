@@ -3,6 +3,7 @@ package uk.co.badgersinfoil.chunkymonkey.conformist;
 import java.util.Arrays;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
@@ -18,7 +19,7 @@ public abstract class AbstractSingleHeaderCheck implements HttpResponseChecker {
 	}
 
 	@Override
-	public void check(Locator loc, HttpResponse resp) {
+	public void check(Locator loc, HttpResponse resp, HttpClientContext ctx) {
 		Header[] headers = resp.getHeaders(headerName);
 		if (headers.length > 1) {
 			rep.carp(loc, "There should not be multiple '%s' headers: %s", headerName, Arrays.toString(headers));
