@@ -43,6 +43,7 @@ public class HlsMediaPlaylistProcessor {
 
 	public void process(final HlsMediaPlaylistContext ctx, final Playlist playlist) {
 		Locator loc = new URILocator(ctx.manifest);
+		long now = System.currentTimeMillis();
 		if (ctx.lastMediaSequence != null) {
 			if (ctx.lastMediaSequence > playlist.getMediaSequenceNumber()) {
 //				rep.carp(loc, "EXT-X-MEDIA-SEQUENCE went backwards %d to %d", ctx.lastMediaSequence, playlist.getMediaSequenceNumber());
@@ -52,16 +53,16 @@ public class HlsMediaPlaylistProcessor {
 			if (ctx.haveProcessedMediaSeq(seqEnd)) {
 				if (ctx.lastTargetDuration != null) {
 					long maxDelayMillis = ctx.lastTargetDuration * 1000 * 2;
-					long delay = System.currentTimeMillis() - ctx.lastMediaSequenceEndChange;
+					long delay = now - ctx.lastMediaSequenceEndChange;
 					if (delay > maxDelayMillis) {
 						rep.carp(loc, "No additional segments in %d milliseconds", delay);
 					}
 				}
 			} else {
-				ctx.lastMediaSequenceEndChange = System.currentTimeMillis();
+				ctx.lastMediaSequenceEndChange = now;
 			}
 		} else {
-			ctx.lastMediaSequenceEndChange = System.currentTimeMillis();
+			ctx.lastMediaSequenceEndChange = now;
 		}
 		ctx.lastMediaSequence = playlist.getMediaSequenceNumber();
 		if (ctx.lastTargetDuration != null && ctx.lastTargetDuration != playlist.getTargetDuration()) {
@@ -69,11 +70,19 @@ public class HlsMediaPlaylistProcessor {
 		}
 		ctx.lastTargetDuration = (long)playlist.getTargetDuration();
 		checkDurations(loc, rep, playlist);
-		long delay = ctx.lastTargetDuration * 1000 / 2;
+		if (ctx.firstLoad == 0) {
+			ctx.firstLoad = now;
+		}
+		long durationMillis = ctx.lastTargetDuration * 1000;
+		// try to keep things to the implied schedule, rather than
+		// falling behind a little bit, each iteration,
+		long adjustment = (now - ctx.firstLoad) % durationMillis;
+		long delay = durationMillis - adjustment;
+		// scheduleAtFixedRate() would be a good fit where it not that
+		// we couldn't handle EXT-X-TARGETDURATION changing,
 		scheduler.schedule(new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
-//System.err.println("refreshing "+ctx.manifest);
 				try {
 					process(ctx);
 				} catch (Throwable e) {
