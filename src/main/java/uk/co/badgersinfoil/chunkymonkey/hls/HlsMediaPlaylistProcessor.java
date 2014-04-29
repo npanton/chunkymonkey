@@ -72,6 +72,26 @@ public class HlsMediaPlaylistProcessor {
 		if (ctx.firstLoad == 0) {
 			ctx.firstLoad = now;
 		}
+		scheduleNextRefresh(ctx, now);
+		int seq = playlist.getMediaSequenceNumber();
+		if (ctx.startup && playlist.getElements().size() > 3) {
+			int off = playlist.getElements().size() -3;
+			seq += off;
+			for (Element e : playlist.getElements().subList(off, off+3)) {
+				processPlaylistElement(ctx, seq, e);
+				seq++;
+			}
+		} else {
+			for (Element e : playlist) {
+				processPlaylistElement(ctx, seq, e);
+				seq++;
+			}
+		}
+		ctx.startup = false;
+	}
+
+	private void scheduleNextRefresh(final HlsMediaPlaylistContext ctx,
+			long now) {
 		long durationMillis = ctx.lastTargetDuration * 1000;
 		// try to keep things to the implied schedule, rather than
 		// falling behind a little bit, each iteration,
@@ -90,21 +110,6 @@ public class HlsMediaPlaylistProcessor {
 				return null;
 			}
 		}, delay, TimeUnit.MILLISECONDS);
-		int seq = playlist.getMediaSequenceNumber();
-		if (ctx.startup && playlist.getElements().size() > 3) {
-			int off = playlist.getElements().size() -3;
-			seq += off;
-			for (Element e : playlist.getElements().subList(off, off+3)) {
-				processPlaylistElement(ctx, seq, e);
-				seq++;
-			}
-		} else {
-			for (Element e : playlist) {
-				processPlaylistElement(ctx, seq, e);
-				seq++;
-			}
-		}
-		ctx.startup = false;
 	}
 
 	/**
@@ -166,7 +171,11 @@ public class HlsMediaPlaylistProcessor {
 			scheduleRetry(ctx);
 			return;
 		}
-		if (playlist != null) {
+		if (playlist == null) {
+			scheduleNextRefresh(ctx, System.currentTimeMillis());
+		} else {
+			// TODO: process() making it's own call to
+			//       scheduleNextRefresh() is a bit of a mess
 			process(ctx, playlist);
 		}
 	}
