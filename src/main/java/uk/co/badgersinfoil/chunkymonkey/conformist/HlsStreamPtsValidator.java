@@ -67,10 +67,10 @@ public class HlsStreamPtsValidator implements TSPacketConsumer {
 							for (ElementryContext me : meCtx.getContexts()) {
 								if (me instanceof HlsValidatingPesContext) {
 									HlsValidatingPesContext hlsCtx = (HlsValidatingPesContext)me;
-									if (firstStream == null) {
+									if (firstStream == null && hlsCtx.initialPts != null) {
 										firstStream = hlsCtx;
 									} else {
-										if (hlsCtx.initialPts.getTs() != firstStream.initialPts.getTs()) {
+										if (hlsCtx.initialPts != null && hlsCtx.initialPts.getTs() != firstStream.initialPts.getTs()) {
 											rep.carp(hlsCtx.initialPacket.getLocator(),
 											         "HLS segment initial PTS %d for this stream and initial PTS %d for stream PID=%d differ by %dµs",
 											         hlsCtx.initialPts.getTs(),

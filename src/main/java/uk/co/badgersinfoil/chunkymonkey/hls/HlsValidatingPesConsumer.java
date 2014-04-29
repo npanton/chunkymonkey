@@ -33,6 +33,11 @@ public class HlsValidatingPesConsumer implements PESConsumer {
 				rep.carp(pesPacket.getLocator(), "Initial PES packet in HLS segment lacks a Presentation Timestamp");
 			}
 		}
+else if (vctx.packetCount == 0 && !pesPacket.isParsed()) {
+	// added to work out why HlsStreamPtsValidator needs to check for initialPts being null
+	// (it's probably absolutely fine, so not really correct to carp about it)
+	rep.carp(pesPacket.getLocator(), "DEBUG: Could not record initialPts because this is not a parsed PES packet");
+}
 		vctx.packetCount++;
 	}
 
