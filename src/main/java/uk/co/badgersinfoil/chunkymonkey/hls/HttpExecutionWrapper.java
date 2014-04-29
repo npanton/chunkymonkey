@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
+import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpException;
 import org.apache.http.HttpInetConnection;
@@ -74,6 +75,16 @@ public abstract class HttpExecutionWrapper<T> {
 				rep.carp(loc, "HTTP request failed: %s", e.getMessage());
 			} else {
 				rep.carp(loc, "HTTP request failed after initial %s response: %s", resp.getStatusLine(), e.getMessage());
+			}
+		} catch (ConnectionClosedException e) {
+			InetAddress remote = (InetAddress)context.getAttribute("conformist-remote-address");
+			if (remote != null) {
+				loc = new SockLocator(remote, loc);
+			}
+			if (resp == null || resp.getFirstHeader("Connection") == null) {
+				rep.carp(loc, "%s", e.getMessage());
+			} else {
+				rep.carp(loc, "%s (response included %h)", e.getMessage(), resp.getFirstHeader("Connection"));
 			}
 		} catch (IOException e) {
 			// TODO: parent Locator
