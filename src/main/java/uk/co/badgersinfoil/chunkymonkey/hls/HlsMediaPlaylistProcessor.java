@@ -45,10 +45,6 @@ public class HlsMediaPlaylistProcessor {
 		Locator loc = new URILocator(ctx.manifest);
 		long now = System.currentTimeMillis();
 		if (ctx.lastMediaSequence != null) {
-			if (ctx.lastMediaSequence > playlist.getMediaSequenceNumber()) {
-//				rep.carp(loc, "EXT-X-MEDIA-SEQUENCE went backwards %d to %d", ctx.lastMediaSequence, playlist.getMediaSequenceNumber());
-			}
-
 			int seqEnd = playlist.getMediaSequenceNumber()+playlist.getElements().size()-1;
 			if (ctx.haveProcessedMediaSeq(seqEnd)) {
 				if (ctx.lastTargetDuration != null) {
