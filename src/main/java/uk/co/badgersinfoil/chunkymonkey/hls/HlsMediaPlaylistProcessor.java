@@ -81,7 +81,7 @@ public class HlsMediaPlaylistProcessor {
 		// falling behind a little bit, each iteration,
 		long adjustment = (now - ctx.firstLoad) % durationMillis;
 		long delay = durationMillis - adjustment;
-		// scheduleAtFixedRate() would be a good fit where it not that
+		// scheduleAtFixedRate() would be a good fit were it not that
 		// we couldn't handle EXT-X-TARGETDURATION changing,
 		scheduler.schedule(new Callable<Void>() {
 			@Override
