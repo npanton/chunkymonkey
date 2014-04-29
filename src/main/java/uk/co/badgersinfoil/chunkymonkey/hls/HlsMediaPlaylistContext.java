@@ -15,6 +15,9 @@ public class HlsMediaPlaylistContext {
 	public long lastMediaSequenceEndChange;
 	private PlaylistInfo playlistInfo;
 	public long firstLoad;
+	// count of the number of times we reported the playlist failed to
+	// update, so we can decrease the frequency of reports over time if
+	// the lack-of-updates persists
 	public int lastMediaSequenceEndChangeProblems;
 
 	public HlsMediaPlaylistContext(HlsMasterPlaylistContext ctx,
