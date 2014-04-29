@@ -200,6 +200,7 @@ public class HlsMediaPlaylistProcessor {
 			@Override
 			protected Playlist handleResponse(HttpClientContext context, CloseableHttpResponse resp) throws IOException {
 				manifestResponseChecker.check(loc, resp, context);
+				checkAge(loc, ctx, resp);
 				InputStream stream = resp.getEntity().getContent();
 				try {
 					return Playlist.parse(stream);
@@ -226,5 +227,20 @@ public class HlsMediaPlaylistProcessor {
 
 	public void setReporter(Reporter rep) {
 		this.rep = rep;
+	}
+
+	private void checkAge(URILocator loc, final HlsMediaPlaylistContext ctx,
+	                      final CloseableHttpResponse resp)
+	{
+		if (resp.containsHeader("Age") && ctx.lastTargetDuration != null) {
+			try {
+				long age = Long.parseLong(resp.getLastHeader("Age").getValue());
+				if (age > ctx.lastTargetDuration) {
+					rep.carp(loc, "Response header %s suggests response is stale, given EXT-X-TARGETDURATION=%d", resp.getLastHeader("Age"), ctx.lastTargetDuration);
+				}
+			} catch (NumberFormatException e) {
+				// ignore
+			}
+		}
 	}
 }
