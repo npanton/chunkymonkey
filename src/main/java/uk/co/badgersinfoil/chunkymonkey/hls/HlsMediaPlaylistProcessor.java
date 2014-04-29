@@ -42,6 +42,10 @@ public class HlsMediaPlaylistProcessor {
 	}
 
 	public void process(final HlsMediaPlaylistContext ctx, final Playlist playlist) {
+		process0(ctx, playlist);
+		scheduleNextRefresh(ctx, System.currentTimeMillis());
+	}
+	private void process0(final HlsMediaPlaylistContext ctx, final Playlist playlist) {
 		Locator loc = new URILocator(ctx.manifest);
 		long now = System.currentTimeMillis();
 		if (ctx.lastMediaSequence != null) {
@@ -72,7 +76,6 @@ public class HlsMediaPlaylistProcessor {
 		if (ctx.firstLoad == 0) {
 			ctx.firstLoad = now;
 		}
-		scheduleNextRefresh(ctx, now);
 		int seq = playlist.getMediaSequenceNumber();
 		if (ctx.startup && playlist.getElements().size() > 3) {
 			int off = playlist.getElements().size() -3;
@@ -171,13 +174,10 @@ public class HlsMediaPlaylistProcessor {
 			scheduleRetry(ctx);
 			return;
 		}
-		if (playlist == null) {
-			scheduleNextRefresh(ctx, System.currentTimeMillis());
-		} else {
-			// TODO: process() making it's own call to
-			//       scheduleNextRefresh() is a bit of a mess
-			process(ctx, playlist);
+		if (playlist != null) {
+			process0(ctx, playlist);
 		}
+		scheduleNextRefresh(ctx, System.currentTimeMillis());
 	}
 
 	private void scheduleRetry(final HlsMediaPlaylistContext ctx) {
