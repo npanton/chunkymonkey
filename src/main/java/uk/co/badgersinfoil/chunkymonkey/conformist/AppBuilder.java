@@ -26,6 +26,11 @@ import uk.co.badgersinfoil.chunkymonkey.hls.HlsTsPacketValidator;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsValidatingPesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpExecutionWrapper;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.AudioObjectTypeParser;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.Avc1CodecParser;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.CodecsParser;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.Mp4aCodecParser;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.OtiParser;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PATConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESConsumer;
@@ -74,7 +79,7 @@ public class AppBuilder {
 		));
 		mediaProc.setReporter(rep);
 		mediaProc.setConfig(RequestConfig.custom().setConnectTimeout(1000).build());
-		HlsMasterPlaylistProcessor masterProc = new HlsMasterPlaylistProcessor(scheduledExecutor, httpclient, mediaProc);
+		HlsMasterPlaylistProcessor masterProc = new HlsMasterPlaylistProcessor(scheduledExecutor, httpclient, mediaProc, createCodecsParser());
 		masterProc.setResponseChecker(new HttpResponseChecker.Multi(
 			new MasterPlaylistResponseChecker(rep),
 			new CorsHeaderChecker(rep),
@@ -87,6 +92,17 @@ public class AppBuilder {
 		masterProc.setReporter(rep);
 		masterProc.setConfig(RequestConfig.custom().setConnectTimeout(1000).build());
 		return masterProc;
+	}
+
+	private CodecsParser createCodecsParser() {
+		OtiParser aotParser = new AudioObjectTypeParser();
+		Mp4aCodecParser mp4aCodecParser = new Mp4aCodecParser();
+		mp4aCodecParser.addParser("40", aotParser);
+		CodecsParser parser = new CodecsParser();
+		parser.addParser("mp4a", mp4aCodecParser);
+		Avc1CodecParser avc1CodecParser = new Avc1CodecParser();
+		parser.addParser("avc1", avc1CodecParser);
+		return parser;
 	}
 
 	public HlsRedundantStreamProcessor buildRedundant(

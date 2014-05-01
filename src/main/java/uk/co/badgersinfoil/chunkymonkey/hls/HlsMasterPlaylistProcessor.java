@@ -21,6 +21,9 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.URILocator;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.CodecsParser;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.Rfc6381Codec;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.UnknownCodec;
 
 public class HlsMasterPlaylistProcessor {
 
@@ -31,11 +34,13 @@ public class HlsMasterPlaylistProcessor {
 	private Reporter rep = Reporter.NULL;
 	private RequestConfig config;
 	private boolean running;
+	private CodecsParser codecsParser;
 
-	public HlsMasterPlaylistProcessor(ScheduledExecutorService scheduler, HttpClient httpclient, HlsMediaPlaylistProcessor mediaPlaylistProcessor) {
+	public HlsMasterPlaylistProcessor(ScheduledExecutorService scheduler, HttpClient httpclient, HlsMediaPlaylistProcessor mediaPlaylistProcessor, CodecsParser codecsParser) {
 		this.scheduler = scheduler;
 		this.httpclient = httpclient;
 		this.mediaPlaylistProcessor = mediaPlaylistProcessor;
+		this.codecsParser = codecsParser;
 	}
 
 	public void setReporter(Reporter rep) {
@@ -138,6 +143,17 @@ public class HlsMasterPlaylistProcessor {
 	}
 
 	private HlsMediaPlaylistContext createMediaPlaylistContext(HlsMasterPlaylistContext ctx, URI manifest, PlaylistInfo playlistInfo) {
+		String codecs = playlistInfo.getCodecs();
+		if (codecs == null) {
+			rep.carp(new URILocator(ctx.getManifestLocation()), "Missing CODECS header info for entry %s", manifest);
+		} else {
+			List<Rfc6381Codec> codecList = codecsParser.parseCodecs(codecs);
+			for (Rfc6381Codec c : codecList) {
+				if (c instanceof UnknownCodec) {
+					rep.carp(new URILocator(ctx.getManifestLocation()), "Unknown codec %s for media playlist %s", c, manifest);
+				}
+			}
+		}
 		return new HlsMediaPlaylistContext(ctx, manifest, playlistInfo);
 	}
 
