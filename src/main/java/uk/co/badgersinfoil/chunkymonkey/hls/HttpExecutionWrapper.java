@@ -84,7 +84,7 @@ public abstract class HttpExecutionWrapper<T> {
 			if (resp == null || resp.getFirstHeader("Connection") == null) {
 				rep.carp(loc, "%s", e.getMessage());
 			} else {
-				rep.carp(loc, "%s (response included %h)", e.getMessage(), resp.getFirstHeader("Connection"));
+				rep.carp(loc, "%s (response included %s)", e.getMessage(), resp.getFirstHeader("Connection"));
 			}
 		} catch (IOException e) {
 			// TODO: parent Locator
