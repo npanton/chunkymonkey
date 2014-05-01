@@ -2,10 +2,15 @@ package uk.co.badgersinfoil.chunkymonkey.hls;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.apache.http.Header;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -41,12 +46,7 @@ public class HlsMediaPlaylistProcessor {
 		this.manifestResponseChecker = manifestResponseChecker;
 	}
 
-	public void process(final HlsMediaPlaylistContext ctx, final Playlist playlist) {
-		process0(ctx, playlist);
-		scheduleNextRefresh(ctx, System.currentTimeMillis());
-	}
-	private void process0(final HlsMediaPlaylistContext ctx, final Playlist playlist) {
-		Locator loc = new URILocator(ctx.manifest);
+	private void process(final HlsMediaPlaylistContext ctx, final Locator loc, final Playlist playlist, HttpResponse resp) {
 		long now = System.currentTimeMillis();
 		if (ctx.lastMediaSequence != null) {
 			int seqEnd = playlist.getMediaSequenceNumber()+playlist.getElements().size()-1;
@@ -55,7 +55,18 @@ public class HlsMediaPlaylistProcessor {
 					long maxDelayMillis = ctx.lastTargetDuration * 1000 * (2 + ctx.lastMediaSequenceEndChangeProblems*ctx.lastMediaSequenceEndChangeProblems);
 					long delay = now - ctx.lastMediaSequenceEndChange;
 					if (delay > maxDelayMillis) {
-						rep.carp(loc, "No additional segments in %d milliseconds", delay);
+						List<Header> headers = findAllHeaders(resp, "Date", "Cache-Control", "Age");
+						if (headers.isEmpty()) {
+							rep.carp(loc,
+							         "No additional segments in %d milliseconds",
+							         delay);
+						} else {
+							rep.carp(loc,
+							         "No additional segments in %d milliseconds; response included: %s",
+							         delay,
+							         headers);
+
+						}
 						ctx.lastMediaSequenceEndChangeProblems++;
 					}
 				}
@@ -91,6 +102,14 @@ public class HlsMediaPlaylistProcessor {
 			}
 		}
 		ctx.startup = false;
+	}
+
+	private static List<Header> findAllHeaders(HttpResponse resp, String... names) {
+		List<Header> result = new ArrayList<Header>();
+		for (String name : names) {
+			Collections.addAll(result, resp.getHeaders(name));
+		}
+		return result;
 	}
 
 	private void scheduleNextRefresh(final HlsMediaPlaylistContext ctx,
@@ -166,16 +185,12 @@ public class HlsMediaPlaylistProcessor {
 
 
 	public void process(HlsMediaPlaylistContext ctx) {
-		Playlist playlist;
 		try {
-			playlist = requestManifest(ctx);
+			requestManifest(ctx);
 		} catch (Exception e) {
 			rep.carp(new URILocator(ctx.manifest), "Loading media manifest failed: %s", e.toString());
 			scheduleRetry(ctx);
 			return;
-		}
-		if (playlist != null) {
-			process0(ctx, playlist);
 		}
 		scheduleNextRefresh(ctx, System.currentTimeMillis());
 	}
@@ -195,25 +210,27 @@ public class HlsMediaPlaylistProcessor {
 		}, delay, TimeUnit.MILLISECONDS);
 	}
 
-	public Playlist requestManifest(final HlsMediaPlaylistContext ctx) throws IOException, ParseException {
+	private void requestManifest(final HlsMediaPlaylistContext ctx) throws IOException, ParseException {
 		HttpGet req = new HttpGet(ctx.manifest);
 		if (getConfig() != null) {
 			req.setConfig(getConfig());
 		}
 		final URILocator loc = new URILocator(ctx.manifest);
-		return new HttpExecutionWrapper<Playlist>(rep) {
+		new HttpExecutionWrapper<Void>(rep) {
 			@Override
-			protected Playlist handleResponse(HttpClientContext context, CloseableHttpResponse resp) throws IOException {
+			protected Void handleResponse(HttpClientContext context, CloseableHttpResponse resp) throws IOException {
 				manifestResponseChecker.check(loc, resp, context);
 				checkAge(loc, ctx, resp);
 				InputStream stream = resp.getEntity().getContent();
 				try {
-					return Playlist.parse(stream);
+					Playlist playlist = Playlist.parse(stream);
+					process(ctx, loc, playlist, resp);
 				} catch (ParseException e) {
 					throw new IOException(e);
 				} finally {
 					stream.close();
 				}
+				return null;
 			}
 		}.execute(httpclient, req, loc);
 	}

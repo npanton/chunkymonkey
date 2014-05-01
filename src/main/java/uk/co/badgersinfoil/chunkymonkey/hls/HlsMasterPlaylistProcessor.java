@@ -113,7 +113,8 @@ public class HlsMasterPlaylistProcessor {
 			// as a special case handle it anyway,
 			HlsMediaPlaylistContext mediaCtx = createMediaPlaylistContext(ctx, ctx.getManifestLocation(), null);
 			ctx.mediaContexts.put(ctx.getManifestLocation(), mediaCtx);
-			mediaPlaylistProcessor.process(mediaCtx, playlist);
+			// TODO: making a second request for the same manifest now is inefficient,
+			mediaPlaylistProcessor.process(mediaCtx);
 		}
 	}
 
