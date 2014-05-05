@@ -4,7 +4,7 @@ public class MediaUnits {
 	private long base;
 	private long scale;
 	private String unitName;
-	
+
 	public MediaUnits(long base, long scale, String unitName) {
 		this.base = base;
 		this.scale = scale;
@@ -31,6 +31,10 @@ public class MediaUnits {
 		MediaUnits otheru = ts.units();
 //		MediaUnits units = new MediaUnits(scale * otheru.base, base * otheru.scale, unitName);
 		return new MediaTimestamp(ts.value()*scale * otheru.base/(base * otheru.scale), this);
+	}
+	public MediaDuration convert(MediaDuration d) {
+		MediaUnits otheru = d.units();
+		return new MediaDuration(d.value()*scale * otheru.base/(base * otheru.scale), this);
 	}
 
 	@Override
