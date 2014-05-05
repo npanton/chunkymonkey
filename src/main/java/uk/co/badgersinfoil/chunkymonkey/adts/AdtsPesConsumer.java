@@ -57,7 +57,7 @@ public class AdtsPesConsumer implements PESConsumer {
 	public AdtsPesConsumer(AdtsFrameConsumer consumer) {
 		this.consumer = consumer;
 	}
-	
+
 	public void setReportor(Reporter rep) {
 		this.rep = rep;
 	}
@@ -92,10 +92,13 @@ public class AdtsPesConsumer implements PESConsumer {
 		if (adtsCtx.currentPts != null && adtsCtx.lastPts != null) {
 			MediaDuration ptsDiff = adtsCtx.currentPts.diff(adtsCtx.lastPts);
 			if (adtsCtx.lastPesDuration != null) {
-				long ptsVsMedia = ptsDiff.toMicros() - adtsCtx.lastPesDuration.toMicros();
-				if (ptsVsMedia != 0) {
-					rep.carp(pesPacket.getLocator(), "PTS change (from %s to %s) unequal to duration of ADTS data in preceeding PES packet (%s); a difference of %dus", adtsCtx.lastPts, adtsCtx.currentPts, adtsCtx.lastPesDuration, ptsVsMedia);
-				} 
+				MediaDuration pesDuration = ptsDiff.units().convert(adtsCtx.lastPesDuration);
+				long ptsVsMedia = ptsDiff.value() - pesDuration.value();
+				// assume that a difference of ~1 tick will be
+				// due to some kind of rounding problem, and ignore
+				if (Math.abs(ptsVsMedia) > 1) {
+					rep.carp(pesPacket.getLocator(), "PTS change (from %s to %s) unequal to duration of ADTS data in preceeding PES packet (%s); a difference of %d ticks", adtsCtx.lastPts, adtsCtx.currentPts, adtsCtx.lastPesDuration, ptsVsMedia);
+				}
 			}
 			adtsCtx.lastPesDuration = null;
 		}
