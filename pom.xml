@@ -93,6 +93,10 @@
               <mainClass>uk.co.badgersinfoil.chunkymonkey.snickersnack.Main</mainClass>
               <id>snickersnack</id>
             </program>
+            <program>
+              <mainClass>uk.co.badgersinfoil.chunkymonkey.conformist.Main</mainClass>
+              <id>conformist</id>
+            </program>
           </programs>
         </configuration>
       </plugin>
