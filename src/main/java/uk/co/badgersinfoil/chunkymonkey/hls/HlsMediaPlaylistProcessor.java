@@ -117,9 +117,9 @@ public class HlsMediaPlaylistProcessor {
 			long now) {
 		long durationMillis;
 		if (ctx.lastTargetDuration == null) {
-			durationMillis = ctx.lastTargetDuration * 1000;
-		} else {
 			durationMillis = DEFAULT_RETRY_MILLIS;
+		} else {
+			durationMillis = ctx.lastTargetDuration * 1000;
 		}
 		// try to keep things to the implied schedule, rather than
 		// falling behind a little bit, each iteration,
