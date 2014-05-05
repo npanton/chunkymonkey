@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.protocol.RequestAcceptEncoding;
+import org.apache.http.client.protocol.ResponseContentEncoding;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
@@ -51,6 +53,11 @@ public class AppBuilder {
 			= HttpClientBuilder.create()
 			                   .setUserAgent("conformist")
 			                   .setRequestExecutor(HttpExecutionWrapper.CONN_INFO_SNARFING_REQUEST_EXECUTOR)
+			                   // remember 'Content-Length' from before any decompression,
+			                   .addInterceptorFirst(new ContentLengthSnarfer())
+			                   // add content compression support,
+			                   .addInterceptorFirst(new RequestAcceptEncoding())
+			                   .addInterceptorFirst(new ResponseContentEncoding())
 			                   .build();
 		RequestConfig requestConfig = RequestConfig.custom()
 				.setConnectTimeout(1000)
@@ -61,7 +68,7 @@ public class AppBuilder {
 // llnw mess with Date hdr				new CachingHeaderCheck(rep, 1),
 				new CorsHeaderChecker(rep),
 				new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
-// akamai chunks manifests?				new ContentLengthCheck(rep),
+				new ContentLengthCheck(rep),
 				new CacheValidatorCheck(rep),
 				new KeepAliveHeaderCheck(rep),
 				new ContentTypeHeaderCheck("video/MP2T", rep)
@@ -72,7 +79,7 @@ public class AppBuilder {
 // llnw mess with Date hdr			new CachingHeaderCheck(rep, 1),
 			new CorsHeaderChecker(rep),
 			new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
-// akamai chunks manifests?			new ContentLengthCheck(rep),
+			new ContentLengthCheck(rep),
 			new CacheValidatorCheck(rep),
 			new KeepAliveHeaderCheck(rep),
 			new ContentTypeHeaderCheck("application/vnd.apple.mpegurl", rep)
@@ -85,6 +92,7 @@ public class AppBuilder {
 			new CorsHeaderChecker(rep),
 			new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
 			new CachingHeaderCheck(rep, 2),
+			new ContentLengthCheck(rep),
 			new CacheValidatorCheck(rep),
 			new KeepAliveHeaderCheck(rep),
 			new ContentTypeHeaderCheck("application/vnd.apple.mpegurl", rep)
