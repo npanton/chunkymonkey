@@ -48,8 +48,10 @@ public abstract class HttpExecutionWrapper<T> {
 	public T execute(HttpClient httpclient, HttpUriRequest req, Locator loc) {
 		HttpClientContext context = HttpClientContext.create();
 		CloseableHttpResponse resp = null;
+		HttpStat stat = HttpStat.start();
 		try {
 			resp = (CloseableHttpResponse)httpclient.execute(req, context);
+			stat.headers(resp.getStatusLine().getStatusCode());
 			// TODO: pull X-Pkgr-Instance handling out into optional component
 			if (resp.containsHeader("X-Pkgr-Instance")) {
 				loc = new PackagerInstanceLocator(resp.getLastHeader("X-Pkgr-Instance").getValue(), loc);
@@ -62,29 +64,34 @@ public abstract class HttpExecutionWrapper<T> {
 			} else {
 				rep.carp(loc, "Request failed %d %s - headers: %s", resp.getStatusLine().getStatusCode(), resp.getStatusLine().getReasonPhrase(), Arrays.toString(resp.getAllHeaders()));
 			}
+			stat.end();
 			resp.close();
 			return result;
 		} catch (SocketTimeoutException e) {
 			InetAddress remote = (InetAddress)context.getAttribute("conformist-remote-address");
+			stat.sock(remote);
+			stat.timeout();
 			if (remote != null) {
 				loc = new SockLocator(remote, loc);
 			}
 			// e.bytesTransferred always seems to be 0, so we don't
 			// bother reporting it
 			if (resp == null || resp.getStatusLine() != null) {
-				rep.carp(loc, "HTTP request failed: %s", e.getMessage());
+				rep.carp(loc, "HTTP request failed after %dms: %s", stat.getDuration(), e.getMessage());
 			} else {
-				rep.carp(loc, "HTTP request failed after initial %s response: %s", resp.getStatusLine(), e.getMessage());
+				rep.carp(loc, "HTTP request failed after %dms, initial %s response: %s", stat.getDuration(), resp.getStatusLine(), e.getMessage());
 			}
 		} catch (ConnectionClosedException e) {
 			InetAddress remote = (InetAddress)context.getAttribute("conformist-remote-address");
+			stat.sock(remote);
+			stat.prematureClose();
 			if (remote != null) {
 				loc = new SockLocator(remote, loc);
 			}
 			if (resp == null || resp.getFirstHeader("Connection") == null) {
-				rep.carp(loc, "%s", e.getMessage());
+				rep.carp(loc, "%s, after %dms", e.getMessage(), stat.getDuration());
 			} else {
-				rep.carp(loc, "%s (response included %s)", e.getMessage(), resp.getFirstHeader("Connection"));
+				rep.carp(loc, "%s, after %dms (response included %s)", e.getMessage(), stat.getDuration(), resp.getFirstHeader("Connection"));
 			}
 		} catch (IOException e) {
 			// TODO: parent Locator
