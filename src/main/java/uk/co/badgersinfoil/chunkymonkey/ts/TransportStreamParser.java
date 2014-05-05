@@ -42,9 +42,6 @@ public class TransportStreamParser {
 				throw new RuntimeException("Transport stream synchronisation lost @packet#"+packetNo+" in "+locator);
 			}
 			consumer.packet(ctx, packet);
-			//if (packet.adaptionControl().adaptionFieldPresent() && packet.getAdaptionField().pcrFlag()) {
-			//	System.out.println(packet.getAdaptionField().pcr());
-			//}
 			packetNo++;
 		}
 		consumer.end(ctx);
