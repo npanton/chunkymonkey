@@ -91,7 +91,7 @@ public class AppBuilder {
 			new MasterPlaylistResponseChecker(rep),
 			new CorsHeaderChecker(rep),
 			new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
-			new CachingHeaderCheck(rep, 2),
+			new CachingHeaderCheck(rep, 1),
 			new ContentLengthCheck(rep),
 			new CacheValidatorCheck(rep),
 			new KeepAliveHeaderCheck(rep),
