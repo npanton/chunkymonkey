@@ -114,7 +114,12 @@ public class HlsMediaPlaylistProcessor {
 
 	private void scheduleNextRefresh(final HlsMediaPlaylistContext ctx,
 			long now) {
-		long durationMillis = ctx.lastTargetDuration * 1000;
+		long durationMillis;
+		if (ctx.lastTargetDuration == null) {
+			durationMillis = ctx.lastTargetDuration * 1000;
+		} else {
+			durationMillis = DEFAULT_RETRY_MILLIS;
+		}
 		// try to keep things to the implied schedule, rather than
 		// falling behind a little bit, each iteration,
 		long adjustment = (now - ctx.firstLoad) % durationMillis;
