@@ -52,7 +52,8 @@ public class HlsMediaPlaylistProcessor {
 			int seqEnd = playlist.getMediaSequenceNumber()+playlist.getElements().size()-1;
 			if (ctx.haveProcessedMediaSeq(seqEnd)) {
 				if (ctx.lastTargetDuration != null) {
-					long maxDelayMillis = ctx.lastTargetDuration * 1000 * (2 + ctx.lastMediaSequenceEndChangeProblems*ctx.lastMediaSequenceEndChangeProblems);
+					final long missedUpdates = 2; // number of target-durations overdue before warning
+					long maxDelayMillis = ctx.lastTargetDuration * 1000 * (1 + missedUpdates + ctx.lastMediaSequenceEndChangeProblems*ctx.lastMediaSequenceEndChangeProblems);
 					long delay = now - ctx.lastMediaSequenceEndChange;
 					if (delay > maxDelayMillis) {
 						List<Header> headers = findAllHeaders(resp, "Date", "Cache-Control", "Age");
