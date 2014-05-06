@@ -6,7 +6,6 @@ public class HttpStat {
 
 	public enum EndState {
 		TIMEOUT, COMPLETED, PREMATURE_CLOSE
-
 	}
 
 	private long startTime;
@@ -31,8 +30,10 @@ public class HttpStat {
 	}
 
 	public void end() {
-		end = System.currentTimeMillis();
-		endState = EndState.COMPLETED;
+		if (end == null) {
+			end = System.currentTimeMillis();
+			endState = EndState.COMPLETED;
+		}
 	}
 
 	public void sock(InetAddress remote) {
