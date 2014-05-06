@@ -77,9 +77,9 @@ public abstract class HttpExecutionWrapper<T> {
 			// e.bytesTransferred always seems to be 0, so we don't
 			// bother reporting it
 			if (resp == null || resp.getStatusLine() != null) {
-				rep.carp(loc, "HTTP request failed after %dms: %s", stat.getDuration(), e.getMessage());
+				rep.carp(loc, "HTTP request failed after %dms: %s", stat.getDurationMillis(), e.getMessage());
 			} else {
-				rep.carp(loc, "HTTP request failed after %dms, initial %s response: %s", stat.getDuration(), resp.getStatusLine(), e.getMessage());
+				rep.carp(loc, "HTTP request failed after %dms, initial %s response: %s", stat.getDurationMillis(), resp.getStatusLine(), e.getMessage());
 			}
 		} catch (ConnectionClosedException e) {
 			InetAddress remote = (InetAddress)context.getAttribute("conformist-remote-address");
@@ -89,9 +89,9 @@ public abstract class HttpExecutionWrapper<T> {
 				loc = new SockLocator(remote, loc);
 			}
 			if (resp == null || resp.getFirstHeader("Connection") == null) {
-				rep.carp(loc, "%s, after %dms", e.getMessage(), stat.getDuration());
+				rep.carp(loc, "%s, after %dms", e.getMessage(), stat.getDurationMillis());
 			} else {
-				rep.carp(loc, "%s, after %dms (response included %s)", e.getMessage(), stat.getDuration(), resp.getFirstHeader("Connection"));
+				rep.carp(loc, "%s, after %dms (response included %s)", e.getMessage(), stat.getDurationMillis(), resp.getFirstHeader("Connection"));
 			}
 		} catch (IOException e) {
 			// TODO: parent Locator

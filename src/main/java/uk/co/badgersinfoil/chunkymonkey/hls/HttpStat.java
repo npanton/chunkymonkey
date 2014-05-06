@@ -49,7 +49,7 @@ public class HttpStat {
 		endState = EndState.PREMATURE_CLOSE;
 	}
 
-	public long getDuration() {
+	public long getDurationMillis() {
 		if (end == null) {
 			throw new IllegalStateException("HTTP response not yet ended");
 		}
