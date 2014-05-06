@@ -186,6 +186,7 @@ public class HlsMasterPlaylistProcessor {
 					rep.carp(new URILocator(ctx.getManifestSpecified(), loc), "Followed %d redirect(s) to: %s", redirects.size(), finalUri==null ? redirects.get(redirects.size()-1) : finalUri);
 				}
 				responseChecker.check(loc, resp, context);
+				ctx.lastUpdated = System.currentTimeMillis();
 				InputStream stream = resp.getEntity().getContent();
 				try {
 					return Playlist.parse(stream);

@@ -7,7 +7,7 @@ import net.chilicat.m3u8.PlaylistInfo;
 public class HlsMediaPlaylistContext {
 
 	private HlsMasterPlaylistContext ctx;
-	URI manifest;
+	public URI manifest;
 	public Long lastTargetDuration = null;
 	public Integer lastMediaSequence = null;
 	private AtomicInteger lastProcessedMediaSeq = new AtomicInteger();
@@ -30,10 +30,17 @@ public class HlsMediaPlaylistContext {
 	}
 
 	public boolean haveProcessedMediaSeq(int seq) {
-		return lastProcessedMediaSeq.get() >= seq;
+		return lastProcessedMediaSeq() >= seq;
+	}
+
+	public PlaylistInfo getPlaylistInfo() {
+		return playlistInfo;
 	}
 
 	public void lastProcessedMediaSeq(int seq) {
 		lastProcessedMediaSeq.set(seq);
+	}
+	public int lastProcessedMediaSeq() {
+		return lastProcessedMediaSeq.get();
 	}
 }

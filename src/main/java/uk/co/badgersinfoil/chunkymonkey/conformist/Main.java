@@ -4,8 +4,10 @@ import io.netty.util.ResourceLeakDetector;
 import java.net.URI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import org.eclipse.jetty.server.Server;
 import uk.co.badgersinfoil.chunkymonkey.ConsoleReporter;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.conformist.api.ServerBuilder;
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStreamContext;
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStreamProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistContext;
@@ -23,7 +25,9 @@ public class Main {
 			HlsMasterPlaylistProcessor processor = b.buildSingle(scheduledExecutor, rep);
 			URI uri = new URI(args[0]);
 			HlsMasterPlaylistContext ctx = processor.createContext(uri);
+			Server server = ServerBuilder.create(ctx).build();
 			processor.start(ctx);
+			server.start();
 		} else if (args.length == 2) {
 			HlsRedundantStreamProcessor processor = b.buildRedundant(scheduledExecutor, rep);
 			URI uri1 = new URI(args[0]);
