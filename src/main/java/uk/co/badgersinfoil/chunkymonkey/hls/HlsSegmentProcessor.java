@@ -17,6 +17,8 @@ import uk.co.badgersinfoil.chunkymonkey.ts.TransportStreamParser;
 
 public class HlsSegmentProcessor {
 
+	private static final float MAX_DOWNLOAD_DURATION = 0.8f;  // 80%
+
 	private HttpClient httpclient;
 	private Reporter rep = Reporter.NULL;
 	private TSPacketConsumer consumer;
@@ -36,9 +38,9 @@ public class HlsSegmentProcessor {
 		this.manifestResponseChecker = manifestResponseChecker;
 	}
 
-	protected void processSegment(HlsMediaPlaylistContext ctx,
-	                              int seq,
-	                              Element element)
+	protected void processSegment(final HlsMediaPlaylistContext ctx,
+	                              final int seq,
+	                              final Element element)
 	{
 		URI elementUri = ctx.manifest.resolve(element.getURI());
 		HttpGet req = new HttpGet(elementUri);
@@ -49,11 +51,16 @@ public class HlsSegmentProcessor {
 		final Locator loc = new URILocator(elementUri, manifestLoc);
 		new HttpExecutionWrapper<Void>(rep) {
 			@Override
-			protected Void handleResponse(HttpClientContext context, CloseableHttpResponse resp) throws IOException {
+			protected Void handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException {
 				manifestResponseChecker.check(loc, resp, context);
 				InputStream stream = resp.getEntity().getContent();
 				TransportStreamParser parser = new TransportStreamParser(loc, consumer);
 				parser.parse(stream);
+				stat.end();
+				long expectedDurationMillis = element.getDuration() * 1000;
+				if (stat.getDurationMillis() > expectedDurationMillis * MAX_DOWNLOAD_DURATION) {
+					rep.carp(loc, "Took %dms to download, but playback duration is %dms", stat.getDurationMillis(), expectedDurationMillis);
+				}
 				return null;
 			}
 		}.execute(httpclient, req, loc);

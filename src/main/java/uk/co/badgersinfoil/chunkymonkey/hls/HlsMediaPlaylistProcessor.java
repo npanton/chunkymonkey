@@ -224,7 +224,7 @@ public class HlsMediaPlaylistProcessor {
 		final URILocator loc = new URILocator(ctx.manifest);
 		new HttpExecutionWrapper<Void>(rep) {
 			@Override
-			protected Void handleResponse(HttpClientContext context, CloseableHttpResponse resp) throws IOException {
+			protected Void handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException {
 				manifestResponseChecker.check(loc, resp, context);
 				checkAge(loc, ctx, resp);
 				InputStream stream = resp.getEntity().getContent();

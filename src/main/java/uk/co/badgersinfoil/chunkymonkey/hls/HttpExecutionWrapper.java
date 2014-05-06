@@ -60,7 +60,7 @@ public abstract class HttpExecutionWrapper<T> {
 			// conditional HTTP (not-modified resposes) etc.
 			T result = null;
 			if (resp.getStatusLine().getStatusCode() == 200) {
-				result = handleResponse(context, resp);
+				result = handleResponse(context, resp, stat);
 			} else {
 				rep.carp(loc, "Request failed %d %s - headers: %s", resp.getStatusLine().getStatusCode(), resp.getStatusLine().getReasonPhrase(), Arrays.toString(resp.getAllHeaders()));
 			}
@@ -100,5 +100,5 @@ public abstract class HttpExecutionWrapper<T> {
 		return null;
 	}
 
-	protected abstract T handleResponse(HttpClientContext context, CloseableHttpResponse resp) throws IOException;
+	protected abstract T handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException;
 }

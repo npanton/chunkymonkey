@@ -173,7 +173,7 @@ public class HlsMasterPlaylistProcessor {
 		final URILocator loc = new URILocator(ctx.getManifestLocation());
 		return new HttpExecutionWrapper<Playlist>(rep) {
 			@Override
-			protected Playlist handleResponse(HttpClientContext context, CloseableHttpResponse resp) throws IOException {
+			protected Playlist handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException {
 				List<URI> redirects = context.getRedirectLocations();
 				if (redirects != null && !redirects.isEmpty()) {
 					URI finalUri = null;
