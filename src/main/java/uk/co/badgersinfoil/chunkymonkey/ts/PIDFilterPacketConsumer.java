@@ -8,7 +8,7 @@ import uk.co.badgersinfoil.chunkymonkey.Reporter;
 public class PIDFilterPacketConsumer implements TSPacketConsumer {
 	private Map<Integer, TSPacketConsumer> defaultFilterMap = new HashMap<>();
 	private Reporter rep = Reporter.NULL;
-	
+
 	public static class FilterEntry {
 		private TSPacketConsumer consumer;
 		private TSContext context;
@@ -32,7 +32,7 @@ public class PIDFilterPacketConsumer implements TSPacketConsumer {
 	public PIDFilterPacketConsumer(Reporter rep) {
 		this.rep = rep;
 	}
-	
+
 	public PIDFilterPacketConsumer defaultFilter(int pid, TSPacketConsumer consumer) {
 		defaultFilterMap.put(pid, consumer);
 		return this;
@@ -43,7 +43,7 @@ public class PIDFilterPacketConsumer implements TSPacketConsumer {
 		tctx.filter(pid, entry);
 		return this;
 	}
-	
+
 	public void setReporter(Reporter rep) {
 		this.rep = rep;
 	}
@@ -54,7 +54,8 @@ public class PIDFilterPacketConsumer implements TSPacketConsumer {
 		FilterEntry entry = tctx.filterForPid(packet.PID());
 		if (entry == null) {
 			rep.carp(packet.getLocator(), "Unhandled PID: %d", packet.PID());
-			filter(ctx, packet.PID(), new FilterEntry(TSPacketConsumer.NULL, null));
+			TSPacketConsumer consumer = TSPacketConsumer.NULL;
+			filter(ctx, packet.PID(), new FilterEntry(consumer, consumer.createContext(tctx)));
 		} else {
 			TSPacketConsumer consumer = entry.getConsumer();
 			consumer.packet(entry.getContext(), packet);

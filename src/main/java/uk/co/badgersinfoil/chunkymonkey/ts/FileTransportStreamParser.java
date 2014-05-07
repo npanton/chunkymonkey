@@ -22,7 +22,8 @@ public class FileTransportStreamParser {
 		FileChannel ch = file.getChannel();
 		MappedByteBuffer in = ch.map(FileChannel.MapMode.READ_ONLY, 0, ch.size());
 		ByteBuf buf = Unpooled.wrappedBuffer(in);
-		
+
+		TSContext ctx = consumer.createContext(null);
 		long packetCount = ch.size() / TSPacket.TS_PACKET_LENGTH;
 		for (int packetNo=0; packetNo<packetCount ; packetNo++) {
 			ByteBuf pk = buf.slice(packetNo*TSPacket.TS_PACKET_LENGTH, TSPacket.TS_PACKET_LENGTH);
@@ -31,7 +32,7 @@ public class FileTransportStreamParser {
 				// TODO: better diagnostics.  re-sync?
 				throw new RuntimeException("Transport stream synchronisation lost @packet#"+packetNo+" in "+locator);
 			}
-			consumer.packet(null, packet);
+			consumer.packet(ctx, packet);
 		}
 	}
 }

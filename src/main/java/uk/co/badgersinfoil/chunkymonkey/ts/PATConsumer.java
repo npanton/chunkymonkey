@@ -55,7 +55,8 @@ public class PATConsumer implements TSPacketConsumer {
 				FilterEntry current = filter.getCurrent(tctx, entry.networkPid());
 				if (current==null || !current.getConsumer().equals(TSPacketConsumer.NULL)) {
 					System.out.println("PAT: network pid entries not yet handled ("+entry.networkPid()+")");
-					filter.filter(tctx, entry.networkPid(), new FilterEntry(TSPacketConsumer.NULL, null));
+					TSPacketConsumer consumer = TSPacketConsumer.NULL;
+					filter.filter(tctx, entry.networkPid(), new FilterEntry(consumer, consumer.createContext(tctx)));
 				}
 			}
 		}
