@@ -41,23 +41,27 @@ public class PATConsumer implements TSPacketConsumer {
 		ProgramAssociationTable pat = new ProgramAssociationTable(packet.getPayload());
 		ProgramEntry entry = pat.entries();
 		while (entry.next()) {
-			if (entry.kind() == ProgramEntryKind.PROGRAM_MAP) {
-				FilterEntry current = filter.getCurrent(tctx, entry.programMapPid());
-				if (current==null || current.getConsumer().equals(TSPacketConsumer.NULL) || isDifferentProgram(entry, current)) {
-					if (current != null) {
-						current.getConsumer().end(current.getContext());
-					}
-					PMTConsumer pmtConsumer = new PMTConsumer(filter, registery);
-					ProgramTSContext programCtx = pmtConsumer.createContext(tctx, entry);
-					filter.filter(tctx, entry.programMapPid(), new FilterEntry(pmtConsumer, programCtx));
+			handleEntry(tctx, entry);
+		}
+	}
+
+	private void handleEntry(TransportContext tctx, ProgramEntry entry) {
+		if (entry.kind() == ProgramEntryKind.PROGRAM_MAP) {
+			FilterEntry current = filter.getCurrent(tctx, entry.programMapPid());
+			if (current==null || current.getConsumer().equals(TSPacketConsumer.NULL) || isDifferentProgram(entry, current)) {
+				if (current != null) {
+					current.getConsumer().end(current.getContext());
 				}
-			} else {
-				FilterEntry current = filter.getCurrent(tctx, entry.networkPid());
-				if (current==null || !current.getConsumer().equals(TSPacketConsumer.NULL)) {
-					System.out.println("PAT: network pid entries not yet handled ("+entry.networkPid()+")");
-					TSPacketConsumer consumer = TSPacketConsumer.NULL;
-					filter.filter(tctx, entry.networkPid(), new FilterEntry(consumer, consumer.createContext(tctx)));
-				}
+				PMTConsumer pmtConsumer = new PMTConsumer(filter, registery);
+				ProgramTSContext programCtx = pmtConsumer.createContext(tctx, entry);
+				filter.filter(tctx, entry.programMapPid(), new FilterEntry(pmtConsumer, programCtx));
+			}
+		} else {
+			FilterEntry current = filter.getCurrent(tctx, entry.networkPid());
+			if (current==null || !current.getConsumer().equals(TSPacketConsumer.NULL)) {
+				System.out.println("PAT: network pid entries not yet handled ("+entry.networkPid()+")");
+				TSPacketConsumer consumer = TSPacketConsumer.NULL;
+				filter.filter(tctx, entry.networkPid(), new FilterEntry(consumer, consumer.createContext(tctx)));
 			}
 		}
 	}
