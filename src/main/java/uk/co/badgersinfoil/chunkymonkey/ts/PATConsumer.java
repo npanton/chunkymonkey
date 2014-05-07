@@ -26,9 +26,9 @@ public class PATConsumer implements TSPacketConsumer {
 	private PMTConsumer pmtConsumer;
 	private TSPacketConsumer networkConsumer;
 
-	public PATConsumer(PIDFilterPacketConsumer filter, StreamProcRegistry registery) {
+	public PATConsumer(PIDFilterPacketConsumer filter, PMTConsumer pmtConsumer) {
 		this.filter = filter;
-		pmtConsumer = new PMTConsumer(filter, registery);
+		this.pmtConsumer = pmtConsumer;
 		networkConsumer = TSPacketConsumer.NULL;
 	}
 
