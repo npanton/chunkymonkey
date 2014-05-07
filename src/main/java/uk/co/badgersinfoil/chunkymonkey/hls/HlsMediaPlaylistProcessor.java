@@ -222,6 +222,7 @@ public class HlsMediaPlaylistProcessor {
 			req.setConfig(getConfig());
 		}
 		final URILocator loc = new URILocator(ctx.manifest);
+		HttpStat stat = new HttpStat();
 		new HttpExecutionWrapper<Void>(rep) {
 			@Override
 			protected Void handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException {
@@ -238,7 +239,8 @@ public class HlsMediaPlaylistProcessor {
 				}
 				return null;
 			}
-		}.execute(httpclient, req, loc);
+		}.execute(httpclient, req, loc, stat);
+		ctx.playlistStats.add(stat);
 	}
 
 	/**

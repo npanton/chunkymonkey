@@ -49,6 +49,7 @@ public class HlsSegmentProcessor {
 		}
 		URILocator manifestLoc = new URILocator(ctx.manifest);
 		final Locator loc = new URILocator(elementUri, manifestLoc);
+		HttpStat stat = new HttpStat();
 		new HttpExecutionWrapper<Void>(rep) {
 			@Override
 			protected Void handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException {
@@ -63,7 +64,8 @@ public class HlsSegmentProcessor {
 				}
 				return null;
 			}
-		}.execute(httpclient, req, loc);
+		}.execute(httpclient, req, loc, stat);
+		ctx.segmentStats.add(stat);
 	}
 
 	public void setConfig(RequestConfig config) {

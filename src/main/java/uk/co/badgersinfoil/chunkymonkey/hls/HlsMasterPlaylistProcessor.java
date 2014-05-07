@@ -171,6 +171,7 @@ public class HlsMasterPlaylistProcessor {
 			req.setConfig(config);
 		}
 		final URILocator loc = new URILocator(ctx.getManifestLocation());
+		HttpStat stat = new HttpStat();
 		return new HttpExecutionWrapper<Playlist>(rep) {
 			@Override
 			protected Playlist handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException {
@@ -196,7 +197,7 @@ public class HlsMasterPlaylistProcessor {
 					stream.close();
 				}
 			}
-		}.execute(httpclient, req, loc);
+		}.execute(httpclient, req, loc, stat );
 	}
 
 	public void stop(final HlsMasterPlaylistContext ctx) {

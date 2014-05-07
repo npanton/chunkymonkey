@@ -5,7 +5,28 @@ import java.net.InetAddress;
 public class HttpStat {
 
 	public enum EndState {
-		TIMEOUT, COMPLETED, PREMATURE_CLOSE
+		/**
+		 * Timeout due to data transfer going idle
+		 */
+		TIMEOUT,
+		/**
+		 * Timemout while trying to connect
+		 */
+		CONNECT_TIMEOUT,
+		/**
+		 * Completed without network failure (may still have had HTTP
+		 * error status)
+		 */
+		COMPLETED,
+		/**
+		 * Connection closed before whole body received (may still have
+		 * had HTTP success status)
+		 */
+		PREMATURE_CLOSE,
+		/**
+		 * Unspecified network failure
+		 */
+		FAILED
 	}
 
 	private long startTime;
@@ -15,13 +36,11 @@ public class HttpStat {
 	private InetAddress remote;
 	private EndState endState;
 
-	private HttpStat() {
+	public HttpStat() {
 	}
 
-	public static HttpStat start() {
-		HttpStat s = new HttpStat();
-		s.startTime = System.currentTimeMillis();
-		return s;
+	public void start() {
+		startTime = System.currentTimeMillis();
 	}
 
 	public void headers(int statusCode) {
@@ -45,9 +64,19 @@ public class HttpStat {
 		endState = EndState.TIMEOUT;
 	}
 
+	public void connectTimeout() {
+		end = System.currentTimeMillis();
+		endState = EndState.CONNECT_TIMEOUT;
+	}
+
 	public void prematureClose() {
 		end = System.currentTimeMillis();
 		endState = EndState.PREMATURE_CLOSE;
+	}
+
+	public void failed() {
+		end = System.currentTimeMillis();
+		endState = EndState.FAILED;
 	}
 
 	public long getDurationMillis() {
@@ -55,5 +84,17 @@ public class HttpStat {
 			throw new IllegalStateException("HTTP response not yet ended");
 		}
 		return end - startTime;
+	}
+
+	public Integer getStatusCode() {
+		return statusCode;
+	}
+
+	public EndState getEndState() {
+		return endState;
+	}
+
+	public InetAddress getRemote() {
+		return remote;
 	}
 }

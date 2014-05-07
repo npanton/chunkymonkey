@@ -19,6 +19,8 @@ public class HlsMediaPlaylistContext {
 	// update, so we can decrease the frequency of reports over time if
 	// the lack-of-updates persists
 	public int lastMediaSequenceEndChangeProblems;
+	public HttpStats segmentStats = new HttpStats();
+	public HttpStats playlistStats = new HttpStats();
 
 	public HlsMediaPlaylistContext(HlsMasterPlaylistContext ctx,
 	                               URI manifest,

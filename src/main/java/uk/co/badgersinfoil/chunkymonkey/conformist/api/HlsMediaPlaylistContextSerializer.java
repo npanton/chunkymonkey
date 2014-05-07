@@ -40,6 +40,11 @@ public class HlsMediaPlaylistContextSerializer extends
 
 		jgen.writeObjectFieldStart("media_manifest");
 		jgen.writeObjectField("uri", ctx.manifest);
+		jgen.writeObjectField("http_stats", ctx.playlistStats);
+		jgen.writeEndObject();
+
+		jgen.writeObjectFieldStart("media_segments");
+		jgen.writeObjectField("http_stats", ctx.segmentStats);
 		jgen.writeEndObject();
 
 		jgen.writeEndObject();

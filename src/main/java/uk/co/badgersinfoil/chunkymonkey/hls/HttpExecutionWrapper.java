@@ -14,6 +14,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
@@ -45,10 +46,10 @@ public abstract class HttpExecutionWrapper<T> {
 			}
 		};
 
-	public T execute(HttpClient httpclient, HttpUriRequest req, Locator loc) {
+	public T execute(HttpClient httpclient, HttpUriRequest req, Locator loc, HttpStat stat) {
 		HttpClientContext context = HttpClientContext.create();
 		CloseableHttpResponse resp = null;
-		HttpStat stat = HttpStat.start();
+		stat.start();
 		try {
 			resp = (CloseableHttpResponse)httpclient.execute(req, context);
 			stat.headers(resp.getStatusLine().getStatusCode());
@@ -68,7 +69,7 @@ public abstract class HttpExecutionWrapper<T> {
 			resp.close();
 			return result;
 		} catch (SocketTimeoutException e) {
-			InetAddress remote = (InetAddress)context.getAttribute("conformist-remote-address");
+			InetAddress remote = getRemote(context);
 			stat.sock(remote);
 			stat.timeout();
 			if (remote != null) {
@@ -82,22 +83,40 @@ public abstract class HttpExecutionWrapper<T> {
 				rep.carp(loc, "HTTP request failed after %dms, initial %s response: %s", stat.getDurationMillis(), resp.getStatusLine(), e.getMessage());
 			}
 		} catch (ConnectionClosedException e) {
-			InetAddress remote = (InetAddress)context.getAttribute("conformist-remote-address");
-			stat.sock(remote);
-			stat.prematureClose();
+			InetAddress remote = getRemote(context);
 			if (remote != null) {
 				loc = new SockLocator(remote, loc);
+				stat.sock(remote);
 			}
+			stat.prematureClose();
 			if (resp == null || resp.getFirstHeader("Connection") == null) {
 				rep.carp(loc, "%s, after %dms", e.getMessage(), stat.getDurationMillis());
 			} else {
 				rep.carp(loc, "%s, after %dms (response included %s)", e.getMessage(), stat.getDurationMillis(), resp.getFirstHeader("Connection"));
 			}
+		} catch (ConnectTimeoutException e) {
+			InetAddress remote = getRemote(context);
+			if (remote != null) {
+				loc = new SockLocator(remote, loc);
+				stat.sock(remote);
+			}
+			stat.connectTimeout();
+			rep.carp(loc, "%s, after %dms", e.getMessage(), stat.getDurationMillis());
 		} catch (IOException e) {
+			InetAddress remote = getRemote(context);
+			if (remote != null) {
+				loc = new SockLocator(remote, loc);
+				stat.sock(remote);
+			}
+			stat.failed();
 			// TODO: parent Locator
 			rep.carp(loc, "HTTP request failed: %s", e.toString());
 		}
 		return null;
+	}
+
+	private static InetAddress getRemote(HttpClientContext context) {
+		return (InetAddress)context.getAttribute("conformist-remote-address");
 	}
 
 	protected abstract T handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException;
