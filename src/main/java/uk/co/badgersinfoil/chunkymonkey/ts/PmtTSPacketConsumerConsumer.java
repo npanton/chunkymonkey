@@ -1,7 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramAssociationTable.ProgramEntry;
-import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable.StreamDescriptorIterator;
 
 public class PmtTSPacketConsumerConsumer implements TSPacketConsumer {
 
@@ -9,14 +8,11 @@ public class PmtTSPacketConsumerConsumer implements TSPacketConsumer {
 
 	}
 
-	private PIDFilterPacketConsumer filter;
-	private StreamProcRegistry registry;
+	private PmtConsumer pmtConsumer;
 
-	public PmtTSPacketConsumerConsumer(PIDFilterPacketConsumer filter,
-	                   StreamProcRegistry registry)
+	public PmtTSPacketConsumerConsumer(PmtConsumer pmtConsumer)
 	{
-		this.filter = filter;
-		this.registry = registry;
+		this.pmtConsumer = pmtConsumer;
 	}
 
 	@Override
@@ -41,28 +37,7 @@ public class PmtTSPacketConsumerConsumer implements TSPacketConsumer {
 			}
 		}
 		if (pmt != null && pmt.isComplete()) {
-			handlePMT(progCtx, pmt);
-		}
-	}
-
-	private void handlePMT(ProgramTSContext progCtx, ProgramMapTable pmt) {
-		StreamDescriptorIterator i = pmt.streamDescriptors();
-		while (i.hasNext()) {
-			StreamTSPacketConsumer newConsumer = registry.getStreamHandler(i.streamType());
-			PIDFilterPacketConsumer.FilterEntry entry = filter.getCurrent(progCtx.getTransportContext(), i.elementryPID());
-			if (entry==null || !newConsumer.equals(entry.getConsumer())) {
-				if (entry != null && entry.getConsumer() != TSPacketConsumer.NULL) {
-System.err.println("replace "+entry.getConsumer()+" for PID "+i.elementryPID());
-					entry.getConsumer().end(entry.getContext());
-					progCtx.removeStream(entry);
-				}
-				StreamTSContext streamCtx = newConsumer.createContext(progCtx, i);
-				PIDFilterPacketConsumer.FilterEntry newEntry
-					= new PIDFilterPacketConsumer.FilterEntry(newConsumer, streamCtx);
-				filter.filter(progCtx.getTransportContext(), i.elementryPID(), newEntry);
-				progCtx.addStream(entry);
-			}
-			i.next();
+			pmtConsumer.handle(progCtx, pmt);
 		}
 	}
 
