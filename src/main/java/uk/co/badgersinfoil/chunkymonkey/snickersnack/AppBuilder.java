@@ -16,7 +16,7 @@ import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PATConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer;
-import uk.co.badgersinfoil.chunkymonkey.ts.PMTConsumer;
+import uk.co.badgersinfoil.chunkymonkey.ts.PmtTSPacketConsumerConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PesTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable;
 import uk.co.badgersinfoil.chunkymonkey.ts.StreamProcRegistry;
@@ -46,7 +46,7 @@ public class AppBuilder {
 		defaultStreamProc.setPesConsumer(new ValidatingPesConsumer(rep));
 		defaultStreamProc.setReporter(rep);
 		StreamProcRegistry streamProcRegistry = new StreamProcRegistry(map, defaultStreamProc);
-		PMTConsumer pmtConsumer = new PMTConsumer(pidFilter, streamProcRegistry);
+		PmtTSPacketConsumerConsumer pmtConsumer = new PmtTSPacketConsumerConsumer(pidFilter, streamProcRegistry);
 		pidFilter.defaultFilter(0, new PATConsumer(pidFilter, pmtConsumer))
 		         .defaultFilter(0x1fff, TSPacketConsumer.NULL);
 		MultiTSPacketConsumer consumer = new MultiTSPacketConsumer(

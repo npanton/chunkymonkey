@@ -23,10 +23,10 @@ public class PATConsumer implements TSPacketConsumer {
 	private static final int PID_PAT = 0;
 
 	private PIDFilterPacketConsumer filter;
-	private PMTConsumer pmtConsumer;
+	private PmtTSPacketConsumerConsumer pmtConsumer;
 	private TSPacketConsumer networkConsumer;
 
-	public PATConsumer(PIDFilterPacketConsumer filter, PMTConsumer pmtConsumer) {
+	public PATConsumer(PIDFilterPacketConsumer filter, PmtTSPacketConsumerConsumer pmtConsumer) {
 		this.filter = filter;
 		this.pmtConsumer = pmtConsumer;
 		networkConsumer = TSPacketConsumer.NULL;

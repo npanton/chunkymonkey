@@ -3,7 +3,7 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramAssociationTable.ProgramEntry;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable.StreamDescriptorIterator;
 
-public class PMTConsumer implements TSPacketConsumer {
+public class PmtTSPacketConsumerConsumer implements TSPacketConsumer {
 
 	public class PMTContext implements TSContext {
 
@@ -11,8 +11,8 @@ public class PMTConsumer implements TSPacketConsumer {
 
 	private PIDFilterPacketConsumer filter;
 	private StreamProcRegistry registry;
-	
-	public PMTConsumer(PIDFilterPacketConsumer filter,
+
+	public PmtTSPacketConsumerConsumer(PIDFilterPacketConsumer filter,
 	                   StreamProcRegistry registry)
 	{
 		this.filter = filter;
@@ -57,7 +57,7 @@ System.err.println("replace "+entry.getConsumer()+" for PID "+i.elementryPID());
 					progCtx.removeStream(entry);
 				}
 				StreamTSContext streamCtx = newConsumer.createContext(progCtx, i);
-				PIDFilterPacketConsumer.FilterEntry newEntry 
+				PIDFilterPacketConsumer.FilterEntry newEntry
 					= new PIDFilterPacketConsumer.FilterEntry(newConsumer, streamCtx);
 				filter.filter(progCtx.getTransportContext(), i.elementryPID(), newEntry);
 				progCtx.addStream(entry);
