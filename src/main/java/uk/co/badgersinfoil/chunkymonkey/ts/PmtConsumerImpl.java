@@ -18,21 +18,27 @@ public class PmtConsumerImpl implements PmtConsumer {
 	public void handle(ProgramTSContext progCtx, ProgramMapTable pmt) {
 		StreamDescriptorIterator i = pmt.streamDescriptors();
 		while (i.hasNext()) {
-			StreamTSPacketConsumer newConsumer = registry.getStreamHandler(i.streamType());
-			PIDFilterPacketConsumer.FilterEntry entry = filter.getCurrent(progCtx.getTransportContext(), i.elementryPID());
-			if (entry==null || !newConsumer.equals(entry.getConsumer())) {
-				if (entry != null && entry.getConsumer() != TSPacketConsumer.NULL) {
-System.err.println("replace "+entry.getConsumer()+" for PID "+i.elementryPID());
-					entry.getConsumer().end(entry.getContext());
-					progCtx.removeStream(entry);
-				}
-				StreamTSContext streamCtx = newConsumer.createContext(progCtx, i);
-				PIDFilterPacketConsumer.FilterEntry newEntry
-					= new PIDFilterPacketConsumer.FilterEntry(newConsumer, streamCtx);
-				filter.filter(progCtx.getTransportContext(), i.elementryPID(), newEntry);
-				progCtx.addStream(entry);
-			}
+			handleStreamDescriptor(progCtx, i);
 			i.next();
+		}
+	}
+
+	private void handleStreamDescriptor(ProgramTSContext progCtx,
+	                                    StreamDescriptorIterator desc)
+	{
+		StreamTSPacketConsumer newConsumer = registry.getStreamHandler(desc.streamType());
+		PIDFilterPacketConsumer.FilterEntry entry = filter.getCurrent(progCtx.getTransportContext(), desc.elementryPID());
+		if (entry==null || !newConsumer.equals(entry.getConsumer())) {
+			if (entry != null && entry.getConsumer() != TSPacketConsumer.NULL) {
+System.err.println("replace "+entry.getConsumer()+" for PID "+desc.elementryPID());
+				entry.getConsumer().end(entry.getContext());
+				progCtx.removeStream(entry);
+			}
+			StreamTSContext streamCtx = newConsumer.createContext(progCtx, desc);
+			PIDFilterPacketConsumer.FilterEntry newEntry
+				= new PIDFilterPacketConsumer.FilterEntry(newConsumer, streamCtx);
+			filter.filter(progCtx.getTransportContext(), desc.elementryPID(), newEntry);
+			progCtx.addStream(entry);
 		}
 	}
 }
