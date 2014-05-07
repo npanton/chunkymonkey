@@ -4,7 +4,7 @@ import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable.StreamDescriptorIterator;
 
 public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
-	
+
 	public class UnhandledContext implements TSContext {
 
 	}
@@ -12,9 +12,9 @@ public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 	public static class UnhandledStreamTSPacketConsumerContext extends StreamTSContext {
 
 		private boolean flagged;
-		private int streamType;
+		private StreamType streamType;
 
-		public UnhandledStreamTSPacketConsumerContext(int streamType) {
+		public UnhandledStreamTSPacketConsumerContext(StreamType streamType) {
 			this.streamType = streamType;
 		}
 	}
@@ -24,11 +24,11 @@ public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 
 	public UnhandledStreamTSPacketConsumer() {
 	}
-	
+
 	public void setReporter(Reporter rep) {
 		this.rep = rep;
 	}
-	
+
 	public void setPesConsumer(PESConsumer pesConsumer) {
 		this.pesConsumer = pesConsumer;
 	}
@@ -44,7 +44,7 @@ public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 	public void packet(TSContext ctx, TSPacket packet) {
 		UnhandledStreamTSPacketConsumerContext uCtx = (UnhandledStreamTSPacketConsumerContext)ctx;
 		if (!uCtx.flagged) {
-			rep.carp(packet.getLocator(), "Unhndled stream type %d", uCtx.streamType);
+			rep.carp(packet.getLocator(), "Unhndled stream type %s", uCtx.streamType);
 			uCtx.flagged = true;
 		}
 	}
@@ -52,7 +52,7 @@ public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 	@Override
 	public void end(TSContext context) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override

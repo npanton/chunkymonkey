@@ -41,6 +41,7 @@ import uk.co.badgersinfoil.chunkymonkey.ts.PesTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable;
 import uk.co.badgersinfoil.chunkymonkey.ts.StreamProcRegistry;
 import uk.co.badgersinfoil.chunkymonkey.ts.StreamTSPacketConsumer;
+import uk.co.badgersinfoil.chunkymonkey.ts.StreamType;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketValidator;
 import uk.co.badgersinfoil.chunkymonkey.ts.UnhandledStreamTSPacketConsumer;
@@ -126,9 +127,9 @@ public class AppBuilder {
 
 	public TSPacketConsumer createConsumer(Reporter rep) {
 		PIDFilterPacketConsumer pidFilter = new PIDFilterPacketConsumer(rep);
-		Map<Integer, StreamTSPacketConsumer> map = new HashMap<>();
-		map.put(ProgramMapTable.STREAM_TYPE_ADTS, createAdtsConsumer(rep));
-		map.put(ProgramMapTable.STREAM_TYPE_H264, createH264Consumer(rep));
+		Map<StreamType, StreamTSPacketConsumer> map = new HashMap<>();
+		map.put(StreamType.ADTS, createAdtsConsumer(rep));
+		map.put(StreamType.H264, createH264Consumer(rep));
 		UnhandledStreamTSPacketConsumer defaultStreamProc = new UnhandledStreamTSPacketConsumer();
 		defaultStreamProc.setPesConsumer(new ValidatingPesConsumer(rep));
 		defaultStreamProc.setReporter(rep);
