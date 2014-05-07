@@ -47,10 +47,11 @@ public class AppBuilder {
 		defaultStreamProc.setReporter(rep);
 		StreamProcRegistry streamProcRegistry = new StreamProcRegistry(map, defaultStreamProc);
 		PMTConsumer pmtConsumer = new PMTConsumer(pidFilter, streamProcRegistry);
+		pidFilter.defaultFilter(0, new PATConsumer(pidFilter, pmtConsumer))
+		         .defaultFilter(0x1fff, TSPacketConsumer.NULL);
 		MultiTSPacketConsumer consumer = new MultiTSPacketConsumer(
 			new TSPacketValidator(rep),
-			pidFilter.defaultFilter(0, new PATConsumer(pidFilter, pmtConsumer))
-			         .defaultFilter(0x1fff, TSPacketConsumer.NULL),
+			pidFilter,
 			pcrWatcher,
 			chunker
 		);
