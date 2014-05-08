@@ -12,6 +12,7 @@ import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.URILocator;
+import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.TransportStreamParser;
 
@@ -24,6 +25,13 @@ public class HlsSegmentProcessor {
 	private TSPacketConsumer consumer;
 	private HttpResponseChecker manifestResponseChecker = HttpResponseChecker.NULL;
 	private RequestConfig config;
+
+	public  static class HlsSegmentTsContext implements TSContext {
+		public HlsSegmentTsContext(HlsMediaPlaylistContext ctx) {
+			this.ctx = ctx;
+		}
+		public HlsMediaPlaylistContext ctx;
+	}
 
 	public HlsSegmentProcessor(Reporter rep,
 	                           HttpClient httpclient,
@@ -56,7 +64,7 @@ public class HlsSegmentProcessor {
 				manifestResponseChecker.check(loc, resp, context);
 				InputStream stream = resp.getEntity().getContent();
 				TransportStreamParser parser = new TransportStreamParser(loc, consumer);
-				parser.parse(stream);
+				parser.parse(new HlsSegmentTsContext(ctx), stream);
 				stat.end();
 				long expectedDurationMillis = element.getDuration() * 1000;
 				if (stat.getDurationMillis() > expectedDurationMillis * MAX_DOWNLOAD_DURATION) {

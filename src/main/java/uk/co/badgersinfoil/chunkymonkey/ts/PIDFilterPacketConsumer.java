@@ -67,7 +67,10 @@ public class PIDFilterPacketConsumer implements TSPacketConsumer {
 	}
 
 	public TSContext createContext(TSContext parent) {
-		TransportContext ctx = new TransportContext();
+		if (parent == null) {
+			throw new IllegalArgumentException("parent must not be null");
+		}
+		TransportContext ctx = new TransportContext(parent);
 		for (Entry<Integer, TSPacketConsumer> e : defaultFilterMap.entrySet()) {
 			TSPacketConsumer consumer = e.getValue();
 			TSContext tctx = consumer.createContext(ctx);

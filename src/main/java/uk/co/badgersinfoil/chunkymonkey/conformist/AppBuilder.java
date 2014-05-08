@@ -137,7 +137,10 @@ public class AppBuilder {
 		defaultStreamProc.setPesConsumer(new ValidatingPesConsumer(rep));
 		defaultStreamProc.setReporter(rep);
 		StreamProcRegistry streamProcRegistry = new StreamProcRegistry(map, defaultStreamProc);
-		PmtConsumer pmtConsumer = new PmtConsumerImpl(pidFilter, streamProcRegistry);
+		PmtConsumer pmtConsumer = new PmtConsumer.Multi(
+			new PmtConsumerImpl(pidFilter, streamProcRegistry),
+			new HlsCodecValidatingPmtConsumer(rep)
+		);
 		PmtTSPacketConsumerConsumer pmtTsConsumer = new PmtTSPacketConsumerConsumer(pmtConsumer);
 		pidFilter.defaultFilter(0, new PATConsumer(pidFilter, pmtTsConsumer))
 		         .defaultFilter(0x1fff, TSPacketConsumer.NULL);

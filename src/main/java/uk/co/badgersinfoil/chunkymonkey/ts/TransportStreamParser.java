@@ -28,8 +28,8 @@ public class TransportStreamParser {
 		return locator;
 	}
 
-	public void parse(InputStream stream) throws IOException {
-		TSContext ctx = consumer.createContext(null);
+	public void parse(TSContext parentCtx, InputStream stream) throws IOException {
+		TSContext ctx = consumer.createContext(parentCtx);
 		while (true) {
 			ByteBuf buf = Unpooled.buffer();
 			if (!readPacket(stream, buf, TSPacket.TS_PACKET_LENGTH)) {

@@ -9,8 +9,10 @@ import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer.FilterEntry;
 
 public class TransportContext implements TSContext, TransportContextProvider {
 	private Map<Integer, FilterEntry> filterMap = new HashMap<>();
+	private TSContext parent;
 
-	public TransportContext() {
+	public TransportContext(TSContext parent) {
+		this.parent = parent;
 	}
 
 	public FilterEntry filterForPid(int pid) {
@@ -32,5 +34,9 @@ public class TransportContext implements TSContext, TransportContextProvider {
 			result.add(e.getContext());
 		}
 		return result;
+	}
+
+	public TSContext getParent() {
+		return parent;
 	}
 }

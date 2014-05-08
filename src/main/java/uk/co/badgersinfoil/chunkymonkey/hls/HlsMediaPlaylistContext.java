@@ -1,7 +1,10 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.Rfc6381Codec;
 import net.chilicat.m3u8.PlaylistInfo;
 
 public class HlsMediaPlaylistContext {
@@ -21,14 +24,17 @@ public class HlsMediaPlaylistContext {
 	public int lastMediaSequenceEndChangeProblems;
 	public HttpStats segmentStats = new HttpStats();
 	public HttpStats playlistStats = new HttpStats();
+	private List<Rfc6381Codec> codecList;
 
 	public HlsMediaPlaylistContext(HlsMasterPlaylistContext ctx,
 	                               URI manifest,
-	                               PlaylistInfo playlistInfo)
+	                               PlaylistInfo playlistInfo,
+	                               List<Rfc6381Codec> codecList)
 	{
 		this.ctx = ctx;
 		this.manifest = manifest;
 		this.playlistInfo = playlistInfo;
+		this.codecList = codecList;
 	}
 
 	public boolean haveProcessedMediaSeq(int seq) {
@@ -37,6 +43,10 @@ public class HlsMediaPlaylistContext {
 
 	public PlaylistInfo getPlaylistInfo() {
 		return playlistInfo;
+	}
+
+	public List<Rfc6381Codec> getCodecList() {
+		return Collections.unmodifiableList(codecList);
 	}
 
 	public void lastProcessedMediaSeq(int seq) {
