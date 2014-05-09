@@ -5,15 +5,11 @@ import io.airlift.command.HelpOption;
 import io.airlift.command.Option;
 import io.airlift.command.SingleCommand;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.net.NetworkInterface;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Date;
 import javax.inject.Inject;
-import uk.co.badgersinfoil.chunkymonkey.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.ts.FileTransportStreamParser;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.MulticastReciever;
@@ -35,7 +31,7 @@ public class Main {
 
 	@Option(name = { "--multicast-group" })
 	public String multicastGroup;
-	
+
 	@Option(name = { "--chunk-dir" }, description = "Destination into which transport stream chunks are to be written", required=true )
 	public String chunkDir;
 
@@ -51,7 +47,7 @@ public class Main {
 		AppBuilder b = new AppBuilder();
 		b.chunkDir(chunkDir);
 		MultiTSPacketConsumer consumer = b.createConsumer();
-		if (benchmarkFile != null) {			
+		if (benchmarkFile != null) {
 			benchmark(benchmarkFile, consumer);
 		} else if (multicastGroup != null) {
 			// TODO: add options to configure network interface,
@@ -93,16 +89,15 @@ public class Main {
 	}
 
 	private static void benchmark(String file,
-			MultiTSPacketConsumer consumer)
-			throws FileNotFoundException, IOException,
-			URISyntaxException {
+	                              MultiTSPacketConsumer consumer)
+		throws IOException
+	{
 		File f = new File(file);
-		RandomAccessFile in = new RandomAccessFile(f, "r");
 		long size = f.length();
 		FileTransportStreamParser parser = new FileTransportStreamParser(consumer);
+		FileTransportStreamParser.FileTsContext ctx = parser.createContext();
 		long start = System.currentTimeMillis();
-		parser.parse(new URILocator(new URI(file)), in);
-		in.close();
+		parser.parse(ctx, f);
 		long time = System.currentTimeMillis() - start;
 		long rate = size*1000/time;
 		System.out.println(new Date()+" finished - took "+(time)+" milliseconds, ("+(rate/1024/1024)+"Mbyte/s, "+(rate*8/1024/1024)+"Mbit/s)");
