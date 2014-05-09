@@ -253,11 +253,13 @@ public class PicTimingHeader {
 		if (vuiParameters.picStructPresentFlag()) {
 			picStruct = PicStruct.forVal(bits.readBits(4));
 			int numClockTS = picStruct.numClockTS();
-			clockTimestamps = new ClockTimestamp[numClockTS];
-			for (int i=0; i<numClockTS; i++) {
-				boolean clockTimestampFlag = bits.readBool();
-				if (clockTimestampFlag) {
-					clockTimestamps[i] = new ClockTimestamp(bits, vuiParameters, timeOffsetLength);
+			if (numClockTS != -1) {
+				clockTimestamps = new ClockTimestamp[numClockTS];
+				for (int i=0; i<numClockTS; i++) {
+					boolean clockTimestampFlag = bits.readBool();
+					if (clockTimestampFlag) {
+						clockTimestamps[i] = new ClockTimestamp(bits, vuiParameters, timeOffsetLength);
+					}
 				}
 			}
 		}
