@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
@@ -168,6 +167,7 @@ public class HlsMasterPlaylistProcessor {
 	public Playlist requestManifest(final HlsMasterPlaylistContext ctx) throws IOException, ParseException {
 		HttpClientContext context = HttpClientContext.create();
 		HttpGet req = new HttpGet(ctx.getManifestLocation());
+		ctx.httpCondition.makeConditional(req);
 		if (config != null) {
 			req.setConfig(config);
 		}
@@ -176,6 +176,9 @@ public class HlsMasterPlaylistProcessor {
 		return new HttpExecutionWrapper<Playlist>(rep) {
 			@Override
 			protected Playlist handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException {
+				if (resp.getStatusLine().getStatusCode() == 304) {
+					return null;
+				}
 				List<URI> redirects = context.getRedirectLocations();
 				if (redirects != null && !redirects.isEmpty()) {
 					URI finalUri = null;
@@ -191,7 +194,11 @@ public class HlsMasterPlaylistProcessor {
 				ctx.lastUpdated = System.currentTimeMillis();
 				InputStream stream = resp.getEntity().getContent();
 				try {
-					return Playlist.parse(stream);
+					// TODO: call a handler, rather than
+					//       returning a value
+					Playlist p = Playlist.parse(stream);
+					ctx.httpCondition.recordCacheValidators(resp);
+					return p;
 				} catch (ParseException e) {
 					throw new IOException(e);
 				} finally {

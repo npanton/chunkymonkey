@@ -25,6 +25,7 @@ public class HlsMediaPlaylistContext {
 	public HttpStats segmentStats = new HttpStats();
 	public HttpStats playlistStats = new HttpStats();
 	private List<Rfc6381Codec> codecList;
+	protected HttpCondition httpCondition = new HttpCondition();
 
 	public HlsMediaPlaylistContext(HlsMasterPlaylistContext ctx,
 	                               URI manifest,

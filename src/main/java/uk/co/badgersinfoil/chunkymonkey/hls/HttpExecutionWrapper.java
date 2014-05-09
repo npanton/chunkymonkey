@@ -57,10 +57,9 @@ public abstract class HttpExecutionWrapper<T> {
 			if (resp.containsHeader("X-Pkgr-Instance")) {
 				loc = new PackagerInstanceLocator(resp.getLastHeader("X-Pkgr-Instance").getValue(), loc);
 			}
-			// TODO: not enough to work when we need to handle
-			// conditional HTTP (not-modified resposes) etc.
 			T result = null;
-			if (resp.getStatusLine().getStatusCode() == 200) {
+			int statusCode = resp.getStatusLine().getStatusCode();
+			if (statusCode == 200 || statusCode == 304) {
 				result = handleResponse(context, resp, stat);
 			} else {
 				rep.carp(loc, "Request failed %d %s - headers: %s", resp.getStatusLine().getStatusCode(), resp.getStatusLine().getReasonPhrase(), Arrays.toString(resp.getAllHeaders()));

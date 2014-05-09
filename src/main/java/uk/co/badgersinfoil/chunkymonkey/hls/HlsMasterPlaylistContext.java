@@ -14,6 +14,7 @@ public class HlsMasterPlaylistContext {
 	public Map<URI, HlsMediaPlaylistContext> mediaContexts = new HashMap<>();
 	private URI manifestRedirectLocation;
 	public long lastUpdated;
+	public HttpCondition httpCondition = new HttpCondition();
 
 	public HlsMasterPlaylistContext(URI manifest) {
 		this.manifest = manifest;

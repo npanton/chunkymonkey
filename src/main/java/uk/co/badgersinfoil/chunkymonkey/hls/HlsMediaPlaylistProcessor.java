@@ -3,7 +3,6 @@ package uk.co.badgersinfoil.chunkymonkey.hls;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -218,6 +217,7 @@ public class HlsMediaPlaylistProcessor {
 
 	private void requestManifest(final HlsMediaPlaylistContext ctx) throws IOException, ParseException {
 		HttpGet req = new HttpGet(ctx.manifest);
+		ctx.httpCondition.makeConditional(req);
 		if (getConfig() != null) {
 			req.setConfig(getConfig());
 		}
@@ -226,11 +226,15 @@ public class HlsMediaPlaylistProcessor {
 		new HttpExecutionWrapper<Void>(rep) {
 			@Override
 			protected Void handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException {
+				if (resp.getStatusLine().getStatusCode() == 304) {
+					return null;
+				}
 				manifestResponseChecker.check(loc, resp, context);
 				checkAge(loc, ctx, resp);
 				InputStream stream = resp.getEntity().getContent();
 				try {
 					Playlist playlist = Playlist.parse(stream);
+					ctx.httpCondition.recordCacheValidators(resp);
 					process(ctx, loc, playlist, resp);
 				} catch (ParseException e) {
 					throw new IOException(e);
