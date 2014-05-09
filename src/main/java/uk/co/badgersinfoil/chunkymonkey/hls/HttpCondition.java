@@ -31,4 +31,11 @@ public class HttpCondition {
 			lastLastModified = null;
 		}
 	}
+
+	public String getLastETag() {
+		return lastETag;
+	}
+	public String getLastLastModified() {
+		return lastLastModified;
+	}
 }

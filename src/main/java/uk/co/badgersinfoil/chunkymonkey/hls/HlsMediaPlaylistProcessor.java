@@ -230,6 +230,7 @@ public class HlsMediaPlaylistProcessor {
 					return null;
 				}
 				manifestResponseChecker.check(loc, resp, context);
+				checkCacheValidators(loc, ctx.httpCondition, resp);
 				checkAge(loc, ctx, resp);
 				InputStream stream = resp.getEntity().getContent();
 				try {
@@ -245,6 +246,36 @@ public class HlsMediaPlaylistProcessor {
 			}
 		}.execute(httpclient, req, loc, stat);
 		ctx.playlistStats.add(stat);
+	}
+
+
+	private void checkCacheValidators(Locator loc,
+	                                  HttpCondition httpCondition,
+	                                  CloseableHttpResponse resp)
+	{
+		if (resp.getStatusLine().getStatusCode() != 302) {
+			if (resp.containsHeader("Last-Modified")) {
+				// TODO: check should be 'less then or equals'
+				String lastMod = resp.getLastHeader("Last-Modified").getValue();
+				if (lastMod.equals(httpCondition.getLastLastModified())) {
+					rep.carp(loc,
+					         "Last-Modified header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)",
+					         resp.getStatusLine(),
+					         lastMod,
+					         httpCondition.getLastLastModified()
+					         );
+				}
+				String etag = resp.getLastHeader("ETag").getValue();
+				if (etag.equals(httpCondition.getLastETag())) {
+					rep.carp(loc,
+					         "ETag header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)",
+					         resp.getStatusLine(),
+					         etag,
+					         httpCondition.getLastETag()
+					         );
+				}
+			}
+		}
 	}
 
 	/**
