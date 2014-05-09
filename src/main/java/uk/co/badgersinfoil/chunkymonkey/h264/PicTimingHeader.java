@@ -8,14 +8,14 @@ import uk.co.badgersinfoil.chunkymonkey.h264.SeqParamSet.VuiParameters;
 import io.netty.buffer.ByteBuf;
 
 public class PicTimingHeader {
-	
+
 	public static class ClockTimestamp {
 		public static enum CtType {
 			PROGRESSIVE,
 			INTERLACED,
 			UNKNOWN,
 			RESERVED;
-			
+
 			public static CtType forKey(int k) {
 				switch (k) {
 				case 0: return PROGRESSIVE;
@@ -72,23 +72,32 @@ public class PicTimingHeader {
 		}
 
 		public StringBuilder toString(StringBuilder b) {
-			b.append("ctType=").append(ctType())
-			 .append(" nuitFieldBasedFlag=").append(nuitFieldBasedFlag())
-			 .append(" countingType=").append(countingType())
-			 .append(" fullTimestampFlag=").append(fullTimestampFlag)
-			 .append(" discontinuityFlag=").append(discontinuityFlag())
-			 .append(" cntDroppedFlag=").append(cntDroppedFlag())
-			 .append(" nFrames=").append(nFrames());
-			if (secondsValue() != -1) {
-				b.append(" secondsValue=").append(secondsValue());
-				if (minutesValue() != -1) {
-					b.append(" minutesValue=").append(minutesValue());
-					if (hoursValue() != -1) {
-						b.append(" hoursValue=").append(hoursValue());
-					}
-				}
+			b.append(ctType());
+			if (nuitFieldBasedFlag()) {
+				b.append(" fieldBased");
 			}
-			b.append(" timeOffset=").append(timeOffset());
+			b.append(" countType=").append(countingType());
+			if (fullTimestampFlag) {
+				b.append(" fullTS");
+			}
+			if (discontinuityFlag()) {
+				b.append(" discontinuity");
+			}
+			if (cntDroppedFlag()) {
+				b.append(" drop");
+			}
+			if (secondsValue() != -1) {
+				b.append(" ");
+				if (minutesValue() != -1) {
+					if (hoursValue() != -1) {
+						b.append(hoursValue()).append("h");
+					}
+					b.append(minutesValue()).append("m");
+				}
+				b.append(secondsValue()).append("s.");
+			}
+			b.append(nFrames()).append("f");
+			b.append("+").append(timeOffset());
 			return b;
 		}
 
@@ -264,9 +273,9 @@ public class PicTimingHeader {
 		if (dpbOutputDelay() != -1) {
 			b.append(" dpbOutputDelay=").append(dpbOutputDelay());
 		}
-		b.append(" picStruct=").append(picStruct());
+		b.append(picStruct());
 		if (clockTimestamps != null) {
-			b.append(" clockTimestamps[").append(clockTimestamps.length).append("]=[");
+			b.append(" [");
 			for (int i=0; i<clockTimestamps.length; i++) {
 				if (i > 0) {
 					b.append(", ");
@@ -286,7 +295,7 @@ public class PicTimingHeader {
 	public PicStruct picStruct() {
 		return picStruct;
 	}
-	
+
 	public ClockTimestamp[] clockTimestamps() {
 		return clockTimestamps;
 	}
