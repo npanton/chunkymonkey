@@ -100,6 +100,10 @@ public class PicTimingHeader {
 			b.append("+").append(timeOffset());
 			return b;
 		}
+		@Override
+		public String toString() {
+			return toString(new StringBuilder()).toString();
+		}
 
 		public int timeOffset() {
 			return timeOffset;
