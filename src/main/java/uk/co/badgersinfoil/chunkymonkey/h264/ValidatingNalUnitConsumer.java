@@ -12,19 +12,29 @@ public class ValidatingNalUnitConsumer implements NalUnitConsumer {
 	}
 
 	@Override
-	public void start(H264Context ctx, NALUnit u) {
+	public void start(NalUnitContext ctx, NALUnit u) {
 		if (u.forbiddenZeroBit() != 0) {
 			rep.carp(u.getLocator(), "forbidden_zero_bit should always be 0, found: "+u.forbiddenZeroBit());
 		}
 	}
 	@Override
-	public void data(H264Context ctx, ByteBuf buf, int offset, int length) {
+	public void data(NalUnitContext ctx, ByteBuf buf, int offset, int length) {
 	}
 	@Override
-	public void end(H264Context ctx) {
+	public void end(NalUnitContext ctx) {
 	}
 
 	@Override
-	public void continuityError(H264Context ctx) {
+	public void continuityError(NalUnitContext ctx) {
+	}
+
+	@Override
+	public NalUnitContext createContext(final H264Context ctx) {
+		return new NalUnitContext() {
+			@Override
+			public H264Context getH264Context() {
+				return ctx;
+			}
+		};
 	}
 }

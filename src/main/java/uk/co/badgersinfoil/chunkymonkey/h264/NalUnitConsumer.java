@@ -4,19 +4,33 @@ import io.netty.buffer.ByteBuf;
 
 public interface NalUnitConsumer {
 
+	public interface NalUnitContext {
+		H264Context getH264Context();
+	}
 	NalUnitConsumer NULL = new NalUnitConsumer() {
 		@Override
-		public void start(H264Context ctx, NALUnit u) {  }
+		public void start(NalUnitContext ctx, NALUnit u) {  }
 		@Override
-		public void data(H264Context ctx, ByteBuf buf, int offset, int length) {  }
+		public void data(NalUnitContext ctx, ByteBuf buf, int offset, int length) {  }
 		@Override
-		public void end(H264Context ctx) {  }
+		public void end(NalUnitContext ctx) {  }
 		@Override
-		public void continuityError(H264Context hCtx) { }
+		public void continuityError(NalUnitContext ctx) { }
+		@Override
+		public NalUnitContext createContext(final H264Context ctx) {
+			return new NalUnitContext() {
+				@Override
+				public H264Context getH264Context() {
+					// TODO Auto-generated method stub
+					return ctx;
+				}
+			};
+		}
 	};
 
-	void start(H264Context ctx, NALUnit u);
-	void data(H264Context ctx, ByteBuf buf, int offset, int length);
-	void end(H264Context ctx);
-	void continuityError(H264Context ctx);
+	void start(NalUnitContext ctx, NALUnit u);
+	void data(NalUnitContext ctx, ByteBuf buf, int offset, int length);
+	void end(NalUnitContext ctx);
+	void continuityError(NalUnitContext ctx);
+	NalUnitContext createContext(H264Context ctx);
 }

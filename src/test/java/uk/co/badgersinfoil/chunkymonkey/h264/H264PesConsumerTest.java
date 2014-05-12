@@ -24,7 +24,7 @@ public class H264PesConsumerTest {
 
 	/**
 	 * Mocks NalUnitConsumer in order to collect together the whole NAL
-	 * Unit body independant 
+	 * Unit body independant
 	 */
 	private static class MockNalUnitConsumer implements NalUnitConsumer {
 		public static class UnitHolder {
@@ -45,13 +45,13 @@ public class H264PesConsumerTest {
 		private List<UnitHolder> units = new ArrayList<>();
 
 		@Override
-		public void start(H264Context ctx, NALUnit u) {
+		public void start(NalUnitContext ctx, NALUnit u) {
 			started = true;
 			units.add(new UnitHolder(u));
 		}
-		
+
 		@Override
-		public void end(H264Context ctx) {
+		public void end(NalUnitContext ctx) {
 			Assert.assertTrue("start() not called before end()", started);
 			Assert.assertTrue("end() called with no payload delivered", lastUnit().data.readableBytes() > 0);
 			lastUnit().ended = true;
@@ -59,12 +59,12 @@ public class H264PesConsumerTest {
 		}
 
 		@Override
-		public void data(H264Context ctx, ByteBuf buf, int offset, int length) {
+		public void data(NalUnitContext ctx, ByteBuf buf, int offset, int length) {
 			Assert.assertTrue("length should be > 0", length > 0);
 			Assert.assertTrue("start() not called before data()", started);
 			lastUnit().data.writeBytes(buf, offset, length);
 		}
-		
+
 		private UnitHolder lastUnit() {
 			return unit(units.size()-1);
 		}
@@ -73,7 +73,12 @@ public class H264PesConsumerTest {
 		}
 
 		@Override
-		public void continuityError(H264Context ctx) {
+		public void continuityError(NalUnitContext ctx) {
+		}
+
+		@Override
+		public NalUnitContext createContext(H264Context ctx) {
+			return null;
 		}
 	}
 	private MockNalUnitConsumer defaultConsumer = new MockNalUnitConsumer();

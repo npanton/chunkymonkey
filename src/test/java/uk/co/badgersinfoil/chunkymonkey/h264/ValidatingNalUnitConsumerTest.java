@@ -8,6 +8,7 @@ import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer.NalUnitContext;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ValidatingNalUnitConsumerTest {
@@ -34,7 +35,7 @@ public class ValidatingNalUnitConsumerTest {
 
 	private void startWithHeader(int header) {
 		NALUnit u = new NALUnit(locator, header);
-		H264Context ctx = null;
+		NalUnitContext ctx = null;
 		validatingNalUnitConsumer.start(ctx, u);
 	}
 }

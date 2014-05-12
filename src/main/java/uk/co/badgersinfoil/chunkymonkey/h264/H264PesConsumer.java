@@ -2,11 +2,13 @@ package uk.co.badgersinfoil.chunkymonkey.h264;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
+import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer.NalUnitContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket;
@@ -21,7 +23,7 @@ public class H264PesConsumer implements PESConsumer {
 	private static final ByteBuf FAKE_ZERO_BYTES = Unpooled.wrappedBuffer(new byte[] {0x00, 0x00});
 	private Map<UnitType,NalUnitConsumer> nalUnitConsumers = new HashMap<>();
 	private NalUnitConsumer defaultNalUnitConsumer = NalUnitConsumer.NULL;
-	
+
 	public static class PesNalUnitLocator implements Locator {
 
 		private Locator parent;
@@ -36,21 +38,21 @@ public class H264PesConsumer implements PESConsumer {
 		public Locator getParent() {
 			return parent;
 		}
-		
+
 		@Override
 		public String toString() {
 			return "NAL Unit #"+index+"\n  at "+parent.toString();
 		}
 	}
-	
+
 	public H264PesConsumer(Map<UnitType,NalUnitConsumer> nalUnitConsumers) {
 		this.nalUnitConsumers.putAll(nalUnitConsumers);
 	}
-	
+
 	public void setDefaultNalUnitConsumer(NalUnitConsumer defaultNalUnitConsumer) {
 		this.defaultNalUnitConsumer = defaultNalUnitConsumer;
 	}
-	
+
 	private NalUnitConsumer getNalUnitConsumerFor(UnitType type) {
 		NalUnitConsumer consumer = nalUnitConsumers.get(type);
 		if (consumer == null) {
@@ -81,7 +83,7 @@ public class H264PesConsumer implements PESConsumer {
 		}
 		dataArrived(hCtx, payload);
 	}
-	
+
 	public static enum ParseState {
 		START,
 		START_ONE_ZERO,
@@ -275,9 +277,11 @@ public class H264PesConsumer implements PESConsumer {
 		PesNalUnitLocator loc = new PesNalUnitLocator(ctx.getPesPacket().getLocator(), ctx.nextUnitIndex());
 		NALUnit u = new NALUnit(loc, b);
 		NalUnitConsumer consumer = getNalUnitConsumerFor(u.nalUnitType());
+		NalUnitContext nalCtx = ctx.nalContext(u.nalUnitType());
 		ctx.setNalUnit(u);
-		ctx.setNalUnitConsumer(consumer);
-		consumer.start(ctx, u);
+		ctx.setCurrentNalUnitConsumer(consumer);
+		ctx.setCurrentNalUnitContext(nalCtx);
+		consumer.start(nalCtx, u);
 	}
 
 	private void data(H264Context ctx, ByteBuf data, int dataStartOffset, int zeroSeqStart) {
@@ -293,15 +297,17 @@ public class H264PesConsumer implements PESConsumer {
 			// later in the PES packet)
 			return;
 		}
-		NalUnitConsumer consumer = ctx.getNalUnitConsumer();
+		NalUnitConsumer consumer = ctx.getCurrentNalUnitConsumer();
+		NalUnitContext nalCtx = ctx.getCurrentNalContext();
 		int len = zeroSeqStart - dataStartOffset;
-		consumer.data(ctx, data, dataStartOffset, len);
+		consumer.data(nalCtx, data, dataStartOffset, len);
 	}
 
 	private void endPrev(H264Context ctx) {
-		NalUnitConsumer consumer = ctx.getNalUnitConsumer();
+		NalUnitConsumer consumer = ctx.getCurrentNalUnitConsumer();
+		NalUnitContext nalCtx = ctx.getCurrentNalContext();
 		if (!ctx.continuityError() && inUnit(ctx.state())) {
-			consumer.end(ctx);
+			consumer.end(nalCtx);
 		}
 	}
 
@@ -326,15 +332,20 @@ System.err.println("H264PesConsumer.end() - end of H264 PES packet we decided to
 	@Override
 	public void continuityError(ElementryContext ctx) {
 		H264Context hCtx = (H264Context)ctx;
-		NalUnitConsumer consumer = hCtx.getNalUnitConsumer();
+		NalUnitConsumer consumer = hCtx.getCurrentNalUnitConsumer();
 		if (consumer != null) {
-			consumer.continuityError(hCtx);
+			consumer.continuityError(hCtx.getCurrentNalContext());
 		}
 		hCtx.continuityError(true);
 	}
 
 	@Override
 	public ElementryContext createContext() {
-		return new H264Context();
+		H264Context ctx = new H264Context();
+		for (Entry<UnitType, NalUnitConsumer> e : nalUnitConsumers.entrySet()) {
+			ctx.addNalContext(e.getKey(), e.getValue());
+		}
+		ctx.setDefaultNalContext(defaultNalUnitConsumer.createContext(ctx));
+		return ctx;
 	}
 }
