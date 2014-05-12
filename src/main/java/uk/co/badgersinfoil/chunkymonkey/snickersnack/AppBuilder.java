@@ -11,6 +11,7 @@ import uk.co.badgersinfoil.chunkymonkey.h264.SeiHeader;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiHeaderConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiNalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeqParamSetNalUnitConsumer;
+import uk.co.badgersinfoil.chunkymonkey.h264.ValidatingPicTimingConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PATConsumer;
@@ -20,16 +21,13 @@ import uk.co.badgersinfoil.chunkymonkey.ts.PmtConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PmtConsumerImpl;
 import uk.co.badgersinfoil.chunkymonkey.ts.PmtTSPacketConsumerConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PesTSPacketConsumer;
-import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable;
 import uk.co.badgersinfoil.chunkymonkey.ts.StreamProcRegistry;
 import uk.co.badgersinfoil.chunkymonkey.ts.StreamTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.StreamType;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketValidator;
-import uk.co.badgersinfoil.chunkymonkey.ts.TransportContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.UnhandledStreamTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.ValidatingPesConsumer;
-import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer.FilterEntry;
 
 public class AppBuilder {
 
@@ -66,7 +64,8 @@ public class AppBuilder {
 		//ValidatingNalUnitConsumer validatingNalUnitConsumer = new ValidatingNalUnitConsumer(rep);
 		Map<Integer, SeiHeaderConsumer> seiConsumers = new HashMap<>();
 		MyPicTimingConsumer picTiming = new MyPicTimingConsumer(pcrWatcher);
-		seiConsumers.put(SeiHeader.PIC_TIMING, new PicTimingSeiConsumer(picTiming));
+		ValidatingPicTimingConsumer validatingPicTiming = new ValidatingPicTimingConsumer(rep, picTiming);
+		seiConsumers.put(SeiHeader.PIC_TIMING, new PicTimingSeiConsumer(validatingPicTiming));
 		SeiNalUnitConsumer seiNalUnitConsumer = new SeiNalUnitConsumer(seiConsumers);
 		nalUnitConsumers.put(UnitType.SEI, seiNalUnitConsumer);
 		SeqParamSetNalUnitConsumer seqParamSetNalUnitConsumer = new SeqParamSetNalUnitConsumer();
