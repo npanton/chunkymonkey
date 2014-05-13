@@ -24,7 +24,8 @@ public class H264PesConsumerTest {
 
 	/**
 	 * Mocks NalUnitConsumer in order to collect together the whole NAL
-	 * Unit body independant
+	 * Unit body independent of the number and size of buffers the body
+	 * was delivered in.
 	 */
 	private static class MockNalUnitConsumer implements NalUnitConsumer {
 		public static class UnitHolder {
