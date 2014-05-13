@@ -117,6 +117,11 @@ public class H264PesConsumer implements PESConsumer {
 			dataStartOffset = -1;
 		}
 		final int max = data.readableBytes();
+
+		// There are two important nested loops here; the outer loop
+		// handles all of the different parse states, and an inner loop
+		// for the IN_UNIT state optimises the case in which we spend
+		// most of our time
 		outer: for (int i=0; i<max; i++) {
 			int b = data.getUnsignedByte(i);
 			switch (ctx.state()) {
@@ -169,11 +174,30 @@ public class H264PesConsumer implements PESConsumer {
 					ctx.state(ParseState.IN_UNIT_ONE_ZERO);
 					zeroSeqStart = i;
 				} else {
-					for (i++; i<max; i++) {
-						b = data.getUnsignedByte(i);
-						if (b == 0) {
-							i--;
-							continue outer;
+					// We could resume processing the
+					// outer loop here, but since we spend
+					// so much time in the IN_UNIT state,
+					// we have the following optimisation
+					// specifically for this case.
+					//
+					// The byte-sequences which will shift
+					// us out of IN_UNIT state are both
+					// 3 bytes long (0x000001 and 0x000003)
+					// so we walk the buffer with a stride
+					// of 3, and backtrack to the outer
+					// loop if we hit a byte that might be
+					// in one of the special sequences, or
+					// if there are fewer than 3 bytes
+					// remaining in this buffer.
+
+					int stepMax = max - (max-i)%3;
+					if (stepMax - i > 3) {
+						for (i+=3; i<stepMax; i+=3) {
+							b = data.getUnsignedByte(i);
+							if (b == 0 || b == 1 || b == 3) {
+								i -= 3;
+								break;
+							}
 						}
 					}
 				}
