@@ -97,6 +97,10 @@
               <mainClass>uk.co.badgersinfoil.chunkymonkey.conformist.Main</mainClass>
               <id>conformist</id>
             </program>
+            <program>
+              <mainClass>uk.co.badgersinfoil.chunkymonkey.seidump.Main</mainClass>
+              <id>seidump</id>
+            </program>
           </programs>
         </configuration>
       </plugin>
