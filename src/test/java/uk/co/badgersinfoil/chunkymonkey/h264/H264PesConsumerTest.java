@@ -1,6 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,7 +40,9 @@ public class H264PesConsumerTest {
 			public void assertCompleteUnitWas(NALUnit expected, ByteBuf expectedData) {
 				Assert.assertEquals(expected, unit);
 				Assert.assertTrue("end() was not called", ended);
-				Assert.assertEquals(expectedData, data);
+				if (!expectedData.equals(data)) {
+					Assert.fail("expected "+ByteBufUtil.hexDump(expectedData)+", but got "+ByteBufUtil.hexDump(data));
+				}
 			}
 		}
 		private boolean started;
