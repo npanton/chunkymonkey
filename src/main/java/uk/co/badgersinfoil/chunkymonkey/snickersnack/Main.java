@@ -11,6 +11,9 @@ import java.net.NetworkInterface;
 import java.net.URISyntaxException;
 import java.util.Date;
 import javax.inject.Inject;
+import uk.co.badgersinfoil.chunkymonkey.ConsoleReporter;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.ts.FileTransportStreamParser;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.MulticastReciever;
@@ -23,6 +26,34 @@ import uk.co.badgersinfoil.chunkymonkey.ts.RtpTransportStreamParser;
  */
 @Command(name = "snickersnack", description = "SEI-based transport stream segmenter")
 public class Main {
+
+	private final class ReportingRTPErrorHandler implements RTPErrorHandler {
+		private Reporter rep;
+
+		public ReportingRTPErrorHandler(Reporter rep) {
+			this.rep = rep;
+		}
+
+		@Override
+		public void unexpectedSsrc(Locator loc, long expectedSsrc, long actualSsrc) {
+			rep.carp(loc, "RTP unexpected SSRC %d (expecting %d)", actualSsrc, expectedSsrc);
+		}
+
+		@Override
+		public void unexpectedSequenceNumber(Locator loc, int expectedSeq, int actualSeq) {
+			rep.carp(loc, "RTP unexpected sequence number %d (expecting %d)", actualSeq, expectedSeq);
+		}
+
+		@Override
+		public void timestampJumped(Locator loc, long lastTimestamp, long timestamp) {
+			rep.carp(loc, "RTP unexpected timestamp jump from %d to %d", lastTimestamp, timestamp);
+		}
+
+		@Override
+		public void timeWentBackwards(Locator loc, long lastTimestamp, long timestamp) {
+			rep.carp(loc, "RTP timestamp went backwards from %d to %d", lastTimestamp, timestamp);
+		}
+	}
 
 	@Inject
 	public HelpOption helpOption;
@@ -47,9 +78,10 @@ public class Main {
 	private void run() throws IOException, URISyntaxException {
 		ResourceLeakDetector.setEnabled(false);
 
+		Reporter rep = new ConsoleReporter();
 		AppBuilder b = new AppBuilder();
 		b.chunkDir(chunkDir);
-		MultiTSPacketConsumer consumer = b.createConsumer();
+		MultiTSPacketConsumer consumer = b.createConsumer(rep);
 		if (benchmarkFile != null) {
 			benchmark(benchmarkFile, consumer);
 		} else if (multicastGroup != null) {
@@ -57,34 +89,7 @@ public class Main {
 			NetworkInterface iface = NetworkInterface.getByIndex(0);
 			MulticastReciever recieve = new MulticastReciever(multicastGroup, iface);
 			RtpTransportStreamParser p = new RtpTransportStreamParser(consumer);
-			// TODO: move RTPErrorHandler impl elsewhere,
-			//       and make use of Reporter interface
-			p.setRTPErrorHandler(new RTPErrorHandler() {
-				@Override
-				public void unexpectedSsrc(long expectedSsrc, long actualSsrc) {
-					long ts = System.currentTimeMillis();
-					System.err.print(String.format("%tF %tT: ", ts, ts));
-					System.err.println("RTP unexpected SSRC "+actualSsrc+" (expexcting "+expectedSsrc+")");
-				}
-				@Override
-				public void unexpectedSequenceNumber(int expectedSeq, int actualSeq) {
-					long ts = System.currentTimeMillis();
-					System.err.print(String.format("%tF %tT: ", ts, ts));
-					System.err.println("RTP unexpected sequence number "+actualSeq+" (expecting "+expectedSeq+")");
-				}
-				@Override
-				public void timestampJumped(long lastTimestamp, long timestamp) {
-					long ts = System.currentTimeMillis();
-					System.err.print(String.format("%tF %tT: ", ts, ts));
-					System.err.println("RTP unexpected timestamp jump from "+lastTimestamp+" to "+timestamp);
-				}
-				@Override
-				public void timeWentBackwards(long lastTimestamp, long timestamp) {
-					long ts = System.currentTimeMillis();
-					System.err.print(String.format("%tF %tT: ", ts, ts));
-					System.err.println("RTP timestamp went backwards from "+lastTimestamp+" to "+timestamp);
-				}
-			});
+			p.setRTPErrorHandler(new ReportingRTPErrorHandler(rep));
 			recieve.recieve(p);
 		} else {
 			System.err.println("One of --multicast-group or --benchmark must be specified");

@@ -12,6 +12,38 @@ import java.util.Arrays;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 
 public class RtpTransportStreamParser {
+
+	public class RtpLocator implements Locator {
+
+		private UdpConnectionLocator parent;
+		private RtpPacket packet;
+
+		public RtpLocator(RtpPacket p, UdpConnectionLocator connLocator) {
+			parent = connLocator;
+			packet = p;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder b = new StringBuilder();
+			b.append("RTP Packet seq=").append(packet.sequenceNumber())
+			 .append(" ts=").append(packet.timestamp())
+			 .append(" ssrc=").append(packet.ssrc());
+			Locator parent = getParent();
+			if (parent != null) {
+				b.append("\n  at ");
+				b.append(parent);
+			}
+			return b.toString();
+		}
+
+		@Override
+		public Locator getParent() {
+			return parent;
+		}
+
+	}
+
 	public static class UdpConnectionLocator implements Locator {
 
 		private int port;
@@ -191,15 +223,16 @@ public class RtpTransportStreamParser {
 	}
 
 	private void check(RtpPacket p) {
+		RtpLocator loc = new RtpLocator(p, connLocator);
 		if (ssrc == -1) {
 			ssrc = p.ssrc();
 		} else if (ssrc != p.ssrc()) {
-			err.unexpectedSsrc(ssrc, p.ssrc());
+			err.unexpectedSsrc(loc, ssrc, p.ssrc());
 		}
 		if (lastSeq != -1) {
 			int expected = nextSeq(lastSeq);
 			if (expected != p.sequenceNumber()) {
-				err.unexpectedSequenceNumber(expected, p.sequenceNumber());
+				err.unexpectedSequenceNumber(loc, expected, p.sequenceNumber());
 			}
 		}
 		lastSeq = p.sequenceNumber();
@@ -211,9 +244,9 @@ public class RtpTransportStreamParser {
 				diff += 0x100000000L;
 			}
 			if (diff < 0) {
-				err.timeWentBackwards(lastTimestamp, p.timestamp());
+				err.timeWentBackwards(loc, lastTimestamp, p.timestamp());
 			} else if (diff > 0x100000000L / 4) {
-				err.timestampJumped(lastTimestamp, p.timestamp());
+				err.timestampJumped(loc, lastTimestamp, p.timestamp());
 			}
 		}
 		lastTimestamp = p.timestamp();

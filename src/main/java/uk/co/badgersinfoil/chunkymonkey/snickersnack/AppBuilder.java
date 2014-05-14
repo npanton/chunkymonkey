@@ -35,8 +35,7 @@ public class AppBuilder {
 
 	// spring meh
 
-	public MultiTSPacketConsumer createConsumer() {
-		Reporter rep = new ConsoleReporter();
+	public MultiTSPacketConsumer createConsumer(Reporter rep) {
 		PIDFilterPacketConsumer pidFilter = new PIDFilterPacketConsumer(rep);
 		Map<StreamType, StreamTSPacketConsumer> map = new HashMap<>();
 		ChunkingTSPacketConsumer chunker = new ChunkingTSPacketConsumer(chunkDir);
