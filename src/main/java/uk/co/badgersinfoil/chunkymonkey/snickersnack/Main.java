@@ -4,6 +4,7 @@ import io.airlift.command.Command;
 import io.airlift.command.HelpOption;
 import io.airlift.command.Option;
 import io.airlift.command.SingleCommand;
+import io.netty.util.ResourceLeakDetector;
 import java.io.File;
 import java.io.IOException;
 import java.net.NetworkInterface;
@@ -44,6 +45,8 @@ public class Main {
 	}
 
 	private void run() throws IOException, URISyntaxException {
+		ResourceLeakDetector.setEnabled(false);
+
 		AppBuilder b = new AppBuilder();
 		b.chunkDir(chunkDir);
 		MultiTSPacketConsumer consumer = b.createConsumer();
