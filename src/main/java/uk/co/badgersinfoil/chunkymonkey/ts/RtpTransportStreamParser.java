@@ -1,13 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.StandardProtocolFamily;
-import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
 import java.util.Arrays;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 
@@ -86,12 +79,16 @@ public class RtpTransportStreamParser {
 		}
 	}
 
+	public class RtpTransportStreamContext implements TSContext {
+		private UdpConnectionLocator connLocator;
+		private long ssrc = -1;
+		private int lastSeq;
+		private long lastTimestamp = -1;
+		public TSContext consumerContext;
+	}
+
 	private TSPacketConsumer consumer;
 	private RTPErrorHandler err = RTPErrorHandler.NULL;
-	private UdpConnectionLocator connLocator;
-	private long ssrc = -1;
-	private int lastSeq;
-	private long lastTimestamp = -1;
 
 	public static class RtpPacket {
 
@@ -120,7 +117,7 @@ public class RtpTransportStreamParser {
 		public boolean mark() {
 			return (buf.getByte(1) & 0b10000000) != 0;
 		}
-		
+
 		public int payloadType() {
 			return buf.getByte(1) & 0b011111111;
 		}
@@ -145,7 +142,7 @@ public class RtpTransportStreamParser {
 			}
 			return result;
 		}
-		
+
 		private int payloadOffset() {
 			int offset = 12 + 4 * csrcCount();
 			if (extension()) {
@@ -154,12 +151,12 @@ public class RtpTransportStreamParser {
 			}
 			return offset;
 		}
-		
+
 		public ByteBuf payload() {
 			int off = payloadOffset();
 			return buf.slice(off, buf.readableBytes() - off);
 		}
-		
+
 		@Override
 		public String toString() {
 			StringBuilder b = new StringBuilder();
@@ -182,35 +179,18 @@ public class RtpTransportStreamParser {
 
 	public RtpTransportStreamParser(TSPacketConsumer consumer) {
 		this.consumer = consumer;
-		connLocator = new UdpConnectionLocator(5004);
 	}
-	
+
 	public void setRTPErrorHandler(RTPErrorHandler err) {
 		this.err = err;
 	}
 
-	public void recieve() throws IOException {
-		SocketAddress local = new InetSocketAddress(5004);
-		DatagramChannel ch = DatagramChannel.open(StandardProtocolFamily.INET).bind(local);
-		ByteBuffer dst = ByteBuffer.allocateDirect(1500);
-		while (true) {
-			SocketAddress peer = ch.receive(dst);
-			if (peer == null) {
-				System.out.println("nothing received");
-			} else {
-				dst.flip();
-				ByteBuf buf = Unpooled.wrappedBuffer(dst);
-				packet(buf);
-			}
-		}
-	}
-
-	public void packet(ByteBuf buf) {
+	public void packet(RtpTransportStreamContext ctx, ByteBuf buf) {
 		RtpPacket p = new RtpPacket(buf);
-		check(p);
+		check(ctx, p);
 		ByteBuf payload = p.payload();
 		int count = payload.readableBytes() / TSPacket.TS_PACKET_LENGTH;
-		RtpPacketLocator locator = new RtpPacketLocator(connLocator, p.timestamp(), p.sequenceNumber());
+		RtpPacketLocator locator = new RtpPacketLocator(ctx.connLocator, p.timestamp(), p.sequenceNumber());
 		for (int i=0; i<count; i++) {
 			ByteBuf pk = payload.slice(i*TSPacket.TS_PACKET_LENGTH, TSPacket.TS_PACKET_LENGTH);
 			TSPacket packet = new TSPacket(locator, i, pk);
@@ -218,38 +198,38 @@ public class RtpTransportStreamParser {
 				// TODO: better diagnostics.  re-sync?
 				throw new RuntimeException("Transport stream synchronisation lost @packet#"+i+" in "+locator);
 			}
-			consumer.packet(null, packet);
+			consumer.packet(ctx.consumerContext, packet);
 		}
 	}
 
-	private void check(RtpPacket p) {
-		RtpLocator loc = new RtpLocator(p, connLocator);
-		if (ssrc == -1) {
-			ssrc = p.ssrc();
-		} else if (ssrc != p.ssrc()) {
-			err.unexpectedSsrc(loc, ssrc, p.ssrc());
+	private void check(RtpTransportStreamContext ctx, RtpPacket p) {
+		RtpLocator loc = new RtpLocator(p, ctx.connLocator);
+		if (ctx.ssrc == -1) {
+			ctx.ssrc = p.ssrc();
+		} else if (ctx.ssrc != p.ssrc()) {
+			err.unexpectedSsrc(loc, ctx.ssrc, p.ssrc());
 		}
-		if (lastSeq != -1) {
-			int expected = nextSeq(lastSeq);
+		if (ctx.lastSeq != -1) {
+			int expected = nextSeq(ctx.lastSeq);
 			if (expected != p.sequenceNumber()) {
 				err.unexpectedSequenceNumber(loc, expected, p.sequenceNumber());
 			}
 		}
-		lastSeq = p.sequenceNumber();
-		if (lastTimestamp != -1) {
+		ctx.lastSeq = p.sequenceNumber();
+		if (ctx.lastTimestamp != -1) {
 			// TODO: are there some tighter general constraints we
 			// can place on allowed ts differences?
-			long diff = p.timestamp() - lastTimestamp;
-			if (willWrapSoon(lastTimestamp) && diff < 0) {
+			long diff = p.timestamp() - ctx.lastTimestamp;
+			if (willWrapSoon(ctx.lastTimestamp) && diff < 0) {
 				diff += 0x100000000L;
 			}
 			if (diff < 0) {
-				err.timeWentBackwards(loc, lastTimestamp, p.timestamp());
+				err.timeWentBackwards(loc, ctx.lastTimestamp, p.timestamp());
 			} else if (diff > 0x100000000L / 4) {
-				err.timestampJumped(loc, lastTimestamp, p.timestamp());
+				err.timestampJumped(loc, ctx.lastTimestamp, p.timestamp());
 			}
 		}
-		lastTimestamp = p.timestamp();
+		ctx.lastTimestamp = p.timestamp();
 	}
 
 	private boolean willWrapSoon(long ts) {
@@ -260,5 +240,12 @@ public class RtpTransportStreamParser {
 
 	private int nextSeq(int seq) {
 		return (seq + 1) & 0xffff;
+	}
+
+	public RtpTransportStreamContext createContext() {
+		RtpTransportStreamContext ctx = new RtpTransportStreamContext();
+		ctx.connLocator = new UdpConnectionLocator(5004);
+		ctx.consumerContext = consumer.createContext(ctx);
+		return ctx;
 	}
 }

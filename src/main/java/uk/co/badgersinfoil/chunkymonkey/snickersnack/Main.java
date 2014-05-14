@@ -17,6 +17,7 @@ import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.ts.FileTransportStreamParser;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.MulticastReciever;
+import uk.co.badgersinfoil.chunkymonkey.ts.MulticastReciever.MulticastRecieverContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.RTPErrorHandler;
 import uk.co.badgersinfoil.chunkymonkey.ts.RtpTransportStreamParser;
 
@@ -87,10 +88,11 @@ public class Main {
 		} else if (multicastGroup != null) {
 			// TODO: add options to configure network interface,
 			NetworkInterface iface = NetworkInterface.getByIndex(0);
-			MulticastReciever recieve = new MulticastReciever(multicastGroup, iface);
 			RtpTransportStreamParser p = new RtpTransportStreamParser(consumer);
+			MulticastReciever recieve = new MulticastReciever(p, multicastGroup, iface);
 			p.setRTPErrorHandler(new ReportingRTPErrorHandler(rep));
-			recieve.recieve(p);
+			MulticastRecieverContext ctx = recieve.createContext();
+			recieve.recieve(ctx);
 		} else {
 			System.err.println("One of --multicast-group or --benchmark must be specified");
 		}
