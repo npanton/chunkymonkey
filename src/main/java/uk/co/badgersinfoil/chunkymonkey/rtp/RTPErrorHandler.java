@@ -1,4 +1,4 @@
-package uk.co.badgersinfoil.chunkymonkey.ts;
+package uk.co.badgersinfoil.chunkymonkey.rtp;
 
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 

@@ -1,4 +1,4 @@
-package uk.co.badgersinfoil.chunkymonkey.ts;
+package uk.co.badgersinfoil.chunkymonkey.rtp;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -7,14 +7,14 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
-import uk.co.badgersinfoil.chunkymonkey.ts.RtpTransportStreamParser.RtpTransportStreamContext;
+import uk.co.badgersinfoil.chunkymonkey.rtp.RtpParser.RtpContext;
 
-public class MulticastReciever {
-	public class MulticastRecieverContext {
+public class MulticastReceiver {
+	public class MulticastReceiverContext {
 
-		private RtpTransportStreamContext rtpCtx;
+		private RtpContext rtpCtx;
 
-		public MulticastRecieverContext(RtpTransportStreamContext rtpCtx) {
+		public MulticastReceiverContext(RtpContext rtpCtx) {
 			this.rtpCtx = rtpCtx;
 		}
 
@@ -22,9 +22,9 @@ public class MulticastReciever {
 
 	private static final int MAX_DATAGRAM_LENGTH = 1500;
 	private MulticastSocket ms;
-	private RtpTransportStreamParser parser;
+	private RtpParser parser;
 
-	public MulticastReciever(RtpTransportStreamParser parser, String multicastGroup, NetworkInterface interf) throws IOException {
+	public MulticastReceiver(RtpParser parser, String multicastGroup, NetworkInterface interf) throws IOException {
 		this.parser = parser;
 		ms = new MulticastSocket(5004);
 		InetAddress group = InetAddress.getByName(multicastGroup);
@@ -32,7 +32,7 @@ public class MulticastReciever {
 		ms.setNetworkInterface(interf);
 	}
 
-	public void recieve(MulticastRecieverContext ctx) throws IOException {
+	public void receive(MulticastReceiverContext ctx) throws IOException {
 		while (true) {
 			ByteBuf buf = Unpooled.buffer(MAX_DATAGRAM_LENGTH);
 			DatagramPacket p = new DatagramPacket(buf.array() , MAX_DATAGRAM_LENGTH);
@@ -42,7 +42,7 @@ public class MulticastReciever {
 		}
 	}
 
-	public MulticastRecieverContext createContext() {
-		return new MulticastRecieverContext(parser.createContext());
+	public MulticastReceiverContext createContext() {
+		return new MulticastReceiverContext(parser.createContext());
 	}
 }

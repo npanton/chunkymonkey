@@ -14,11 +14,12 @@ import javax.inject.Inject;
 import uk.co.badgersinfoil.chunkymonkey.ConsoleReporter;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.rtp.MulticastReceiver;
+import uk.co.badgersinfoil.chunkymonkey.rtp.RTPErrorHandler;
+import uk.co.badgersinfoil.chunkymonkey.rtp.RtpParser;
+import uk.co.badgersinfoil.chunkymonkey.rtp.MulticastReceiver.MulticastReceiverContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.FileTransportStreamParser;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
-import uk.co.badgersinfoil.chunkymonkey.ts.MulticastReciever;
-import uk.co.badgersinfoil.chunkymonkey.ts.MulticastReciever.MulticastRecieverContext;
-import uk.co.badgersinfoil.chunkymonkey.ts.RTPErrorHandler;
 import uk.co.badgersinfoil.chunkymonkey.ts.RtpTransportStreamParser;
 
 /**
@@ -89,10 +90,11 @@ public class Main {
 			// TODO: add options to configure network interface,
 			NetworkInterface iface = NetworkInterface.getByIndex(0);
 			RtpTransportStreamParser p = new RtpTransportStreamParser(consumer);
-			MulticastReciever recieve = new MulticastReciever(p, multicastGroup, iface);
-			p.setRTPErrorHandler(new ReportingRTPErrorHandler(rep));
-			MulticastRecieverContext ctx = recieve.createContext();
-			recieve.recieve(ctx);
+			RtpParser rtpParse = new RtpParser(p);
+			MulticastReceiver receive = new MulticastReceiver(rtpParse, multicastGroup, iface);
+			rtpParse.setRTPErrorHandler(new ReportingRTPErrorHandler(rep));
+			MulticastReceiverContext ctx = receive.createContext();
+			receive.receive(ctx);
 		} else {
 			System.err.println("One of --multicast-group or --benchmark must be specified");
 		}
