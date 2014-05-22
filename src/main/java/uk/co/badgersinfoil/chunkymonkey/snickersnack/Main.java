@@ -38,7 +38,7 @@ public class Main {
 
 		@Override
 		public void unexpectedSsrc(Locator loc, long expectedSsrc, long actualSsrc) {
-			rep.carp(loc, "RTP unexpected SSRC %d (expecting %d)", actualSsrc, expectedSsrc);
+			rep.carp(loc, "RTP unexpected SSRC 0x%08x (expecting 0x%08x)", actualSsrc, expectedSsrc);
 		}
 
 		@Override

@@ -1,5 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.rtp;
 
+import java.util.HashSet;
+import java.util.Set;
 import io.netty.buffer.ByteBuf;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.ts.RtpTransportStreamParser.UdpConnectionLocator;
@@ -42,7 +44,18 @@ public class RtpParser {
 		private long ssrc = -1;
 		private int lastSeq;
 		private long lastTimestamp = -1;
-		public TSContext consumerContext;
+		private Set<Long> bannedSsrcs = new HashSet<>();
+		private TSContext consumerContext;
+
+		/**
+		 * Defines the required 32-bit synchronisation source identifier
+		 * (packets with any other values will be filtered out).  If
+		 * unspecified, the SSRC of initial of the first RTP packet
+		 * seen will be used.
+		 */
+		public void setSsrc(long ssrc) {
+			this.ssrc = ssrc;
+		}
 	}
 
 	private RtpConsumer consumer;
@@ -54,8 +67,20 @@ public class RtpParser {
 
 	public void packet(RtpContext ctx, ByteBuf buf) {
 		RtpPacket p = new RtpPacket(buf);
-		check(ctx, p);
-		consumer.packet(ctx.consumerContext, p);
+		if (ctx.ssrc == -1) {
+			ctx.ssrc = p.ssrc();
+		} else if (ctx.ssrc != p.ssrc()) {
+			// only report an unexpected SSRC value the first time
+			// its seen,
+			if (!ctx.bannedSsrcs.contains(p.ssrc())) {
+				ctx.bannedSsrcs.add(p.ssrc());
+				RtpLocator loc = new RtpLocator(p, ctx.connLocator);
+				err.unexpectedSsrc(loc, ctx.ssrc, p.ssrc());
+			}
+		} else {
+			check(ctx, p);
+			consumer.packet(ctx.consumerContext, p);
+		}
 	}
 
 	public void setRTPErrorHandler(RTPErrorHandler err) {
@@ -64,11 +89,6 @@ public class RtpParser {
 
 	private void check(RtpContext ctx, RtpPacket p) {
 		RtpLocator loc = new RtpLocator(p, ctx.connLocator);
-		if (ctx.ssrc == -1) {
-			ctx.ssrc = p.ssrc();
-		} else if (ctx.ssrc != p.ssrc()) {
-			err.unexpectedSsrc(loc, ctx.ssrc, p.ssrc());
-		}
 		if (ctx.lastSeq != -1) {
 			int expected = nextSeq(ctx.lastSeq);
 			if (expected != p.sequenceNumber()) {
