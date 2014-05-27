@@ -69,7 +69,7 @@ public class AppBuilder {
 				.build();
 		HlsSegmentProcessor segProc = new HlsSegmentProcessor(rep, httpclient, createConsumer(rep));
 		segProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
-// llnw mess with Date hdr				new CachingHeaderCheck(rep, 1),
+				new CachingHeaderCheck(rep, 60),
 				new CorsHeaderChecker(rep),
 				new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
 				new ContentLengthCheck(rep),
@@ -80,7 +80,7 @@ public class AppBuilder {
 		segProc.setConfig(requestConfig);
 		HlsMediaPlaylistProcessor mediaProc = new HlsMediaPlaylistProcessor(scheduledExecutor, httpclient, segProc);
 		mediaProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
-// llnw mess with Date hdr			new CachingHeaderCheck(rep, 1),
+			new CachingHeaderCheck(rep, 1),  // TODO: hack - duration should be derived at runtime (and > 1)
 			new CorsHeaderChecker(rep),
 			new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
 			new ContentLengthCheck(rep),
