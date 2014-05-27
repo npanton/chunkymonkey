@@ -19,7 +19,7 @@ public class Main {
 		ResourceLeakDetector.setEnabled(false);
 
 		AppBuilder b = new AppBuilder();
-		ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(4);
+		ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(16);
 		Reporter rep = new ConsoleReporter();
 		if (args.length == 1) {
 			HlsMasterPlaylistProcessor processor = b.buildSingle(scheduledExecutor, rep);

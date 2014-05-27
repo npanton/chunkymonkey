@@ -57,6 +57,8 @@ public class AppBuilder {
 			= HttpClientBuilder.create()
 			                   .setUserAgent("conformist")
 			                   .setRequestExecutor(HttpExecutionWrapper.CONN_INFO_SNARFING_REQUEST_EXECUTOR)
+			                   .setMaxConnPerRoute(10)
+			                   .setMaxConnTotal(40)
 			                   // remember 'Content-Length' from before any decompression,
 			                   .addInterceptorFirst(new ContentLengthSnarfer())
 			                   // add content compression support,
