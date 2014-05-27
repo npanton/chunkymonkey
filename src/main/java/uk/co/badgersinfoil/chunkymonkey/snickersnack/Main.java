@@ -22,7 +22,7 @@ import uk.co.badgersinfoil.chunkymonkey.rtp.RtpParser;
 import uk.co.badgersinfoil.chunkymonkey.rtp.MulticastReceiver.MulticastReceiverContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.FileTransportStreamParser;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
-import uk.co.badgersinfoil.chunkymonkey.ts.RtpTransportStreamParser;
+import uk.co.badgersinfoil.chunkymonkey.ts.BufferTransportStreamParser;
 
 /**
  * One, two! One, two! and through and through <br />
@@ -30,6 +30,10 @@ import uk.co.badgersinfoil.chunkymonkey.ts.RtpTransportStreamParser;
  */
 @Command(name = "snickersnack", description = "SEI-based transport stream segmenter")
 public class Main {
+
+	public enum ErrorCorrection {
+		mpegparityfec
+	}
 
 	private final class ReportingRTPErrorHandler implements RTPErrorHandler {
 		private Reporter rep;
@@ -74,6 +78,9 @@ public class Main {
 	@Option(name = { "--interface" }, description = "Name of the network interface on which to join the multicast group" )
 	public String ifname;
 
+	@Option(name = { "--error-correction" }, description = "The type of error correction to use.  If unspecified, no error correction is attempted." )
+	public ErrorCorrection errorCorrection;
+
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		Main m = SingleCommand.singleCommand(Main.class).parse(args);
 		if (m.helpOption.showHelpIfRequested()) {
@@ -93,11 +100,11 @@ public class Main {
 			benchmark(benchmarkFile, consumer);
 		} else if (multicastGroup != null) {
 			NetworkInterface iface = getInterface();
-			RtpTransportStreamParser p = new RtpTransportStreamParser(consumer);
+			BufferTransportStreamParser p = new BufferTransportStreamParser(consumer);
 			RtpParser rtpParse = new RtpParser(p);
-			MulticastReceiver receive = new MulticastReceiver(rtpParse, multicastGroup, iface);
-			rtpParse.setRTPErrorHandler(new ReportingRTPErrorHandler(rep));
-			MulticastReceiverContext ctx = receive.createContext();
+			MulticastReceiver receive = new MulticastReceiver(rtpParse, errorCorrection == ErrorCorrection.mpegparityfec);
+			rtpParse.setReporter(rep);
+			MulticastReceiverContext ctx = receive.createContext(multicastGroup, iface);
 			receive.receive(ctx);
 		} else {
 			System.err.println("One of --multicast-group or --benchmark must be specified");
