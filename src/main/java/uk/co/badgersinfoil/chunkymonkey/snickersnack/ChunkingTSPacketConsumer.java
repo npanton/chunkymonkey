@@ -8,6 +8,11 @@ import java.nio.channels.FileChannel;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
@@ -21,9 +26,12 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 	// transport stream packets, so that we can efficiently write them
 	// all out in one go, rather than inefficiently giving the OS lots
 	// of individual 188-byte writes to handle
-	private CompositeByteBuf pending = Unpooled.compositeBuffer();
-	private static final int COALESCE_THRESHOLD = 4 * 1024;  // 4KB
+	private AtomicReference<ByteBuf> pending = new AtomicReference<>(Unpooled.buffer());
+	private static final int COALESCE_THRESHOLD = 1024 * 1024;  // 1MB
+	private static final int MAX_BUFFER = 10 * 1024 * 1024;  // 10MB
 	private String chunkDir;
+	private ExecutorService executor = Executors.newSingleThreadExecutor();
+	private Future<Void> lastWrite;
 
 	public ChunkingTSPacketConsumer(String chunkDir) {
 		this.chunkDir = chunkDir;
@@ -31,15 +39,19 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 
 	@Override
 	public void packet(TSContext ctx, TSPacket packet) {
-		try {
-			ByteBuf buf = packet.getBuffer();
-			if (pending.readableBytes() + buf.readableBytes() > COALESCE_THRESHOLD) {
-				writeout();
-			}
-			pending.writeBytes(buf);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		if (pending.get().readableBytes() > MAX_BUFFER) {
+			System.err.println("Writeout too slow, dropping a packet");
 		}
+		ByteBuf buf = packet.getBuffer();
+		if (pending.get().readableBytes() + buf.readableBytes() > COALESCE_THRESHOLD) {
+			try {
+				writeout();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		pending.get().writeBytes(buf);
 	}
 
 	private FileChannel getChunkChannel() throws IOException {
@@ -52,11 +64,11 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 
 	@Override
 	public void end(TSContext context) {
-		if (pending.readableBytes() > 0) {
+		if (pending.get().readableBytes() > 0) {
 			try {
 				writeout();
 			} catch (IOException e) {
-				throw new RuntimeException(e);
+				e.printStackTrace();
 			}
 		}
 		if (file != null) {
@@ -64,20 +76,42 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 		}
 	}
 
+
 	private void writeout() throws IOException {
-		pending.getBytes(0, getChunkChannel(), pending.readableBytes());
-		pending.clear();
-		pending.discardReadBytes();
+		if (lastWrite != null && !lastWrite.isDone()) {
+			return;
+		}
+		final ByteBuf buf = pending.get();
+		final FileChannel out = getChunkChannel();
+		lastWrite = executor.submit(new Callable<Void>() {
+			@Override
+			public Void call() {
+				try {
+					buf.readBytes(out, buf.readableBytes());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				return null;
+			}
+		});
+		pending.set(Unpooled.buffer());
 	}
 
 	private void close() {
-		try {
-			file.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		file = null;
+		final FileChannel file = this.file;
+		this.file = null;
+		executor.submit(new Callable<Void>() {
+			@Override
+			public Void call() {
+				try {
+					file.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				return null;
+			}
+		});
 	}
 
 	public String getChunkId() {
@@ -87,11 +121,10 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 	public void setChunkId(String chunkId) {
 		this.chunkId = chunkId;
 		if (file != null) {
-			if (pending.readableBytes() > 0) {
+			if (pending.get().readableBytes() > 0) {
 				try {
 					writeout();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
