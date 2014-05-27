@@ -8,8 +8,10 @@ import io.netty.util.ResourceLeakDetector;
 import java.io.File;
 import java.io.IOException;
 import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.URISyntaxException;
 import java.util.Date;
+import java.util.Enumeration;
 import javax.inject.Inject;
 import uk.co.badgersinfoil.chunkymonkey.ConsoleReporter;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
@@ -69,6 +71,9 @@ public class Main {
 	@Option(name = { "--chunk-dir" }, description = "Destination into which transport stream chunks are to be written", required=true )
 	public String chunkDir;
 
+	@Option(name = { "--interface" }, description = "Name of the network interface on which to join the multicast group" )
+	public String ifname;
+
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		Main m = SingleCommand.singleCommand(Main.class).parse(args);
 		if (m.helpOption.showHelpIfRequested()) {
@@ -87,8 +92,7 @@ public class Main {
 		if (benchmarkFile != null) {
 			benchmark(benchmarkFile, consumer);
 		} else if (multicastGroup != null) {
-			// TODO: add options to configure network interface,
-			NetworkInterface iface = NetworkInterface.getByIndex(0);
+			NetworkInterface iface = getInterface();
 			RtpTransportStreamParser p = new RtpTransportStreamParser(consumer);
 			RtpParser rtpParse = new RtpParser(p);
 			MulticastReceiver receive = new MulticastReceiver(rtpParse, multicastGroup, iface);
@@ -98,6 +102,23 @@ public class Main {
 		} else {
 			System.err.println("One of --multicast-group or --benchmark must be specified");
 		}
+	}
+
+	private NetworkInterface getInterface() throws SocketException {
+		NetworkInterface iface;
+		if (ifname == null) {
+			Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
+			if (!e.hasMoreElements() || (iface = e.nextElement()) == null) {
+				throw new RuntimeException("No network interfaces?");
+			}
+			System.err.println("Listening on "+iface.getDisplayName());
+		} else {
+			iface = NetworkInterface.getByName(ifname);
+			if (iface == null) {
+				throw new RuntimeException("No such network interface: "+ifname);
+			}
+		}
+		return iface;
 	}
 
 	private static void benchmark(String file,
