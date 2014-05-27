@@ -230,7 +230,9 @@ public class HlsMediaPlaylistProcessor {
 					return null;
 				}
 				manifestResponseChecker.check(loc, resp, context);
-				checkCacheValidators(loc, ctx.httpCondition, resp);
+				if (resp.getStatusLine().getStatusCode() != 302) {
+					checkCacheValidators(loc, ctx.httpCondition, resp);
+				}
 				checkAge(loc, ctx, resp);
 				InputStream stream = resp.getEntity().getContent();
 				try {
@@ -253,28 +255,37 @@ public class HlsMediaPlaylistProcessor {
 	                                  HttpCondition httpCondition,
 	                                  CloseableHttpResponse resp)
 	{
-		if (resp.getStatusLine().getStatusCode() != 302) {
-			if (resp.containsHeader("Last-Modified")) {
-				// TODO: check should be 'less then or equals'
-				String lastMod = resp.getLastHeader("Last-Modified").getValue();
-				if (lastMod.equals(httpCondition.getLastLastModified())) {
-					rep.carp(loc,
-					         "Last-Modified header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)",
-					         resp.getStatusLine(),
-					         lastMod,
-					         httpCondition.getLastLastModified()
-					         );
-				}
-				String etag = resp.getLastHeader("ETag").getValue();
-				if (etag.equals(httpCondition.getLastETag())) {
-					rep.carp(loc,
-					         "ETag header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)",
-					         resp.getStatusLine(),
-					         etag,
-					         httpCondition.getLastETag()
-					         );
-				}
+		// TODO: check should be 'less then or equals'
+		boolean lastModMatch = resp.containsHeader("Last-Modified") && resp.getLastHeader("Last-Modified").getValue().equals(httpCondition.getLastLastModified());
+		boolean etagMatch = resp.containsHeader("ETag") && resp.getLastHeader("ETag").getValue().equals(httpCondition.getLastETag());
+		if (lastModMatch != etagMatch) {
+			if (lastModMatch) {
+				rep.carp(loc,
+				         "Last-Modified header is still %s, but ETag has changed from %s to %s",
+				         httpCondition.getLastLastModified(),
+				         httpCondition.getLastETag(),
+				         resp.getLastHeader("ETag").getValue());
+			} else {
+				rep.carp(loc,
+				         "ETag header is still %s, but Last-Modified has changed from %s to %s",
+				         httpCondition.getLastETag(),
+				         httpCondition.getLastLastModified(),
+				         resp.getLastHeader("Last-Modified").getValue());
 			}
+		} else if (lastModMatch) {
+			rep.carp(loc,
+			         "Last-Modified header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)",
+			         resp.getStatusLine(),
+			         resp.getLastHeader("Last-Modified").getValue(),
+			         httpCondition.getLastLastModified()
+			         );
+		} else if (etagMatch) {
+			rep.carp(loc,
+			         "ETag header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)",
+			         resp.getStatusLine(),
+			         resp.getLastHeader("ETag").getValue(),
+			         httpCondition.getLastETag()
+			         );
 		}
 	}
 
