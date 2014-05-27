@@ -52,10 +52,12 @@ import uk.co.badgersinfoil.chunkymonkey.ts.ValidatingPesConsumer;
 
 public class AppBuilder {
 
+	private String userAgent = "conformist";
+
 	public HlsMasterPlaylistProcessor buildSingle(ScheduledExecutorService scheduledExecutor, Reporter rep) {
 		CloseableHttpClient httpclient
 			= HttpClientBuilder.create()
-			                   .setUserAgent("conformist")
+			                   .setUserAgent(userAgent)
 			                   .setRequestExecutor(HttpExecutionWrapper.CONN_INFO_SNARFING_REQUEST_EXECUTOR)
 			                   .setMaxConnPerRoute(10)
 			                   .setMaxConnTotal(40)
@@ -185,5 +187,9 @@ public class AppBuilder {
 				new H264PesConsumer(nalUnitConsumers)
 			);
 		return new PesTSPacketConsumer(consumers);
+	}
+
+	public void setUserAgent(String userAgent) {
+		this.userAgent = userAgent;
 	}
 }
