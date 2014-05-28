@@ -5,7 +5,6 @@ import io.netty.buffer.Unpooled;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.URI;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import uk.co.badgersinfoil.chunkymonkey.Locator;

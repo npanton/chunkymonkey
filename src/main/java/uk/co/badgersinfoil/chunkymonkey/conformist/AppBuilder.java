@@ -41,7 +41,6 @@ import uk.co.badgersinfoil.chunkymonkey.ts.PmtConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PmtConsumerImpl;
 import uk.co.badgersinfoil.chunkymonkey.ts.PmtTSPacketConsumerConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PesTSPacketConsumer;
-import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable;
 import uk.co.badgersinfoil.chunkymonkey.ts.StreamProcRegistry;
 import uk.co.badgersinfoil.chunkymonkey.ts.StreamTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.StreamType;

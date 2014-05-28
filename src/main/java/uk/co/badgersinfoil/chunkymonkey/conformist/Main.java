@@ -7,7 +7,6 @@ import io.airlift.command.Option;
 import io.airlift.command.SingleCommand;
 import io.netty.util.ResourceLeakDetector;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

@@ -1,7 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.snickersnack;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import java.io.IOException;
 import java.nio.channels.FileChannel;

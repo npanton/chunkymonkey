@@ -5,11 +5,10 @@ import uk.co.badgersinfoil.chunkymonkey.aac.AacProfile;
 import uk.co.badgersinfoil.chunkymonkey.aac.ChannelConfiguration;
 import uk.co.badgersinfoil.chunkymonkey.aac.SamplingFrequencyIndex;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 
 public class ADTSFrame {
-	
+
 	private static final int HEADER_MIN_LENGTH = 7;
 	private static final int HEADER_CRC_LENGTH = 9;
 

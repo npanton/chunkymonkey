@@ -2,7 +2,6 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import java.util.HashMap;
 import java.util.Map;
-import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable.StreamDescriptorIterator;
 
 public class StreamProcRegistry {
 

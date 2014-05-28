@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import com.google.common.collect.ImmutableSet;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import net.chilicat.m3u8.Element;
 import net.chilicat.m3u8.Playlist;
 import net.chilicat.m3u8.PlaylistInfo;

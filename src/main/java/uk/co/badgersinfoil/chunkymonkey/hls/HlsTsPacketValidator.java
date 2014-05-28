@@ -1,13 +1,9 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
-import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket.ProgramClockReference;
 
 public class HlsTsPacketValidator implements TSPacketConsumer {
 

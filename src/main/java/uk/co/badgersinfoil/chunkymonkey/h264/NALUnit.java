@@ -1,12 +1,9 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 
 public class NALUnit {
-	
+
 	public static enum UnitType {
 		UNSPECIFIED(0),
 		SLICE_LAYER_WITHOUT_PARTITIONING_NON_IDR(1),
@@ -40,7 +37,7 @@ public class NALUnit {
 		UNSPECIFIED_29(29),
 		UNSPECIFIED_30(30),
 		UNSPECIFIED_31(31);
-		
+
 		private int id;
 
 		private UnitType(int id) {
@@ -84,7 +81,7 @@ public class NALUnit {
 			default: throw new IllegalArgumentException("Invalid id "+id);
 			}
 		}
-		
+
 		public int getId() {
 			return id;
 		}
@@ -97,7 +94,7 @@ public class NALUnit {
 		this.locator = locator;
 		this.header = header;
 	}
-	
+
 	public int forbiddenZeroBit() {
 		return (header & 0b10000000) >> 7;
 	}
@@ -107,7 +104,7 @@ public class NALUnit {
 	public UnitType nalUnitType() {
 		return UnitType.forId((header & 0b00011111));
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
