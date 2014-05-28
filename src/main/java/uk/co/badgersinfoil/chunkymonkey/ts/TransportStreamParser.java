@@ -2,11 +2,10 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-
 import java.io.IOException;
 import java.io.InputStream;
-
 import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 
 
 public class TransportStreamParser {
@@ -28,8 +27,8 @@ public class TransportStreamParser {
 		return locator;
 	}
 
-	public void parse(TSContext parentCtx, InputStream stream) throws IOException {
-		TSContext ctx = consumer.createContext(parentCtx);
+	public void parse(MediaContext parentCtx, InputStream stream) throws IOException {
+		MediaContext ctx = consumer.createContext(parentCtx);
 		while (true) {
 			ByteBuf buf = Unpooled.buffer();
 			if (!readPacket(stream, buf, TSPacket.TS_PACKET_LENGTH)) {

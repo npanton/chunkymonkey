@@ -4,7 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
-import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket.AdaptationField;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket.ProgramClockReference;
@@ -29,7 +29,7 @@ public class MyPCRWatchingTSConsumer implements TSPacketConsumer {
 		this.chunker = chunker;
 	}
 
-	private void pcr(TSContext ctx, ProgramClockReference programClockReference) {
+	private void pcr(MediaContext ctx, ProgramClockReference programClockReference) {
 		if (pcrClockOffset != null) {
 //System.out.println("PCR: "+programClockReference.toSexidecimalString());
 			final long ts = programClockReference.getPcrBase();
@@ -82,7 +82,7 @@ System.err.println(" to "+pcrClockOffset);
 	}
 
 	@Override
-	public void packet(TSContext ctx, TSPacket pkt) {
+	public void packet(MediaContext ctx, TSPacket pkt) {
 		if (pkt.adaptionControl().adaptionFieldPresent()) {
 			AdaptationField adaptationField = pkt.getAdaptationField();
 			if (adaptationField.pcrFlag()) {
@@ -93,7 +93,7 @@ System.err.println(" to "+pcrClockOffset);
 	}
 
 	@Override
-	public void end(TSContext context) {
+	public void end(MediaContext context) {
 		// TODO Auto-generated method stub
 		
 	}
@@ -110,7 +110,7 @@ System.err.println(" to "+pcrClockOffset);
 	}
 
 	@Override
-	public TSContext createContext(TSContext parent) {
+	public MediaContext createContext(MediaContext parent) {
 		// TODO Auto-generated method stub
 		return null;
 	}

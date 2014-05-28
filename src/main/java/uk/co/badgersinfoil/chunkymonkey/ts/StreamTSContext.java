@@ -1,5 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
-public class StreamTSContext implements TSContext {
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+
+public class StreamTSContext implements MediaContext {
 
 }

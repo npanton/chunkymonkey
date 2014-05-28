@@ -1,19 +1,19 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 
 public class HlsTsPacketValidator implements TSPacketConsumer {
 
-	public static class HlsTsPacketValidatorContext implements TSContext {
+	public static class HlsTsPacketValidatorContext implements MediaContext {
 
-		private TSContext parent;
+		private MediaContext parent;
 		public int packetCount = 0;
 		public int patCount = 0;
 
-		public HlsTsPacketValidatorContext(TSContext parent) {
+		public HlsTsPacketValidatorContext(MediaContext parent) {
 			this.parent = parent;
 		}
 	}
@@ -25,7 +25,7 @@ public class HlsTsPacketValidator implements TSPacketConsumer {
 	}
 
 	@Override
-	public void packet(TSContext ctx, TSPacket packet) {
+	public void packet(MediaContext ctx, TSPacket packet) {
 		HlsTsPacketValidatorContext vctx = (HlsTsPacketValidatorContext)ctx;
 		if (vctx.packetCount == 0 && packet.PID() != 0) {
 			rep.carp(packet.getLocator(), "First packet should be PAT (i.e. PID 0), but has PID %d instead", packet.PID());
@@ -37,7 +37,7 @@ public class HlsTsPacketValidator implements TSPacketConsumer {
 	}
 
 	@Override
-	public void end(TSContext context) {
+	public void end(MediaContext context) {
 		HlsTsPacketValidatorContext vctx = (HlsTsPacketValidatorContext)context;
 		if (vctx.patCount == 0) {
 			System.err.println("No PAT seen in HLS segment");
@@ -45,7 +45,7 @@ public class HlsTsPacketValidator implements TSPacketConsumer {
 	}
 
 	@Override
-	public TSContext createContext(TSContext parent) {
+	public MediaContext createContext(MediaContext parent) {
 		return new HlsTsPacketValidatorContext(parent);
 	}
 }

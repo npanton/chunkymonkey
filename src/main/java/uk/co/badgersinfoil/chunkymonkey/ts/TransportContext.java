@@ -4,14 +4,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer.FilterEntry;
 
 
-public class TransportContext implements TSContext, TransportContextProvider {
+public class TransportContext implements MediaContext, TransportContextProvider {
 	private Map<Integer, FilterEntry> filterMap = new HashMap<>();
-	private TSContext parent;
+	private MediaContext parent;
 
-	public TransportContext(TSContext parent) {
+	public TransportContext(MediaContext parent) {
 		this.parent = parent;
 	}
 
@@ -28,15 +29,15 @@ public class TransportContext implements TSContext, TransportContextProvider {
 		return this;
 	}
 
-	public List<TSContext> getContexts() {
-		List<TSContext> result = new ArrayList<TSContext>();
+	public List<MediaContext> getContexts() {
+		List<MediaContext> result = new ArrayList<MediaContext>();
 		for (FilterEntry e : filterMap.values()) {
 			result.add(e.getContext());
 		}
 		return result;
 	}
 
-	public TSContext getParent() {
+	public MediaContext getParent() {
 		return parent;
 	}
 }

@@ -9,9 +9,9 @@ import org.mockito.Mock;
 import static org.mockito.Mockito.*;
 import org.mockito.runners.MockitoJUnitRunner;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.rtp.RtpParser.RtpContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.BufferTransportStreamParser;
-import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
 
 @RunWith(MockitoJUnitRunner.class)
 public class RtpBufferTest {
@@ -28,7 +28,7 @@ public class RtpBufferTest {
 		b.add(ctx, consumer, p);
 		assertEquals(0, b.diffSeq());
 		assertEquals(1, b.size());
-		verify(consumer).buffer(any(TSContext.class), any(ByteBuf.class), any(Locator.class));
+		verify(consumer).buffer(any(MediaContext.class), any(ByteBuf.class), any(Locator.class));
 	}
 
 	private RtpPacket mockPacket(int seq) {

@@ -3,26 +3,27 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 
 public class MultiTSPacketConsumer implements TSPacketConsumer {
 
 
-	public static class MultiTsContext implements TSContext {
+	public static class MultiMediaContext implements MediaContext {
 		public static class Entry {
-			public Entry(TSContext context,
+			public Entry(MediaContext context,
 			             TSPacketConsumer consumer)
 			{
 				this.context = context;
 				this.consumer = consumer;
 			}
 			TSPacketConsumer consumer;
-			private TSContext context;
-			public TSContext getContext() {
+			private MediaContext context;
+			public MediaContext getContext() {
 				return context;
 			}
 		}
 		public List<Entry> list = new ArrayList<>();
-		public MultiTsContext(TSContext parent, List<TSPacketConsumer> list) {
+		public MultiMediaContext(MediaContext parent, List<TSPacketConsumer> list) {
 			for (TSPacketConsumer consumer : list) {
 				this.list.add(new Entry(consumer.createContext(parent), consumer));
 			}
@@ -37,23 +38,23 @@ public class MultiTSPacketConsumer implements TSPacketConsumer {
 	}
 
 	@Override
-	public void packet(TSContext ctx, TSPacket packet) {
-		MultiTsContext mctx = (MultiTsContext)ctx;
-		for (MultiTsContext.Entry e : mctx.list) {
+	public void packet(MediaContext ctx, TSPacket packet) {
+		MultiMediaContext mctx = (MultiMediaContext)ctx;
+		for (MultiMediaContext.Entry e : mctx.list) {
 			e.consumer.packet(e.getContext(), packet);
 		}
 	}
 
 	@Override
-	public void end(TSContext ctx) {
-		MultiTsContext mctx = (MultiTsContext)ctx;
-		for (MultiTsContext.Entry e : mctx.list) {
+	public void end(MediaContext ctx) {
+		MultiMediaContext mctx = (MultiMediaContext)ctx;
+		for (MultiMediaContext.Entry e : mctx.list) {
 			e.consumer.end(e.getContext());
 		}
 	}
 
 	@Override
-	public TSContext createContext(TSContext parent) {
-		return new MultiTsContext(parent, list);
+	public MediaContext createContext(MediaContext parent) {
+		return new MultiMediaContext(parent, list);
 	}
 }

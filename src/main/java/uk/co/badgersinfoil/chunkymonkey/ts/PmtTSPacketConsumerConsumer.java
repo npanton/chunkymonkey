@@ -1,10 +1,11 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramAssociationTable.ProgramEntry;
 
 public class PmtTSPacketConsumerConsumer implements TSPacketConsumer {
 
-	public class PMTContext implements TSContext {
+	public class PMTContext implements MediaContext {
 
 	}
 
@@ -16,7 +17,7 @@ public class PmtTSPacketConsumerConsumer implements TSPacketConsumer {
 	}
 
 	@Override
-	public void packet(TSContext ctx, TSPacket packet) {
+	public void packet(MediaContext ctx, TSPacket packet) {
 		ProgramTSContext progCtx = (ProgramTSContext)ctx;
 		ProgramMapTable pmt = progCtx.lastPmt();
 		if (packet.payloadUnitStartIndicator()) {
@@ -46,12 +47,12 @@ public class PmtTSPacketConsumerConsumer implements TSPacketConsumer {
 	}
 
 	@Override
-	public void end(TSContext ctx) {
+	public void end(MediaContext ctx) {
 		ProgramTSContext progCtx = (ProgramTSContext)ctx;
 	}
 
 	@Override
-	public TSContext createContext(TSContext parent) {
+	public MediaContext createContext(MediaContext parent) {
 		return new PMTContext();
 	}
 }

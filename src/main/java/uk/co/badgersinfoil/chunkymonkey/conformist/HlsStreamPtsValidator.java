@@ -1,30 +1,30 @@
 package uk.co.badgersinfoil.chunkymonkey.conformist;
 
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsValidatingPesConsumer.HlsValidatingPesContext;
 import uk.co.badgersinfoil.chunkymonkey.snickersnack.MyPicTimingConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer;
-import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer.MultiTsContext;
-import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer.MultiTsContext.Entry;
+import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer.MultiMediaContext;
+import uk.co.badgersinfoil.chunkymonkey.ts.MultiTSPacketConsumer.MultiMediaContext.Entry;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESConsumer.MultiPesConsumer.MultiElementryContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PesTSPacketConsumer.PESLocator;
 import uk.co.badgersinfoil.chunkymonkey.ts.PesTSPacketConsumer.PesStreamTSContext;
-import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.TransportContext;
 
 public class HlsStreamPtsValidator implements TSPacketConsumer {
 
-	private class PCRtoPTSValidatorContext implements TSContext {
+	private class PCRtoPTSValidatorContext implements MediaContext {
 
-		public MultiTsContext multiTSPacketContext;
+		public MultiMediaContext multiTSPacketContext;
 
-		public PCRtoPTSValidatorContext(TSContext parent,
-		                                TSContext multiTSPacketContext)
+		public PCRtoPTSValidatorContext(MediaContext parent,
+		                                MediaContext multiTSPacketContext)
 		{
-			this.multiTSPacketContext = (MultiTsContext)multiTSPacketContext;
+			this.multiTSPacketContext = (MultiMediaContext)multiTSPacketContext;
 		}
 
 	}
@@ -38,13 +38,13 @@ public class HlsStreamPtsValidator implements TSPacketConsumer {
 	}
 
 	@Override
-	public void packet(TSContext ctx, TSPacket packet) {
+	public void packet(MediaContext ctx, TSPacket packet) {
 		PCRtoPTSValidatorContext vctx = (PCRtoPTSValidatorContext)ctx;
 		multiTSPacketConsumer.packet(vctx.multiTSPacketContext, packet);
 	}
 
 	@Override
-	public void end(TSContext ctx) {
+	public void end(MediaContext ctx) {
 		PCRtoPTSValidatorContext vctx = (PCRtoPTSValidatorContext)ctx;
 		multiTSPacketConsumer.end(vctx.multiTSPacketContext);
 		checkInitialPtsValues(vctx);
@@ -56,10 +56,10 @@ public class HlsStreamPtsValidator implements TSPacketConsumer {
 		//        (Visitor design pattern or similar for context
 		//         objects required?)
 		for (Entry e : vctx.multiTSPacketContext.list) {
-			TSContext ctx = e.getContext();
+			MediaContext ctx = e.getContext();
 			if (ctx instanceof TransportContext) {
 				TransportContext tsCtx = (TransportContext)ctx;
-				for (TSContext filterContext : tsCtx.getContexts()) {
+				for (MediaContext filterContext : tsCtx.getContexts()) {
 					if (filterContext instanceof PesStreamTSContext) {
 						ElementryContext elementryContext = ((PesStreamTSContext)filterContext).getElementryContext();
 						if (elementryContext instanceof MultiElementryContext) {
@@ -93,7 +93,7 @@ public class HlsStreamPtsValidator implements TSPacketConsumer {
 	}
 
 	@Override
-	public TSContext createContext(TSContext parent) {
+	public MediaContext createContext(MediaContext parent) {
 		return new PCRtoPTSValidatorContext(parent, multiTSPacketConsumer.createContext(parent));
 	}
 }

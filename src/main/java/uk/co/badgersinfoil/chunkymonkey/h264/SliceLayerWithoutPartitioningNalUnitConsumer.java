@@ -1,6 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
-import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -16,7 +16,7 @@ public class SliceLayerWithoutPartitioningNalUnitConsumer implements NalUnitCons
 		public NALUnit currentUnit;
 		private ByteBuf buf = Unpooled.buffer();
 		H264BitBuf bits;
-		public TSContext consumerContext;
+		public MediaContext consumerContext;
 
 		public SliceLayerWithoutPartitioningContext(H264Context parent) {
 			this.parent = parent;

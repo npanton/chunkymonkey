@@ -1,24 +1,26 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+
 
 public interface TSPacketConsumer {
-	public class NullContext implements TSContext { }
+	public class NullContext implements MediaContext { }
 
 	TSPacketConsumer NULL = new TSPacketConsumer() {
 		@Override
-		public void packet(TSContext ctx, TSPacket packet) { }
+		public void packet(MediaContext ctx, TSPacket packet) { }
 		@Override
-		public void end(TSContext context) { }
+		public void end(MediaContext context) { }
 		@Override
-		public TSContext createContext(TSContext parent) { return new NullContext(); }
+		public MediaContext createContext(MediaContext parent) { return new NullContext(); }
 	};
 
-	void packet(TSContext ctx, TSPacket packet);
+	void packet(MediaContext ctx, TSPacket packet);
 
 	/**
 	 * Called when the transport stream ends
 	 */
-	void end(TSContext context);
+	void end(MediaContext context);
 
-	TSContext createContext(TSContext parent);
+	MediaContext createContext(MediaContext parent);
 }

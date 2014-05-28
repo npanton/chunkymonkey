@@ -135,7 +135,7 @@ public class Main {
 		File f = new File(file);
 		long size = f.length();
 		FileTransportStreamParser parser = new FileTransportStreamParser(consumer);
-		FileTransportStreamParser.FileTsContext ctx = parser.createContext();
+		FileTransportStreamParser.FileContext ctx = parser.createContext();
 		long start = System.currentTimeMillis();
 		parser.parse(ctx, f);
 		long time = System.currentTimeMillis() - start;

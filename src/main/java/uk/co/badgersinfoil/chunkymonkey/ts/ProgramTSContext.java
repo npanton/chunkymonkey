@@ -2,11 +2,11 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer.FilterEntry;
 
 
-public class ProgramTSContext implements TSContext {
+public class ProgramTSContext implements MediaContext {
 
 	private int pid;
 	private TransportContext ctx;

@@ -2,7 +2,7 @@ package uk.co.badgersinfoil.chunkymonkey.seidump;
 
 import java.io.File;
 import uk.co.badgersinfoil.chunkymonkey.ts.FileTransportStreamParser;
-import uk.co.badgersinfoil.chunkymonkey.ts.FileTransportStreamParser.FileTsContext;
+import uk.co.badgersinfoil.chunkymonkey.ts.FileTransportStreamParser.FileContext;
 
 public class Main {
 
@@ -14,7 +14,7 @@ public class Main {
 		AppBuilder b = new AppBuilder();
 		FileTransportStreamParser parser = b.createFileParser();
 		File f = new File(args[0]);
-		FileTsContext ctx = parser.createContext();
+		FileContext ctx = parser.createContext();
 		parser.parse(ctx, f);
 	}
 }

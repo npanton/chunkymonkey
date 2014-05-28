@@ -2,18 +2,19 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import io.netty.buffer.ByteBuf;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 
 /**
  * Common code for handlers of buffers containing multiple transport stream
  * packets.
  */
 public class BufferTransportStreamParser {
-	public static class BufferContext implements TSContext {
+	public static class BufferContext implements MediaContext {
 
-		public TSContext consumerContext;
-		private TSContext parent;
+		public MediaContext consumerContext;
+		private MediaContext parent;
 
-		public BufferContext(TSContext parent) {
+		public BufferContext(MediaContext parent) {
 			this.parent = parent;
 		}
 	}
@@ -30,7 +31,7 @@ public class BufferTransportStreamParser {
 	 * {@link TSPacket#TS_PACKET_LENGTH} bytes long), passing each to the
 	 * TSPacketConsumer instance supplied on construction.
 	 */
-	public void buffer(TSContext c, ByteBuf payload, Locator locator) {
+	public void buffer(MediaContext c, ByteBuf payload, Locator locator) {
 		BufferContext ctx = (BufferContext)c;
 		int count = payload.readableBytes() / TSPacket.TS_PACKET_LENGTH;
 		for (int i=0; i<count; i++) {
@@ -44,7 +45,7 @@ public class BufferTransportStreamParser {
 		}
 	}
 
-	public TSContext createContext(TSContext ctx) {
+	public MediaContext createContext(MediaContext ctx) {
 		BufferContext bufCtx = new BufferContext(ctx);
 		bufCtx.consumerContext = consumer.createContext(bufCtx);
 		return bufCtx;

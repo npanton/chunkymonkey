@@ -3,11 +3,12 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 import java.util.HashMap;
 import java.util.Map;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket.ProgramClockReference;
 
 public class TSPacketValidator implements TSPacketConsumer {
 
-	public class ValidatorTSContext implements TSContext {
+	public class TSPacketValidatorContext implements MediaContext {
 		private Map<Integer,ProgramClockReference> lastPCRs = new HashMap<>();
 	}
 
@@ -20,8 +21,8 @@ public class TSPacketValidator implements TSPacketConsumer {
 	}
 
 	@Override
-	public void packet(TSContext ctx, TSPacket packet) {
-		ValidatorTSContext vctx = (ValidatorTSContext)ctx;
+	public void packet(MediaContext ctx, TSPacket packet) {
+		TSPacketValidatorContext vctx = (TSPacketValidatorContext)ctx;
 		if (packet.transportErrorIndicator()) {
 			rep.carp(packet.getLocator(), "Transport error indicator flag present");
 		}
@@ -31,7 +32,7 @@ public class TSPacketValidator implements TSPacketConsumer {
 
 	private static final int PCR_MAX_INTERVAL_NANOS = 100000;
 
-	private void checkPCR(ValidatorTSContext vctx, TSPacket packet) {
+	private void checkPCR(TSPacketValidatorContext vctx, TSPacket packet) {
 		if (packet.adaptionControl().adaptionFieldPresent() && packet.getAdaptationField().pcrFlag()) {
 			ProgramClockReference pcr = packet.getAdaptationField().pcr();
 			if (vctx.lastPCRs.containsKey(packet.PID())) {
@@ -61,12 +62,12 @@ public class TSPacketValidator implements TSPacketConsumer {
 	}
 
 	@Override
-	public void end(TSContext context) {
+	public void end(MediaContext context) {
 		// TODO Auto-generated method stub
 	}
 
 	@Override
-	public TSContext createContext(TSContext parent) {
-		return new ValidatorTSContext();
+	public MediaContext createContext(MediaContext parent) {
+		return new TSPacketValidatorContext();
 	}
 }

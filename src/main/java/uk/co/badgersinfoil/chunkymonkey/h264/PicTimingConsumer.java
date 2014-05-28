@@ -1,11 +1,11 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.h264.PicTimingSeiConsumer.PicTimingSeiContext;
-import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
 
 public interface PicTimingConsumer {
 
-	public static interface PicTimingContext extends TSContext {
+	public static interface PicTimingContext extends MediaContext {
 		PicTimingSeiContext getPicTimingSeiContext();
 	}
 

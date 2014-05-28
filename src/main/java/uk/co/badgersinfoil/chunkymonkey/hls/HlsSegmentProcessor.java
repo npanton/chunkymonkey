@@ -11,8 +11,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.URILocator;
-import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.TransportStreamParser;
 
@@ -26,7 +26,7 @@ public class HlsSegmentProcessor {
 	private HttpResponseChecker manifestResponseChecker = HttpResponseChecker.NULL;
 	private RequestConfig config;
 
-	public  static class HlsSegmentTsContext implements TSContext {
+	public  static class HlsSegmentTsContext implements MediaContext {
 		public HlsSegmentTsContext(HlsMediaPlaylistContext ctx) {
 			this.ctx = ctx;
 		}

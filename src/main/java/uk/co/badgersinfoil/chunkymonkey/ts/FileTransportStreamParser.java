@@ -8,18 +8,19 @@ import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.URILocator;
 
 public class FileTransportStreamParser {
 
-	public static class FileTsContext implements TSContext {
+	public static class FileContext implements MediaContext {
 
-		private TSContext ctx;
+		private MediaContext ctx;
 
-		public void setConsumerContext(TSContext ctx) {
+		public void setConsumerContext(MediaContext ctx) {
 			this.ctx = ctx;
 		}
-		public TSContext getConsumerContext() {
+		public MediaContext getConsumerContext() {
 			return ctx;
 		}
 	}
@@ -30,7 +31,7 @@ public class FileTransportStreamParser {
 		this.consumer = consumer;
 	}
 
-	public void parse(FileTsContext fctx, File f) throws IOException {
+	public void parse(FileContext fctx, File f) throws IOException {
 		Locator locator = new URILocator(f.toURI());
 		RandomAccessFile file = new RandomAccessFile(f, "r");
 		try {
@@ -52,7 +53,7 @@ public class FileTransportStreamParser {
 				ByteBuf buf = Unpooled.wrappedBuffer(in);
 
 				long packetCount = mapped / TSPacket.TS_PACKET_LENGTH;
-				TSContext ctx = fctx.getConsumerContext();
+				MediaContext ctx = fctx.getConsumerContext();
 				for (int i=0; i<packetCount ; i++) {
 					ByteBuf pk = buf.slice(i*TSPacket.TS_PACKET_LENGTH, TSPacket.TS_PACKET_LENGTH);
 					TSPacket packet = new TSPacket(locator, packetNo++, pk);
@@ -69,9 +70,9 @@ public class FileTransportStreamParser {
 		}
 	}
 
-	public FileTsContext createContext() {
-		FileTsContext fctx = new FileTsContext();
-		TSContext ctx = consumer.createContext(fctx);
+	public FileContext createContext() {
+		FileContext fctx = new FileContext();
+		MediaContext ctx = consumer.createContext(fctx);
 		fctx.setConsumerContext(ctx);
 		return fctx;
 	}

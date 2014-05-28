@@ -12,7 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
-import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 
@@ -37,7 +37,7 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 	}
 
 	@Override
-	public void packet(TSContext ctx, TSPacket packet) {
+	public void packet(MediaContext ctx, TSPacket packet) {
 		if (pending.get().readableBytes() > MAX_BUFFER) {
 			System.err.println("Writeout too slow, dropping a packet");
 		}
@@ -62,7 +62,7 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 	}
 
 	@Override
-	public void end(TSContext context) {
+	public void end(MediaContext context) {
 		if (pending.get().readableBytes() > 0) {
 			try {
 				writeout();
@@ -132,7 +132,7 @@ public class ChunkingTSPacketConsumer implements TSPacketConsumer {
 	}
 
 	@Override
-	public TSContext createContext(TSContext parent) {
+	public MediaContext createContext(MediaContext parent) {
 		// TODO Auto-generated method stub
 		return null;
 	}

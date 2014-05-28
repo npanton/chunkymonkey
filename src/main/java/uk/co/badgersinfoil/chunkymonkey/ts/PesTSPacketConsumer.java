@@ -2,6 +2,7 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable.StreamDescriptorIterator;
 
 public class PesTSPacketConsumer implements StreamTSPacketConsumer {
@@ -89,7 +90,7 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 	}
 
 	@Override
-	public void packet(TSContext tsCtx, TSPacket packet) {
+	public void packet(MediaContext tsCtx, TSPacket packet) {
 		PesStreamTSContext ctx = (PesStreamTSContext)tsCtx;
 		// sanity check,
 		if (packet.PID() != ctx.elementryPID) {
@@ -121,7 +122,7 @@ System.err.println(String.format("TS continuity error (PID %d) counter now %d, l
 	}
 
 	@Override
-	public void end(TSContext tsCtx) {
+	public void end(MediaContext tsCtx) {
 		PesStreamTSContext ctx = (PesStreamTSContext)tsCtx;
 		pesConsumer.end(ctx.eCtx);
 	}
@@ -135,7 +136,7 @@ System.err.println(String.format("TS continuity error (PID %d) counter now %d, l
 	}
 
 	@Override
-	public TSContext createContext(TSContext parent) {
+	public MediaContext createContext(MediaContext parent) {
 		throw new RuntimeException("Oops!  Use createContext(ProgramTSContext,StreamDescriptorIterator) instead");
 	}
 }

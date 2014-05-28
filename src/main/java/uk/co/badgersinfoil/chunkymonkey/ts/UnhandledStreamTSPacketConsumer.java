@@ -1,11 +1,12 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable.StreamDescriptorIterator;
 
 public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 
-	public class UnhandledContext implements TSContext {
+	public class UnhandledContext implements MediaContext {
 
 	}
 
@@ -41,7 +42,7 @@ public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 //	}
 
 	@Override
-	public void packet(TSContext ctx, TSPacket packet) {
+	public void packet(MediaContext ctx, TSPacket packet) {
 		UnhandledStreamTSPacketConsumerContext uCtx = (UnhandledStreamTSPacketConsumerContext)ctx;
 		if (!uCtx.flagged) {
 			rep.carp(packet.getLocator(), "Unhndled stream type %s", uCtx.streamType);
@@ -50,7 +51,7 @@ public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 	}
 
 	@Override
-	public void end(TSContext context) {
+	public void end(MediaContext context) {
 		// TODO Auto-generated method stub
 
 	}
@@ -62,7 +63,7 @@ public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 	}
 
 	@Override
-	public TSContext createContext(TSContext parent) {
+	public MediaContext createContext(MediaContext parent) {
 		return new UnhandledContext();
 	}
 }

@@ -9,9 +9,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.rtp.FecPacket.Direction;
 import uk.co.badgersinfoil.chunkymonkey.ts.BufferTransportStreamParser;
-import uk.co.badgersinfoil.chunkymonkey.ts.TSContext;
 
 public class RtpParser {
 	public static class RtpLocator implements Locator {
@@ -44,19 +44,19 @@ public class RtpParser {
 		}
 
 	}
-	public static class RtpContext implements TSContext {
+	public static class RtpContext implements MediaContext {
 		private MulticastReceiver.UdpConnectionLocator connLocator;
 		private long ssrc = -1;
 		private int lastSeq = -1;
 		private long lastTimestamp = -1;
 		private Set<Long> bannedSsrcs = new HashSet<>();
-		private TSContext consumerContext;
+		private MediaContext consumerContext;
 		public CorrectionMatrix correctionMatrix;
 		public long fecSsrc = -1;
 		private Set<Long> bannedFecSsrcs = new HashSet<>();
 		public int lastFecSeq = -1;
 
-		public RtpContext(BufferTransportStreamParser consumer, TSContext consumerContext, MulticastReceiver.UdpConnectionLocator connLocator) {
+		public RtpContext(BufferTransportStreamParser consumer, MediaContext consumerContext, MulticastReceiver.UdpConnectionLocator connLocator) {
 			this.consumerContext = consumerContext;
 			this.connLocator = connLocator;
 			correctionMatrix = new CorrectionMatrix(consumer);
@@ -72,7 +72,7 @@ public class RtpParser {
 			this.ssrc = ssrc;
 		}
 
-		public TSContext consumerContext() {
+		public MediaContext consumerContext() {
 			return consumerContext;
 		}
 	}
@@ -300,7 +300,7 @@ System.err.println(missing+" FEC packets missing.  Last "+ctx.lastFecSeq+", this
 		this.rep = rep;
 	}
 
-	public RtpContext createContext(TSContext ctx, MulticastReceiver.UdpConnectionLocator connLocator) {
+	public RtpContext createContext(MediaContext ctx, MulticastReceiver.UdpConnectionLocator connLocator) {
 		return new RtpContext(consumer, consumer.createContext(ctx), connLocator);
 	}
 }

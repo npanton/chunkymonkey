@@ -1,15 +1,16 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer.FilterEntry;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramAssociationTable.ProgramEntry;
 
 public class PATConsumer implements TSPacketConsumer {
 
-	public class PATContext implements TSContext, TransportContextProvider {
+	public class PATContext implements MediaContext, TransportContextProvider {
 
-		private TSContext parent;
+		private MediaContext parent;
 
-		public PATContext(TSContext parent) {
+		public PATContext(MediaContext parent) {
 			this.parent = parent;
 		}
 
@@ -33,7 +34,7 @@ public class PATConsumer implements TSPacketConsumer {
 	}
 
 	@Override
-	public void packet(TSContext ctx, TSPacket packet) {
+	public void packet(MediaContext ctx, TSPacket packet) {
 		TransportContext tctx = ((TransportContextProvider)ctx).getTransportContext();
 		if (packet.PID() != PID_PAT) {
 			throw new RuntimeException("PID expexcted to be 0, got: "+packet.PID());
@@ -76,7 +77,7 @@ public class PATConsumer implements TSPacketConsumer {
 		FilterEntry current = filter.getCurrent(tctx, entry.networkPid());
 		if (current==null || !current.getConsumer().equals(TSPacketConsumer.NULL)) {
 			System.out.println("PAT: network pid entries not yet handled ("+entry.networkPid()+")");
-			TSContext networkCtx = networkConsumer.createContext(tctx);
+			MediaContext networkCtx = networkConsumer.createContext(tctx);
 			filter.filter(tctx, entry.networkPid(), new FilterEntry(networkConsumer, networkCtx));
 		}
 	}
@@ -86,13 +87,13 @@ public class PATConsumer implements TSPacketConsumer {
 	}
 
 	@Override
-	public void end(TSContext ctx) {
+	public void end(MediaContext ctx) {
 		PATContext c = (PATContext)ctx;
 
 	}
 
 	@Override
-	public TSContext createContext(TSContext parent) {
+	public MediaContext createContext(MediaContext parent) {
 		return new PATContext(parent);
 	}
 }
