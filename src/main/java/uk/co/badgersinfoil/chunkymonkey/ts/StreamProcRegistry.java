@@ -20,12 +20,4 @@ public class StreamProcRegistry {
 		}
 		return consumer;
 	}
-
-//	public TSPacketConsumer create(StreamDescriptorIterator i) {
-//		StreamProcBuilder builder = map.get(i.streamType());
-//		if (builder == null) {
-//			return defaultStreamProc.create(i);
-//		}
-//		return builder.create(i);
-//	}
 }
