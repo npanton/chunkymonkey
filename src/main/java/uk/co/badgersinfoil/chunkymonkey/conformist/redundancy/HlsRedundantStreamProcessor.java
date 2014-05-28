@@ -81,10 +81,10 @@ public class HlsRedundantStreamProcessor {
 	                                        HlsMasterPlaylistContext stream2)
 	{
 		PlaylistComparisonResult res = masterPlaylistComparator.compare(ctx, stream1.lastTopLevel, stream2.lastTopLevel);
-		if (false && !res.getIn1Only().isEmpty()) {
+		if (!res.getIn1Only().isEmpty()) {
 			rep.carp(new URILocator(stream1.getManifestLocation()), "Master manifest entries not specified by partner: %s", playlistInfos(res.getIn1Only()));
 		}
-		if (false && !res.getIn2Only().isEmpty()) {
+		if (!res.getIn2Only().isEmpty()) {
 			rep.carp(new URILocator(stream2.getManifestLocation()), "Master manifest entries not specified by partner: %s", playlistInfos(res.getIn2Only()));
 		}
 
