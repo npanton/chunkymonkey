@@ -10,40 +10,53 @@ import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 
 public class TransportStreamParser {
 
-	private TSPacketConsumer consumer;
-	private Locator locator;
-	private int packetNo;
+	public static class TransportStreamParserContext implements MediaContext {
 
-	public TransportStreamParser(Locator locator, TSPacketConsumer consumer) {
-		this.locator = locator;
+		private MediaContext consumerContext;
+		private MediaContext parentContext;
+		private int packetNo;
+
+		public TransportStreamParserContext(MediaContext parentContext) {
+			this.parentContext = parentContext;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return new TSPacketLocator(parentContext.getLocator(), packetNo);
+		}
+
+		public void setConsumerContext(MediaContext consumerContext) {
+			this.consumerContext = consumerContext;
+		}
+
+		public MediaContext getParent() {
+			return parentContext;
+		}
+	}
+
+	private TSPacketConsumer consumer;
+
+	public TransportStreamParser(TSPacketConsumer consumer) {
 		this.consumer = consumer;
 	}
 
-	public long getPacketNo() {
-		return packetNo;
-	}
-
-	public Locator getLocator() {
-		return locator;
-	}
-
-	public void parse(MediaContext parentCtx, InputStream stream) throws IOException {
-		MediaContext ctx = consumer.createContext(parentCtx);
+	public void parse(MediaContext ctx, InputStream stream) throws IOException {
+		TransportStreamParserContext pctx = (TransportStreamParserContext)ctx;
 		while (true) {
 			ByteBuf buf = Unpooled.buffer();
 			if (!readPacket(stream, buf, TSPacket.TS_PACKET_LENGTH)) {
 				break;
 			}
 			ByteBuf pk = buf.slice(buf.readerIndex(), TSPacket.TS_PACKET_LENGTH);
-			TSPacket packet = new TSPacket(locator, packetNo, pk);
+			TSPacket packet = new TSPacket(pk);
 			if (!packet.synced()) {
 				// TODO: better diagnostics.  re-sync?
-				throw new RuntimeException("Transport stream synchronisation lost @packet#"+packetNo+" in "+locator);
+				throw new RuntimeException("Transport stream synchronisation lost @packet#"+pctx.packetNo+" in "+pctx.getLocator());
 			}
-			consumer.packet(ctx, packet);
-			packetNo++;
+			consumer.packet(pctx.consumerContext, packet);
+			pctx.packetNo++;
 		}
-		consumer.end(ctx);
+		consumer.end(pctx.consumerContext);
 	}
 
 	private boolean readPacket(InputStream in, ByteBuf buf, int packetSize) throws IOException {
@@ -59,5 +72,11 @@ public class TransportStreamParser {
 			read += r;
 		}
 		return true;
+	}
+
+	public MediaContext createContext(MediaContext parentCtx) {
+		TransportStreamParserContext ctx = new TransportStreamParserContext(parentCtx);
+		ctx.setConsumerContext(consumer.createContext(ctx));
+		return ctx;
 	}
 }

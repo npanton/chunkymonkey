@@ -1,11 +1,23 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramAssociationTable.ProgramEntry;
 
 public class PmtTSPacketConsumerConsumer implements TSPacketConsumer {
 
 	public class PMTContext implements MediaContext {
+
+		private MediaContext parentContext;
+
+		public PMTContext(MediaContext parentContext) {
+			this.parentContext = parentContext;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return parentContext.getLocator();
+		}
 
 	}
 
@@ -24,7 +36,7 @@ public class PmtTSPacketConsumerConsumer implements TSPacketConsumer {
 			if (pmt != null && !pmt.isComplete()) {
 				System.err.println("Last PMT incomplete at start of new PMT");
 			}
-			pmt = new ProgramMapTable(packet.getLocator(), packet.getPayload());
+			pmt = new ProgramMapTable(packet.getPayload());
 			progCtx.lastPmt(pmt);
 		} else {
 			if (pmt == null) {
@@ -53,6 +65,7 @@ public class PmtTSPacketConsumerConsumer implements TSPacketConsumer {
 
 	@Override
 	public MediaContext createContext(MediaContext parent) {
-		return new PMTContext();
+System.out.println("PmtTSPacketConsumerConsumer.createContext() - didn't expect call");
+		return new PMTContext(parent);
 	}
 }

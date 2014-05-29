@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable.StreamDescriptorIterator;
@@ -8,15 +9,33 @@ public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 
 	public class UnhandledContext implements MediaContext {
 
+		private MediaContext parentContext;
+
+		public UnhandledContext(MediaContext parentContext) {
+			this.parentContext = parentContext;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return parentContext.getLocator();
+		}
+
 	}
 
 	public static class UnhandledStreamTSPacketConsumerContext extends StreamTSContext {
 
 		private boolean flagged;
 		private StreamType streamType;
+		private ProgramTSContext parentContext;
 
-		public UnhandledStreamTSPacketConsumerContext(StreamType streamType) {
+		public UnhandledStreamTSPacketConsumerContext(ProgramTSContext parentContext, StreamType streamType) {
+			this.parentContext = parentContext;
 			this.streamType = streamType;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return parentContext.getLocator();
 		}
 	}
 
@@ -34,18 +53,11 @@ public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 		this.pesConsumer = pesConsumer;
 	}
 
-//	@Override
-//	public TSPacketConsumer create(StreamDescriptorIterator i) {
-//		rep.carp(i.getLocator(), "Unhandled stream-type %d for PID %d", i.streamType(), i.elementryPID());
-//		StreamContext ctx = new StreamContext();
-//		return new PesTSPacketConsumer(i.elementryPID(), i.streamType(), pesConsumer, ctx );
-//	}
-
 	@Override
 	public void packet(MediaContext ctx, TSPacket packet) {
 		UnhandledStreamTSPacketConsumerContext uCtx = (UnhandledStreamTSPacketConsumerContext)ctx;
 		if (!uCtx.flagged) {
-			rep.carp(packet.getLocator(), "Unhndled stream type %s", uCtx.streamType);
+			rep.carp(uCtx.getLocator(), "Unhndled stream type %s", uCtx.streamType);
 			uCtx.flagged = true;
 		}
 	}
@@ -59,11 +71,11 @@ public class UnhandledStreamTSPacketConsumer implements StreamTSPacketConsumer {
 	@Override
 	public StreamTSContext createContext(ProgramTSContext ctx,
 			StreamDescriptorIterator streamDesc) {
-		return new UnhandledStreamTSPacketConsumerContext(streamDesc.streamType());
+		return new UnhandledStreamTSPacketConsumerContext(ctx, streamDesc.streamType());
 	}
 
 	@Override
 	public MediaContext createContext(MediaContext parent) {
-		return new UnhandledContext();
+		return new UnhandledContext(parent);
 	}
 }

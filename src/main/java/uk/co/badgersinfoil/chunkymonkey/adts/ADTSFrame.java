@@ -17,14 +17,9 @@ public class ADTSFrame {
 	}
 
 	private ByteBuf buf;
-	private Locator loc;
 
-	public ADTSFrame(Locator loc, ByteBuf buf) {
-		this.loc = loc;
+	public ADTSFrame(ByteBuf buf) {
 		this.buf = buf;
-	}
-	public Locator getLocator() {
-		return loc;
 	}
 	public void append(ByteBuf buf) {
 		this.buf = Unpooled.wrappedBuffer(this.buf, buf);

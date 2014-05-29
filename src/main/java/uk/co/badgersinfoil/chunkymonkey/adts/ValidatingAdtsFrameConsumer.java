@@ -1,16 +1,28 @@
 package uk.co.badgersinfoil.chunkymonkey.adts;
 
+import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 
 public class ValidatingAdtsFrameConsumer implements AdtsFrameConsumer {
-	
+
 	public class ValidatingADTSContext implements ADTSContext {
 		private ADTSFrame lastFrame = null;
+		private MediaContext parentContext;
+
+		public ValidatingADTSContext(MediaContext parentContext) {
+			this.parentContext = parentContext;
+		}
 
 		@Override
 		public MediaDuration getDuration() {
 			return null;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return parentContext.getLocator();
 		}
 	}
 
@@ -24,7 +36,7 @@ public class ValidatingAdtsFrameConsumer implements AdtsFrameConsumer {
 	public void frame(ADTSContext adtsCtx, ADTSFrame frame) {
 		ValidatingADTSContext ctx = (ValidatingADTSContext)adtsCtx;
 		if (frame.syncWord() != 0xfff) {
-			rep.carp(frame.getLocator(), "Bad sync word 0x%s (expected 0xfff)", Integer.toHexString(frame.syncWord()));
+			rep.carp(ctx.getLocator(), "Bad sync word 0x%s (expected 0xfff)", Integer.toHexString(frame.syncWord()));
 		}
 		if (ctx.lastFrame != null) {
 			// the spec requires the following headers to be the
@@ -86,26 +98,26 @@ public class ValidatingAdtsFrameConsumer implements AdtsFrameConsumer {
 				 .append(frame.home());
 			}
 			if (b.length() > 0) {
-				rep.carp(frame.getLocator(), "Stream configuration unexpectedly changed:%s", b.toString());
+				rep.carp(ctx.getLocator(), "Stream configuration unexpectedly changed:%s", b.toString());
 			}
 		}
 		if (frame.blockCount() != 0) {
-			rep.carp(frame.getLocator(), "ADTS frame contains more than one AAC frame (supposed compatability issues): %d AAC frames", frame.blockCount()+1);
+			rep.carp(ctx.getLocator(), "ADTS frame contains more than one AAC frame (supposed compatability issues): %d AAC frames", frame.blockCount()+1);
 		}
 
 		// 1 byte of payload might allow an 'END' AAC raw block to appear
 		// (even that might be invalid - realistically this should
 		// probably be greater than 1; but what?)
 		if (frame.payloadLength() < 1) {
-			rep.carp(frame.getLocator(), "ADTS frame too short. A frame_length of "+frame.frameLength()+" gives "+frame.payloadLength()+" bytes of payload.");
+			rep.carp(ctx.getLocator(), "ADTS frame too short. A frame_length of "+frame.frameLength()+" gives "+frame.payloadLength()+" bytes of payload.");
 		}
 
 		// TODO: check that, if channelConfig == OBJECT_TYPE_SPECIFIC_CONFIG, then AAC really does have a PCE with this info
 	}
 
 	@Override
-	public ADTSContext createContext() {
-		return new ValidatingADTSContext();
+	public ADTSContext createContext(MediaContext parentContext) {
+		return new ValidatingADTSContext(parentContext);
 	}
 
 }

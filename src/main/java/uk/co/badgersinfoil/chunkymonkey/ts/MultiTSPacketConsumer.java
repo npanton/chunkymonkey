@@ -3,6 +3,7 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 
 public class MultiTSPacketConsumer implements TSPacketConsumer {
@@ -23,10 +24,16 @@ public class MultiTSPacketConsumer implements TSPacketConsumer {
 			}
 		}
 		public List<Entry> list = new ArrayList<>();
+		private MediaContext parent;
 		public MultiMediaContext(MediaContext parent, List<TSPacketConsumer> list) {
+			this.parent = parent;
 			for (TSPacketConsumer consumer : list) {
 				this.list.add(new Entry(consumer.createContext(parent), consumer));
 			}
+		}
+		@Override
+		public Locator getLocator() {
+			return parent.getLocator();
 		}
 
 	}

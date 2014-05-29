@@ -27,10 +27,18 @@ public class HlsSegmentProcessor {
 	private RequestConfig config;
 
 	public  static class HlsSegmentTsContext implements MediaContext {
-		public HlsSegmentTsContext(HlsMediaPlaylistContext ctx) {
-			this.ctx = ctx;
-		}
 		public HlsMediaPlaylistContext ctx;
+		private URI elementUri;
+
+		public HlsSegmentTsContext(HlsMediaPlaylistContext ctx, URI elementUri) {
+			this.ctx = ctx;
+			this.elementUri = elementUri;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return new URILocator(elementUri, ctx.getLocator());
+		}
 	}
 
 	public HlsSegmentProcessor(Reporter rep,
@@ -51,28 +59,28 @@ public class HlsSegmentProcessor {
 	                              final Element element)
 	{
 		URI elementUri = ctx.manifest.resolve(element.getURI());
+		final HlsSegmentTsContext segCtx = new HlsSegmentTsContext(ctx, elementUri);
 		HttpGet req = new HttpGet(elementUri);
 		if (getConfig() != null) {
 			req.setConfig(getConfig());
 		}
-		URILocator manifestLoc = new URILocator(ctx.manifest);
-		final Locator loc = new URILocator(elementUri, manifestLoc);
 		HttpStat stat = new HttpStat();
 		new HttpExecutionWrapper<Void>(rep) {
 			@Override
 			protected Void handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException {
-				manifestResponseChecker.check(loc, resp, context);
+				manifestResponseChecker.check(segCtx, resp, context);
 				InputStream stream = resp.getEntity().getContent();
-				TransportStreamParser parser = new TransportStreamParser(loc, consumer);
-				parser.parse(new HlsSegmentTsContext(ctx), stream);
+				TransportStreamParser parser = new TransportStreamParser(consumer);
+				MediaContext parseCtx = parser.createContext(segCtx);
+				parser.parse(parseCtx, stream);
 				stat.end();
 				long expectedDurationMillis = element.getDuration() * 1000;
 				if (stat.getDurationMillis() > expectedDurationMillis * MAX_DOWNLOAD_DURATION) {
-					rep.carp(loc, "Took %dms to download, but playback duration is %dms", stat.getDurationMillis(), expectedDurationMillis);
+					rep.carp(segCtx.getLocator(), "Took %dms to download, but playback duration is %dms", stat.getDurationMillis(), expectedDurationMillis);
 				}
 				return null;
 			}
-		}.execute(httpclient, req, loc, stat);
+		}.execute(httpclient, req, segCtx, stat);
 		ctx.segmentStats.add(stat);
 	}
 

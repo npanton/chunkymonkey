@@ -1,53 +1,16 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import io.netty.buffer.ByteBuf;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 
 public class TSPacket {
 	public static final int TS_PACKET_LENGTH = 188;
-
-
-	public static class TSPacketLocator implements Locator {
-
-		private long packetNo;
-		private int pid;
-		private Locator parent;
-
-		public TSPacketLocator(Locator parent, long packetNo, int pid) {
-			this.parent = parent;
-			this.packetNo = packetNo;
-			this.pid = pid;
-		}
-		
-		public long getPacketNo() {
-			return packetNo;
-		}
-		
-		@Override
-		public String toString() {
-			StringBuilder b = new StringBuilder();
-			b.append("TS Packet#").append(packetNo)
-			 .append("[PID=").append(pid).append("]");
-			Locator parent = getParent();
-			if (parent != null) {
-				b.append("\n  at ");
-				b.append(parent);
-			}
-			return b.toString();
-		}
-
-		@Override
-		public Locator getParent() {
-			return parent;
-		}
-	}
 
 	public static enum AdaptationFieldControl {
 		RESERVED(0, false, false),
 		PAYLOAD_ONLY(1, false, true),
 		ADAPTATIONFIELD_ONLY(2, true, false),
 		ADAPTATIONFIELD_AND_PAYLOAD(3, true, true);
-		
+
 		private int val;
 		private boolean adaption;
 		private boolean content;
@@ -84,17 +47,17 @@ public class TSPacket {
 		public int length() {
 			return buf.getByte(4) & 0b11111111;
 		}
-		
+
 		public boolean discontinuityIndicator() {
 			return length() > 0
 			       && 0 != (buf.getByte(5) & 0b10000000);
 		}
-		
+
 		public boolean randomAccessIndicator() {
 			return length() > 0
 			       && 0 != (buf.getByte(5) & 0b01000000);
 		}
-		
+
 		public int elementryStreamPriority() {
 			return length() > 0 ? (buf.getByte(5) & 0b00100000) >> 5 : 0;
 		}
@@ -188,12 +151,8 @@ public class TSPacket {
 
 	private AdaptationField adaptionField = new AdaptationField();
 	private ByteBuf buf;
-	private Locator parentLocator;
-	private long packetNo;
 
-	public TSPacket(Locator parentLocator, long packetNo, ByteBuf pk) {
-		this.parentLocator = parentLocator;
-		this.packetNo = packetNo;
+	public TSPacket(ByteBuf pk) {
 		if (pk.readableBytes() != 188) {
 			throw new IllegalArgumentException("ByteBuffer must contain 188 bytes, got: "+pk.readableBytes());
 		}
@@ -229,7 +188,7 @@ public class TSPacket {
 		}
 		throw new RuntimeException("No adaption field present");
 	}
-	
+
 	public ByteBuf getPayload() {
 		return buf.slice(contentStart(), getPayloadLength());
 	}
@@ -260,10 +219,6 @@ public class TSPacket {
 			     + getAdaptationField().length();
 		}
 		return TSPACKET_FIXED_HEADER_LENGTH;
-	}
-
-	public TSPacketLocator getLocator() {
-		return new TSPacketLocator(parentLocator, packetNo, PID());
 	}
 
 	/**

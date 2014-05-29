@@ -14,7 +14,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.mockito.Mockito.*;
+import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket.Parsed;
@@ -87,6 +90,9 @@ public class H264PesConsumerTest {
 	}
 	private MockNalUnitConsumer defaultConsumer = new MockNalUnitConsumer();
 
+	@Mock
+	private MediaContext parentContext;
+
 	private H264PesConsumer h264PesConsumer;
 
 	private static final Map<UnitType, NalUnitConsumer> nalUnitConsumers
@@ -100,7 +106,7 @@ public class H264PesConsumerTest {
 
 	@Test
 	public void basic() throws Exception {
-		H264Context ctx = (H264Context)h264PesConsumer.createContext();
+		H264Context ctx = (H264Context)h264PesConsumer.createContext(null);
 		ByteBuf content = hexToBuf(
 				 "000001"    // start code
 				+"16"        // forbidden_zero_bit, nal_ref_idc, nal_unit_type
@@ -109,13 +115,13 @@ public class H264PesConsumerTest {
 		PESPacket pesPacket = mockPacket(content);
 		h264PesConsumer.start(ctx, pesPacket);
 		h264PesConsumer.end(ctx);
-		NALUnit expectedUnit = new NALUnit(null, 0x16);
+		NALUnit expectedUnit = new NALUnit(0x16);
 		defaultConsumer.unit(0).assertCompleteUnitWas(expectedUnit, hexToBuf("010203"));
 	}
 
 	@Test
 	public void emulationPrevention() throws Exception {
-		H264Context ctx = (H264Context)h264PesConsumer.createContext();
+		H264Context ctx = (H264Context)h264PesConsumer.createContext(parentContext);
 		ByteBuf content = hexToBuf(
 				 "000001"    // start code
 				+"16"        // forbidden_zero_bit, nal_ref_idc, nal_unit_type
@@ -124,13 +130,13 @@ public class H264PesConsumerTest {
 		PESPacket pesPacket = mockPacket(content);
 		h264PesConsumer.start(ctx, pesPacket);
 		h264PesConsumer.end(ctx);
-		NALUnit expectedUnit = new NALUnit(null, 0x16);
+		NALUnit expectedUnit = new NALUnit(0x16);
 		defaultConsumer.unit(0).assertCompleteUnitWas(expectedUnit, hexToBuf("010200000003"));
 	}
 
 	@Test
 	public void continuation() throws Exception {
-		H264Context ctx = (H264Context)h264PesConsumer.createContext();
+		H264Context ctx = (H264Context)h264PesConsumer.createContext(parentContext);
 		ByteBuf content = hexToBuf(
 				 "000001"    // start code
 				+"16"        // forbidden_zero_bit, nal_ref_idc, nal_unit_type
@@ -142,7 +148,7 @@ public class H264PesConsumerTest {
 		TSPacket packet = mock(TSPacket.class);
 		h264PesConsumer.continuation(ctx, packet, payload);
 		h264PesConsumer.end(ctx);
-		NALUnit expectedUnit = new NALUnit(null, 0x16);
+		NALUnit expectedUnit = new NALUnit(0x16);
 		defaultConsumer.unit(0).assertCompleteUnitWas(expectedUnit, hexToBuf("010203040506"));
 	}
 
@@ -155,7 +161,7 @@ public class H264PesConsumerTest {
 	@Test
 	public void continuationVsDelimiter() throws Exception {
 		// given,
-		H264Context ctx = (H264Context)h264PesConsumer.createContext();
+		H264Context ctx = (H264Context)h264PesConsumer.createContext(parentContext);
 		ByteBuf content = hexToBuf(
 				 "000001"    // start code
 				+"15"        // forbidden_zero_bit, nal_ref_idc, nal_unit_type
@@ -177,9 +183,9 @@ public class H264PesConsumerTest {
 			h264PesConsumer.continuation(ctx, packet, payload);
 			h264PesConsumer.end(ctx);
 			// then,
-			NALUnit expectedUnitOne = new NALUnit(null, 0x15);
+			NALUnit expectedUnitOne = new NALUnit(0x15);
 			defaultConsumer.unit(0).assertCompleteUnitWas(expectedUnitOne, hexToBuf("010203"));
-			NALUnit expectedUnitTwo = new NALUnit(null, 0x16);
+			NALUnit expectedUnitTwo = new NALUnit(0x16);
 			defaultConsumer.unit(1).assertCompleteUnitWas(expectedUnitTwo, hexToBuf("040506"));
 		}
 	}

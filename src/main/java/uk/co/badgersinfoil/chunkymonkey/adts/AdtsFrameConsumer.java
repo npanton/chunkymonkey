@@ -3,20 +3,24 @@ package uk.co.badgersinfoil.chunkymonkey.adts;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
 
 public interface AdtsFrameConsumer {
 
 	void frame(ADTSContext ctx, ADTSFrame adtsframe);
-	
+
 	public class Multi implements AdtsFrameConsumer {
 		private static class MultiADTSContext implements ADTSContext {
 			private List<Entry> list = new ArrayList<>();
-			public MultiADTSContext(List<AdtsFrameConsumer> list) {
+			private MediaContext parentContext;
+			public MultiADTSContext(MediaContext parentContext, List<AdtsFrameConsumer> list) {
+				this.parentContext = parentContext;
 				for (AdtsFrameConsumer p : list) {
 					Entry e = new Entry();
 					e.consumer = p;
-					e.ctx = p.createContext();
+					e.ctx = p.createContext(this);
 					this.list.add(e);
 				}
 			}
@@ -30,6 +34,10 @@ public interface AdtsFrameConsumer {
 				}
 				return null;
 			}
+			@Override
+			public Locator getLocator() {
+				return parentContext.getLocator();
+			}
 		}
 		private static class Entry {
 			public AdtsFrameConsumer consumer;
@@ -37,7 +45,7 @@ public interface AdtsFrameConsumer {
 		}
 
 		List<AdtsFrameConsumer> list = new ArrayList<>();
-		
+
 		public Multi(AdtsFrameConsumer... list) {
 			this.list = Arrays.asList(list);
 		}
@@ -54,8 +62,8 @@ public interface AdtsFrameConsumer {
 		}
 
 		@Override
-		public ADTSContext createContext() {
-			return new MultiADTSContext(list);
+		public ADTSContext createContext(MediaContext parentContext) {
+			return new MultiADTSContext(parentContext, list);
 		}
 	}
 
@@ -65,10 +73,10 @@ public interface AdtsFrameConsumer {
 		}
 
 		@Override
-		public ADTSContext createContext() {
+		public ADTSContext createContext(MediaContext parentContext) {
 			return null;
 		}
 	}
 
-	ADTSContext createContext();
+	ADTSContext createContext(MediaContext parentContext);
 }

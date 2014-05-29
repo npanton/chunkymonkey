@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.conformist;
 
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsValidatingPesConsumer.HlsValidatingPesContext;
@@ -20,11 +21,18 @@ public class HlsStreamPtsValidator implements TSPacketConsumer {
 	private class PCRtoPTSValidatorContext implements MediaContext {
 
 		public MultiMediaContext multiTSPacketContext;
+		private MediaContext parent;
 
 		public PCRtoPTSValidatorContext(MediaContext parent,
 		                                MediaContext multiTSPacketContext)
 		{
+			this.parent = parent;
 			this.multiTSPacketContext = (MultiMediaContext)multiTSPacketContext;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return parent.getLocator();
 		}
 
 	}
@@ -71,11 +79,11 @@ public class HlsStreamPtsValidator implements TSPacketConsumer {
 										firstStream = hlsCtx;
 									} else {
 										if (hlsCtx.initialPts != null && hlsCtx.initialPts.getTs() != firstStream.initialPts.getTs()) {
-											rep.carp(hlsCtx.initialPacket.getLocator(),
+											rep.carp(hlsCtx.getLocator(),
 											         "HLS segment initial PTS %d for this stream and initial PTS %d for stream PID=%d differ by %dµs",
 											         hlsCtx.initialPts.getTs(),
 											         firstStream.initialPts.getTs(),
-											         ((PESLocator)firstStream.initialPacket.getLocator()).getElementryPID(),
+											         ((PESLocator)firstStream.getLocator()).getElementryPID(),
 											         millisDiff(firstStream.initialPts.getTs(), hlsCtx.initialPts.getTs()));
 										}
 									}

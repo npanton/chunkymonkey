@@ -1,10 +1,12 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
+import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import io.netty.buffer.ByteBuf;
 
 public interface NalUnitConsumer {
 
-	public interface NalUnitContext {
+	public interface NalUnitContext extends MediaContext {
 		H264Context getH264Context();
 	}
 	NalUnitConsumer NULL = new NalUnitConsumer() {
@@ -23,6 +25,10 @@ public interface NalUnitConsumer {
 				public H264Context getH264Context() {
 					// TODO Auto-generated method stub
 					return ctx;
+				}
+				@Override
+				public Locator getLocator() {
+					return ctx.getLocator();
 				}
 			};
 		}

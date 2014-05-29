@@ -4,10 +4,13 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.Rfc6381Codec;
 import net.chilicat.m3u8.PlaylistInfo;
 
-public class HlsMediaPlaylistContext {
+public class HlsMediaPlaylistContext implements MediaContext {
 
 	private HlsMasterPlaylistContext ctx;
 	public URI manifest;
@@ -55,5 +58,10 @@ public class HlsMediaPlaylistContext {
 	}
 	public int lastProcessedMediaSeq() {
 		return lastProcessedMediaSeq.get();
+	}
+
+	@Override
+	public Locator getLocator() {
+		return new URILocator(manifest, ctx.getLocator());
 	}
 }

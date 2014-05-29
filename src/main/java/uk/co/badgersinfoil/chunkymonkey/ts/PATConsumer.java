@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer.FilterEntry;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramAssociationTable.ProgramEntry;
@@ -17,6 +18,11 @@ public class PATConsumer implements TSPacketConsumer {
 		@Override
 		public TransportContext getTransportContext() {
 			return ((TransportContextProvider)parent).getTransportContext();
+		}
+
+		@Override
+		public Locator getLocator() {
+			return parent.getLocator();
 		}
 
 	}

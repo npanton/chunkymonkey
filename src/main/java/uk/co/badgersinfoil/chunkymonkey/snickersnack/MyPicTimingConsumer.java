@@ -2,6 +2,7 @@ package uk.co.badgersinfoil.chunkymonkey.snickersnack;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
 import uk.co.badgersinfoil.chunkymonkey.MediaTimestamp;
 import uk.co.badgersinfoil.chunkymonkey.MediaUnits;
@@ -29,6 +30,12 @@ public class MyPicTimingConsumer implements PicTimingConsumer {
 		@Override
 		public PicTimingSeiContext getPicTimingSeiContext() {
 			return ctx;
+		}
+
+		@Override
+		public Locator getLocator() {
+			// TODO: implement
+			return null;
 		}
 	}
 
@@ -92,7 +99,7 @@ public class MyPicTimingConsumer implements PicTimingConsumer {
 				}
 			}
 		} else {
-			System.err.println("PES packet[stream_id="+pesPacket.streamId()+"] not parsed (trying to get a PTS)\n  at "+pesPacket.getLocator());
+			System.err.println("PES packet[stream_id="+pesPacket.streamId()+"] not parsed (trying to get a PTS)\n  at "+ctx.getLocator());
 		}
 	}
 

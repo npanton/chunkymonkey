@@ -2,13 +2,17 @@ package uk.co.badgersinfoil.chunkymonkey.h264;
 
 import java.util.HashMap;
 import java.util.Map;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer.ParseState;
+import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer.PesNalUnitLocator;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer.NalUnitContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket;
 
 public class H264Context implements ElementryContext {
+	private MediaContext parentContext;
 	private boolean ignoreRest;
 	private PESPacket pesPacket;
 	private int unitIndex = 0;
@@ -22,6 +26,9 @@ public class H264Context implements ElementryContext {
 	private Map<UnitType,NalUnitContext> nalUnitContexts = new HashMap<>();
 	private NalUnitContext defaultNalContext;
 
+	public H264Context(MediaContext parentContext) {
+		this.parentContext = parentContext;
+	}
 	public void addNalContext(UnitType type, NalUnitConsumer consumer) {
 		nalUnitContexts.put(type, consumer.createContext(this));
 	}
@@ -45,7 +52,7 @@ public class H264Context implements ElementryContext {
 	public void setPesPacket(PESPacket pesPacket) {
 		this.pesPacket = pesPacket;
 	}
-	public int nextUnitIndex() {
+	public int incUnitIndex() {
 		return unitIndex++;
 	}
 	public void start() {
@@ -96,5 +103,9 @@ public class H264Context implements ElementryContext {
 	}
 	public boolean continuityError() {
 		return continuityError;
+	}
+	@Override
+	public Locator getLocator() {
+		return new PesNalUnitLocator(parentContext.getLocator(), unitIndex);
 	}
 }

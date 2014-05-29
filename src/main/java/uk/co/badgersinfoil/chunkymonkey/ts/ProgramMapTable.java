@@ -7,10 +7,8 @@ import io.netty.buffer.Unpooled;
 public class ProgramMapTable {
 
 	private ByteBuf buf = Unpooled.buffer();
-	private Locator locator;
 
-	public ProgramMapTable(Locator locator, ByteBuf buf) {
-		this.locator = locator;
+	public ProgramMapTable(ByteBuf buf) {
 		appendPayload(buf);
 	}
 
@@ -100,20 +98,6 @@ public class ProgramMapTable {
 			return (buf.getByte(offset+3) & 0b00001111) << 8
 			      |(buf.getByte(offset+4) & 0b11111111);
 		}
-		public Locator getLocator() {
-			return new Locator() {
-				private int index = i;
-				@Override
-				public String toString() {
-					return "PMT stream-descriptor #"+index+"\n"
-							+"  at "+getParent();
-				}
-				@Override
-				public Locator getParent() {
-					return ProgramMapTable.this.getLocator();
-				}
-			};
-		}
 		public void toString(StringBuilder b) {
 			b.append(" streamType=").append(streamType())
 			 .append(";elementryPID=").append(elementryPID())
@@ -151,10 +135,6 @@ public class ProgramMapTable {
 		}
 		b.append(" }");
 		return b.toString();
-	}
-
-	public Locator getLocator() {
-		return locator;
 	}
 
 	public boolean isComplete() {

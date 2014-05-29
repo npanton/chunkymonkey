@@ -4,9 +4,12 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.URILocator;
 import net.chilicat.m3u8.Playlist;
 
-public class HlsMasterPlaylistContext {
+public class HlsMasterPlaylistContext implements MediaContext {
 
 	private URI manifest;
 	public Future<Void> topLevelManifestFuture;
@@ -38,5 +41,10 @@ public class HlsMasterPlaylistContext {
 
 	public void setManifestRedirectLocation(URI location) {
 		this.manifestRedirectLocation = location;
+	}
+
+	@Override
+	public Locator getLocator() {
+		return new URILocator(getManifestLocation());
 	}
 }

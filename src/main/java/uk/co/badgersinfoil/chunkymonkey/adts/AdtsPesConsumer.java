@@ -2,6 +2,7 @@ package uk.co.badgersinfoil.chunkymonkey.adts;
 
 import io.netty.buffer.ByteBuf;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
 import uk.co.badgersinfoil.chunkymonkey.MediaTimestamp;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
@@ -15,6 +16,7 @@ import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
 public class AdtsPesConsumer implements PESConsumer {
 
 	public class ADTSElementryContext implements ElementryContext {
+		private MediaContext parentContext;
 		private ADTSContext adtsContext;
 		private ADTSFrame adtsFrame;
 		private PESPacket currentPesPacket;
@@ -25,8 +27,13 @@ public class AdtsPesConsumer implements PESConsumer {
 		public MediaDuration lastPesDuration;
 		public MediaDuration lastElapsedDuration;
 
-		public ADTSElementryContext(ADTSContext adtsContext) {
-			this.adtsContext = adtsContext;
+		public ADTSElementryContext(MediaContext parentContext) {
+			this.parentContext = parentContext;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return new AdtsLocator(parentContext.getLocator(), frameNumber);
 		}
 	}
 
@@ -97,7 +104,7 @@ public class AdtsPesConsumer implements PESConsumer {
 				// assume that a difference of ~1 tick will be
 				// due to some kind of rounding problem, and ignore
 				if (Math.abs(ptsVsMedia) > 1) {
-					rep.carp(pesPacket.getLocator(), "PTS change (from %s to %s) unequal to duration of ADTS data in preceeding PES packet (%s); a difference of %d ticks", adtsCtx.lastPts, adtsCtx.currentPts, adtsCtx.lastPesDuration, ptsVsMedia);
+					rep.carp(adtsCtx.getLocator(), "PTS change (from %s to %s) unequal to duration of ADTS data in preceeding PES packet (%s); a difference of %d ticks", adtsCtx.lastPts, adtsCtx.currentPts, adtsCtx.lastPesDuration, ptsVsMedia);
 				}
 			}
 			adtsCtx.lastPesDuration = null;
@@ -107,8 +114,8 @@ public class AdtsPesConsumer implements PESConsumer {
 	private void parsePacket(ADTSElementryContext adtsCtx, ByteBuf buf) {
 		while (buf != null) {
 			if (adtsCtx.adtsFrame == null) {
-				Locator loc = new AdtsLocator(adtsCtx.currentPesPacket.getLocator(), adtsCtx.frameNumber++);
-				adtsCtx.adtsFrame = new ADTSFrame(loc, buf);
+				adtsCtx.frameNumber++;
+				adtsCtx.adtsFrame = new ADTSFrame(buf);
 			} else {
 				adtsCtx.adtsFrame.append(buf);
 			}
@@ -155,7 +162,9 @@ public class AdtsPesConsumer implements PESConsumer {
 	}
 
 	@Override
-	public ElementryContext createContext() {
-		return new ADTSElementryContext(consumer.createContext());
+	public ElementryContext createContext(MediaContext parentContext) {
+		ADTSElementryContext adtsElementryContext = new ADTSElementryContext(parentContext);
+		adtsElementryContext.adtsContext = consumer.createContext(adtsElementryContext);
+		return adtsElementryContext;
 	}
 }

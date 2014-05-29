@@ -1,16 +1,27 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import io.netty.buffer.ByteBuf;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket.Parsed;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket.Timestamp;
 
 public class ValidatingPesConsumer implements PESConsumer {
 
-	public static class ValidatingElementryContext implements
-			ElementryContext {
+	public static class ValidatingElementryContext implements ElementryContext {
+		private MediaContext parentContext;
 		private Timestamp lastDts;
 		public Integer lastStreamId;
+
+		public ValidatingElementryContext(MediaContext parentContext) {
+			this.parentContext = parentContext;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return parentContext.getLocator();
+		}
 	}
 
 	private Reporter rep;
@@ -23,10 +34,10 @@ public class ValidatingPesConsumer implements PESConsumer {
 	public void start(ElementryContext ctx, PESPacket pesPacket) {
 		ValidatingElementryContext vCtx = (ValidatingElementryContext)ctx;
 		if (pesPacket.packetStartCodePrefix() != 1) {
-			rep.carp(pesPacket.getLocator(), "start_code_prefix should be 0x1, got: ", pesPacket.packetStartCodePrefix());
+			rep.carp(vCtx.getLocator(), "start_code_prefix should be 0x1, got: ", pesPacket.packetStartCodePrefix());
 		}
 		if (vCtx.lastStreamId != null && vCtx.lastStreamId != pesPacket.streamId()) {
-			rep.carp(pesPacket.getLocator(), "stream_id changed: %d, was previously %d", pesPacket.streamId(), vCtx.lastStreamId);
+			rep.carp(vCtx.getLocator(), "stream_id changed: %d, was previously %d", pesPacket.streamId(), vCtx.lastStreamId);
 		}
 		vCtx.lastStreamId = pesPacket.streamId();
 		if (pesPacket.isParsed()) {
@@ -35,9 +46,9 @@ public class ValidatingPesConsumer implements PESConsumer {
 				if (vCtx.lastDts != null && vCtx.lastDts.isValid() && payload.dts().isValid()) {
 					long diff = payload.dts().getTs() - vCtx.lastDts.getTs();
 					if (diff < 0) {
-						rep.carp(pesPacket.getLocator(), "DTS went backwards (wraparound?): %s -> %s", vCtx.lastDts, payload.dts());
+						rep.carp(vCtx.getLocator(), "DTS went backwards (wraparound?): %s -> %s", vCtx.lastDts, payload.dts());
 					} else if (diff == 0) {
-						rep.carp(pesPacket.getLocator(), "DTS failed to advance: %s", payload.dts());
+						rep.carp(vCtx.getLocator(), "DTS failed to advance: %s", payload.dts());
 					}
 				}
 				vCtx.lastDts = payload.dts();
@@ -53,7 +64,7 @@ public class ValidatingPesConsumer implements PESConsumer {
 	@Override
 	public void end(ElementryContext ctx) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -64,7 +75,7 @@ public class ValidatingPesConsumer implements PESConsumer {
 	}
 
 	@Override
-	public ElementryContext createContext() {
-		return new ValidatingElementryContext();
+	public ElementryContext createContext(MediaContext parentContext) {
+		return new ValidatingElementryContext(parentContext);
 	}
 }

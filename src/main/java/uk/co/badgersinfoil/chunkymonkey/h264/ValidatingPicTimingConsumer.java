@@ -31,6 +31,11 @@ public class ValidatingPicTimingConsumer implements PicTimingConsumer {
 		public PicTimingSeiContext getPicTimingSeiContext() {
 			return ctx;
 		}
+
+		@Override
+		public Locator getLocator() {
+			return getPicTimingSeiContext().getNalUnitContext().getH264Context().getLocator();
+		}
 	}
 
 	private PicTimingConsumer delegate;
@@ -45,7 +50,7 @@ public class ValidatingPicTimingConsumer implements PicTimingConsumer {
 	public void picTiming(PicTimingContext pctx, PicTimingHeader picTiming) {
 		ValidationPicTimingContext ctx = (ValidationPicTimingContext)pctx;
 		if (picTiming.picStruct().numClockTS() == -1) {
-			rep.carp(getLocator(ctx), "Unknown/reserved pic_struct %s", picTiming.picStruct());
+			rep.carp(ctx.getLocator(), "Unknown/reserved pic_struct %s", picTiming.picStruct());
 		}
 		boolean valid = true;
 		if (picTiming.clockTimestamps() != null) {
@@ -57,30 +62,30 @@ public class ValidatingPicTimingConsumer implements PicTimingConsumer {
 				boolean validTs = true;
 				if (ts.secondsValue() != -1) {
 					if (ts.secondsValue() > 59) {
-						rep.carp(getLocator(ctx), "Invalid seconds value %d in %s", ts.secondsValue(), ts);
+						rep.carp(ctx.getLocator(), "Invalid seconds value %d in %s", ts.secondsValue(), ts);
 						validTs = false;
 					}
 					if (ts.minutesValue() != -1) {
 						if (ts.minutesValue() > 59) {
-							rep.carp(getLocator(ctx), "Invalid minutes value %d in %s", ts.minutesValue(), ts);
+							rep.carp(ctx.getLocator(), "Invalid minutes value %d in %s", ts.minutesValue(), ts);
 							validTs = false;
 						}
 						if (ts.hoursValue() != -1) {
 							if (ts.hoursValue() > 23) {
-								rep.carp(getLocator(ctx), "Invalid hours value %d in %s", ts.hoursValue(), ts);
+								rep.carp(ctx.getLocator(), "Invalid hours value %d in %s", ts.hoursValue(), ts);
 								validTs = false;
 							}
 						}
 					}
 				}
 				if (ts.countingType() == 0 && ts.timeOffset() != 0) {
-					rep.carp(getLocator(ctx), "Non-zero time_offset found while counting_type is 0: %d, in %s", ts.timeOffset(), ts);
+					rep.carp(ctx.getLocator(), "Non-zero time_offset found while counting_type is 0: %d, in %s", ts.timeOffset(), ts);
 				}
 				if (validTs) {
 					if (ctx.lastTs != null) {
 						MediaDuration diff = ctx.lastTs.toClockTimestamp().diff(ts.toClockTimestamp());
 						if (!itsAWrap(ctx.lastTs, ts) && Math.abs(diff.toMillis()) > 1000) {
-							rep.carp(getLocator(ctx),
+							rep.carp(ctx.getLocator(),
 							         "Unexpectedly large timestamp change: %,dms (last <%s>, this <%s>)", diff.toMillis(), ctx.lastTs, ts);
 						}
 					}
@@ -104,10 +109,6 @@ public class ValidatingPicTimingConsumer implements PicTimingConsumer {
 	private boolean itsAWrap(ClockTimestamp lastTs, ClockTimestamp ts) {
 		return lastTs.hoursValue() == 23 && lastTs.minutesValue() == 59
 		      && ts.hoursValue() == 0 && ts.minutesValue() == 0;
-	}
-
-	private Locator getLocator(ValidationPicTimingContext ctx) {
-		return ctx.getPicTimingSeiContext().getNalUnitContext().getH264Context().getNalUnit().getLocator();
 	}
 
 	@Override

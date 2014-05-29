@@ -15,7 +15,6 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.URILocator;
 import net.chilicat.m3u8.Element;
@@ -45,7 +44,7 @@ public class HlsMediaPlaylistProcessor {
 		this.manifestResponseChecker = manifestResponseChecker;
 	}
 
-	private void process(final HlsMediaPlaylistContext ctx, final Locator loc, final Playlist playlist, HttpResponse resp) {
+	private void process(final HlsMediaPlaylistContext ctx, final Playlist playlist, HttpResponse resp) {
 		long now = System.currentTimeMillis();
 		if (ctx.lastMediaSequence != null) {
 			int seqEnd = playlist.getMediaSequenceNumber()+playlist.getElements().size()-1;
@@ -57,11 +56,11 @@ public class HlsMediaPlaylistProcessor {
 					if (delay > maxDelayMillis) {
 						List<Header> headers = findAllHeaders(resp, "Date", "Cache-Control", "Age");
 						if (headers.isEmpty()) {
-							rep.carp(loc,
+							rep.carp(ctx.getLocator(),
 							         "No additional segments in %d milliseconds",
 							         delay);
 						} else {
-							rep.carp(loc,
+							rep.carp(ctx.getLocator(),
 							         "No additional segments in %d milliseconds; response included: %s",
 							         delay,
 							         headers);
@@ -80,10 +79,10 @@ public class HlsMediaPlaylistProcessor {
 		}
 		ctx.lastMediaSequence = playlist.getMediaSequenceNumber();
 		if (ctx.lastTargetDuration != null && ctx.lastTargetDuration != playlist.getTargetDuration()) {
-			rep.carp(loc, "EXT-X-TARGETDURATION changed? %d became %d", ctx.lastTargetDuration, playlist.getTargetDuration());
+			rep.carp(ctx.getLocator(), "EXT-X-TARGETDURATION changed? %d became %d", ctx.lastTargetDuration, playlist.getTargetDuration());
 		}
 		ctx.lastTargetDuration = (long)playlist.getTargetDuration();
-		checkDurations(ctx, loc, rep, playlist);
+		checkDurations(ctx, rep, playlist);
 		if (ctx.firstLoad == 0) {
 			ctx.firstLoad = now;
 		}
@@ -143,7 +142,7 @@ public class HlsMediaPlaylistProcessor {
 	 * Report if any element has a duration more than 1 second different
 	 * than the playlist's specified EXT-X-TARGETDURATION.
 	 */
-	private void checkDurations(final HlsMediaPlaylistContext ctx, Locator loc, Reporter rep, Playlist playlist) {
+	private void checkDurations(final HlsMediaPlaylistContext ctx, Reporter rep, Playlist playlist) {
 		Element firstProblemElement = null;
 		int problemCount = 0;
 		int seq = playlist.getMediaSequenceNumber();
@@ -164,7 +163,7 @@ public class HlsMediaPlaylistProcessor {
 			seq++;
 		}
 		if (problemCount > 0) {
-			rep.carp(loc, "%d new element(s) with duration different to EXT-X-TARGETDURATION=%d, first being %dsecond duration of %s", problemCount, playlist.getTargetDuration(), firstProblemElement.getDuration(), firstProblemElement.getURI());
+			rep.carp(ctx.getLocator(), "%d new element(s) with duration different to EXT-X-TARGETDURATION=%d, first being %dsecond duration of %s", problemCount, playlist.getTargetDuration(), firstProblemElement.getDuration(), firstProblemElement.getURI());
 		}
 	}
 
@@ -221,7 +220,6 @@ public class HlsMediaPlaylistProcessor {
 		if (getConfig() != null) {
 			req.setConfig(getConfig());
 		}
-		final URILocator loc = new URILocator(ctx.manifest);
 		HttpStat stat = new HttpStat();
 		new HttpExecutionWrapper<Void>(rep) {
 			@Override
@@ -229,16 +227,16 @@ public class HlsMediaPlaylistProcessor {
 				if (resp.getStatusLine().getStatusCode() == 304) {
 					return null;
 				}
-				manifestResponseChecker.check(loc, resp, context);
+				manifestResponseChecker.check(ctx, resp, context);
 				if (resp.getStatusLine().getStatusCode() != 302) {
-					checkCacheValidators(loc, ctx.httpCondition, resp);
+					checkCacheValidators(ctx, resp);
 				}
-				checkAge(loc, ctx, resp);
+				checkAge(ctx, resp);
 				InputStream stream = resp.getEntity().getContent();
 				try {
 					Playlist playlist = Playlist.parse(stream);
 					ctx.httpCondition.recordCacheValidators(resp);
-					process(ctx, loc, playlist, resp);
+					process(ctx, playlist, resp);
 				} catch (ParseException e) {
 					throw new IOException(e);
 				} finally {
@@ -246,45 +244,44 @@ public class HlsMediaPlaylistProcessor {
 				}
 				return null;
 			}
-		}.execute(httpclient, req, loc, stat);
+		}.execute(httpclient, req, ctx, stat);
 		ctx.playlistStats.add(stat);
 	}
 
 
-	private void checkCacheValidators(Locator loc,
-	                                  HttpCondition httpCondition,
+	private void checkCacheValidators(HlsMediaPlaylistContext ctx,
 	                                  CloseableHttpResponse resp)
 	{
 		// TODO: check should be 'less then or equals'
-		boolean lastModMatch = resp.containsHeader("Last-Modified") && resp.getLastHeader("Last-Modified").getValue().equals(httpCondition.getLastLastModified());
-		boolean etagMatch = resp.containsHeader("ETag") && resp.getLastHeader("ETag").getValue().equals(httpCondition.getLastETag());
+		boolean lastModMatch = resp.containsHeader("Last-Modified") && resp.getLastHeader("Last-Modified").getValue().equals(ctx.httpCondition.getLastLastModified());
+		boolean etagMatch = resp.containsHeader("ETag") && resp.getLastHeader("ETag").getValue().equals(ctx.httpCondition.getLastETag());
 		if (lastModMatch != etagMatch) {
 			if (lastModMatch) {
-				rep.carp(loc,
+				rep.carp(ctx.getLocator(),
 				         "Last-Modified header is still %s, but ETag has changed from %s to %s",
-				         httpCondition.getLastLastModified(),
-				         httpCondition.getLastETag(),
+				         ctx.httpCondition.getLastLastModified(),
+				         ctx.httpCondition.getLastETag(),
 				         resp.getLastHeader("ETag").getValue());
 			} else {
-				rep.carp(loc,
+				rep.carp(ctx.getLocator(),
 				         "ETag header is still %s, but Last-Modified has changed from %s to %s",
-				         httpCondition.getLastETag(),
-				         httpCondition.getLastLastModified(),
+				         ctx.httpCondition.getLastETag(),
+				         ctx.httpCondition.getLastLastModified(),
 				         resp.getLastHeader("Last-Modified").getValue());
 			}
 		} else if (lastModMatch) {
-			rep.carp(loc,
+			rep.carp(ctx.getLocator(),
 			         "Last-Modified header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)",
 			         resp.getStatusLine(),
 			         resp.getLastHeader("Last-Modified").getValue(),
-			         httpCondition.getLastLastModified()
+			         ctx.httpCondition.getLastLastModified()
 			         );
 		} else if (etagMatch) {
-			rep.carp(loc,
+			rep.carp(ctx.getLocator(),
 			         "ETag header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)",
 			         resp.getStatusLine(),
 			         resp.getLastHeader("ETag").getValue(),
-			         httpCondition.getLastETag()
+			         ctx.httpCondition.getLastETag()
 			         );
 		}
 	}
@@ -305,14 +302,14 @@ public class HlsMediaPlaylistProcessor {
 		this.rep = rep;
 	}
 
-	private void checkAge(URILocator loc, final HlsMediaPlaylistContext ctx,
+	private void checkAge(final HlsMediaPlaylistContext ctx,
 	                      final CloseableHttpResponse resp)
 	{
 		if (resp.containsHeader("Age") && ctx.lastTargetDuration != null) {
 			try {
 				long age = Long.parseLong(resp.getLastHeader("Age").getValue());
 				if (age > ctx.lastTargetDuration) {
-					rep.carp(loc, "Response header %s suggests response is stale, given EXT-X-TARGETDURATION=%d", resp.getLastHeader("Age"), ctx.lastTargetDuration);
+					rep.carp(ctx.getLocator(), "Response header %s suggests response is stale, given EXT-X-TARGETDURATION=%d", resp.getLastHeader("Age"), ctx.lastTargetDuration);
 				}
 			} catch (NumberFormatException e) {
 				// ignore

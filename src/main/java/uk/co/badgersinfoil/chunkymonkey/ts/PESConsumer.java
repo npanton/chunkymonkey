@@ -3,6 +3,8 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import io.netty.buffer.ByteBuf;
 
 public interface PESConsumer {
@@ -17,7 +19,7 @@ public interface PESConsumer {
 		@Override
 		public void continuityError(ElementryContext ctx) { }
 		@Override
-		public ElementryContext createContext() {
+		public ElementryContext createContext(MediaContext parentContext) {
 			return null;
 		}
 	};
@@ -25,11 +27,13 @@ public interface PESConsumer {
 	public static class MultiPesConsumer implements PESConsumer {
 		public static class MultiElementryContext implements ElementryContext {
 			private List<Entry> list = new ArrayList<>();
-			public MultiElementryContext(List<PESConsumer> list) {
+			private MediaContext parentContext;
+			public MultiElementryContext(MediaContext parentContext, List<PESConsumer> list) {
+				this.parentContext = parentContext;
 				for (PESConsumer p : list) {
 					Entry e = new Entry();
 					e.consumer = p;
-					e.ctx = p.createContext();
+					e.ctx = p.createContext(this);
 					this.list.add(e);
 				}
 			}
@@ -39,6 +43,10 @@ public interface PESConsumer {
 					result.add(e.ctx);
 				}
 				return result;
+			}
+			@Override
+			public Locator getLocator() {
+				return parentContext.getLocator();
 			}
 		}
 		private static class Entry {
@@ -84,8 +92,8 @@ public interface PESConsumer {
 		}
 
 		@Override
-		public ElementryContext createContext() {
-			return new MultiElementryContext(list);
+		public ElementryContext createContext(MediaContext parentContext) {
+			return new MultiElementryContext(parentContext, list);
 		}
 	}
 
@@ -95,7 +103,7 @@ public interface PESConsumer {
 
 	void end(ElementryContext ctx);
 
-	ElementryContext createContext();
+	ElementryContext createContext(MediaContext parentContext);
 
 	void continuityError(ElementryContext ctx);
 

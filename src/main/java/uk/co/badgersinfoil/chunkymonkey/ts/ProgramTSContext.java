@@ -2,11 +2,33 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import java.util.ArrayList;
 import java.util.List;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer.FilterEntry;
 
 
 public class ProgramTSContext implements MediaContext {
+
+	public class ProgramLocator implements Locator {
+
+		private Locator parent;
+		private int pid;
+
+		public ProgramLocator(Locator parent, int pid) {
+			this.parent = parent;
+			this.pid = pid;
+		}
+
+		@Override
+		public String toString() {
+			return "Program PID="+pid+"\n  at "+parent.toString();
+		}
+
+		@Override
+		public Locator getParent() {
+			return parent;
+		}
+	}
 
 	private int pid;
 	private TransportContext ctx;
@@ -38,5 +60,10 @@ public class ProgramTSContext implements MediaContext {
 	}
 	public ProgramMapTable lastPmt() {
 		return pmt;
+	}
+
+	@Override
+	public Locator getLocator() {
+		return new ProgramLocator(ctx.getLocator(), pid);
 	}
 }

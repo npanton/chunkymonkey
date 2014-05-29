@@ -54,7 +54,7 @@ public class PIDFilterPacketConsumer implements TSPacketConsumer {
 		TransportContext tctx = (TransportContext)ctx;
 		FilterEntry entry = tctx.filterForPid(packet.PID());
 		if (entry == null) {
-			rep.carp(packet.getLocator(), "Unhandled PID: %d", packet.PID());
+			rep.carp(ctx.getLocator(), "Unhandled PID: %d", packet.PID());
 			TSPacketConsumer consumer = TSPacketConsumer.NULL;
 			filter(ctx, packet.PID(), new FilterEntry(consumer, consumer.createContext(tctx)));
 		} else {

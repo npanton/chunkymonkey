@@ -14,10 +14,11 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Set;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.rtp.RtpParser.RtpContext;
 
 public class MulticastReceiver {
-	public class MulticastReceiverContext {
+	public class MulticastReceiverContext implements MediaContext {
 
 		private DatagramChannel rtpChannel;
 		public DatagramChannel fecChannel;
@@ -25,9 +26,11 @@ public class MulticastReceiver {
 		private RtpContext rtpCtx;
 		public SelectionKey rtpKey;
 		public SelectionKey fecKey;
+		private int port;
 
-		public MulticastReceiverContext(RtpContext rtpCtx) {
-			this.rtpCtx = rtpCtx;
+		@Override
+		public Locator getLocator() {
+			return new UdpConnectionLocator(port);
 		}
 	}
 
@@ -92,18 +95,18 @@ public class MulticastReceiver {
 	}
 
 	public MulticastReceiverContext createContext(String multicastGroup, NetworkInterface interf) {
-		int port = 5004;
-		UdpConnectionLocator loc = new UdpConnectionLocator(port);
-		MulticastReceiverContext ctx = new MulticastReceiverContext(parser.createContext(null, loc));
+		MulticastReceiverContext ctx = new MulticastReceiverContext();
+		ctx.rtpCtx = parser.createContext(ctx);
+		ctx.port = 5004;
 		try {
 			ctx.selector = Selector.open();
 			InetAddress group = InetAddress.getByName(multicastGroup);
-			ctx.rtpChannel = createChannel(port);
+			ctx.rtpChannel = createChannel(ctx.port);
 			ctx.rtpChannel.configureBlocking(false);
 			ctx.rtpChannel.join(group, interf);
 			ctx.rtpKey = ctx.rtpChannel.register(ctx.selector, SelectionKey.OP_READ);
 			if (doFec) {
-				ctx.fecChannel = createChannel(port+2);
+				ctx.fecChannel = createChannel(ctx.port+2);
 				ctx.fecChannel.configureBlocking(false);
 				ctx.fecChannel.join(group, interf);
 				ctx.fecKey = ctx.fecChannel.register(ctx.selector, SelectionKey.OP_READ);

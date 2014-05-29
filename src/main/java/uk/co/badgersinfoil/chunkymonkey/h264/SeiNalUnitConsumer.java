@@ -3,12 +3,34 @@ package uk.co.badgersinfoil.chunkymonkey.h264;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer.NalUnitContext;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiHeaderConsumer.SeiHeaderContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 public class SeiNalUnitConsumer implements NalUnitConsumer {
+
+	public class SeiLocator implements Locator {
+
+		private Locator parent;
+		private int headerNo;
+
+		public SeiLocator(Locator parent, int headerNo) {
+			this.parent = parent;
+			this.headerNo = headerNo;
+		}
+
+		@Override
+		public String toString() {
+			return "SEI Header #"+headerNo+"\n  at "+parent.toString();
+		}
+
+		@Override
+		public Locator getParent() {
+			return parent;
+		}
+	}
 
 	public class SeiNalUnitContext implements NalUnitContext {
 
@@ -24,6 +46,7 @@ public class SeiNalUnitConsumer implements NalUnitConsumer {
 		private ByteBuf seiBuffer = Unpooled.buffer();
 		private Map<Integer, SeiHeaderContext> contexts = new HashMap<>();
 		private SeiHeaderContext defaultSeiContext;
+		private int headerNo = 0;
 
 		public ByteBuf seiBuffer() {
 			return seiBuffer;
@@ -37,6 +60,11 @@ public class SeiNalUnitConsumer implements NalUnitConsumer {
 		public SeiHeaderContext getContextForType(int type) {
 			SeiHeaderContext context = contexts.get(type);
 			return context == null ? defaultSeiContext : context;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return new SeiLocator(ctx.getLocator(), headerNo);
 		}
 	}
 
@@ -82,6 +110,7 @@ public class SeiNalUnitConsumer implements NalUnitConsumer {
 			}
 			int type = readVar(buf);
 			int size = readVar(buf);
+			ctx.headerNo++;
 			SeiHeaderContext headerCtx = ctx.getContextForType(type);
 			getSeiConsumerForType(type).header(headerCtx, new SeiHeader(type, buf.slice(buf.readerIndex(), size)));
 			buf.skipBytes(size);

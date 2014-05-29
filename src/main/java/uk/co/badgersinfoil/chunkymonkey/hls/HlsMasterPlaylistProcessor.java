@@ -165,7 +165,6 @@ public class HlsMasterPlaylistProcessor {
 	}
 
 	public Playlist requestManifest(final HlsMasterPlaylistContext ctx) throws IOException, ParseException {
-		HttpClientContext context = HttpClientContext.create();
 		HttpGet req = new HttpGet(ctx.getManifestLocation());
 		ctx.httpCondition.makeConditional(req);
 		if (config != null) {
@@ -190,7 +189,7 @@ public class HlsMasterPlaylistProcessor {
 					}
 					rep.carp(new URILocator(ctx.getManifestSpecified(), loc), "Followed %d redirect(s) to: %s", redirects.size(), finalUri==null ? redirects.get(redirects.size()-1) : finalUri);
 				}
-				responseChecker.check(loc, resp, context);
+				responseChecker.check(ctx, resp, context);
 				ctx.lastUpdated = System.currentTimeMillis();
 				InputStream stream = resp.getEntity().getContent();
 				try {
@@ -205,7 +204,7 @@ public class HlsMasterPlaylistProcessor {
 					stream.close();
 				}
 			}
-		}.execute(httpclient, req, loc, stat );
+		}.execute(httpclient, req, ctx, stat );
 	}
 
 	public void stop(final HlsMasterPlaylistContext ctx) {

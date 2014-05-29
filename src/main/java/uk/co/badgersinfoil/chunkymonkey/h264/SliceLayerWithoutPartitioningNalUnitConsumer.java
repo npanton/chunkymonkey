@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -25,6 +26,11 @@ public class SliceLayerWithoutPartitioningNalUnitConsumer implements NalUnitCons
 		@Override
 		public H264Context getH264Context() {
 			return parent;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return parent.getLocator();
 		}
 	}
 

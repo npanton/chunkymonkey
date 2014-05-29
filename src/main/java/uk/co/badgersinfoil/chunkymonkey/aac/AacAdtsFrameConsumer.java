@@ -14,6 +14,8 @@ import net.sourceforge.jaad.aac.syntax.FIL;
 import net.sourceforge.jaad.aac.syntax.PCE;
 import net.sourceforge.jaad.aac.syntax.SyntacticElements;
 */
+import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
 import uk.co.badgersinfoil.chunkymonkey.MediaUnits;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
@@ -22,13 +24,24 @@ import uk.co.badgersinfoil.chunkymonkey.adts.ADTSFrame;
 import uk.co.badgersinfoil.chunkymonkey.adts.AdtsFrameConsumer;
 
 public class AacAdtsFrameConsumer implements AdtsFrameConsumer {
-	
+
 	public class AacAdtsContext implements ADTSContext {
 		private boolean sbrPresent;
 		private MediaDuration duration = null;
+		private MediaContext parentContext;
+
+		public AacAdtsContext(MediaContext parentContext) {
+			this.parentContext = parentContext;
+		}
+
 		@Override
 		public MediaDuration getDuration() {
 			return duration;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return parentContext.getLocator();
 		}
 	}
 
@@ -95,7 +108,7 @@ public class AacAdtsFrameConsumer implements AdtsFrameConsumer {
 				ctx.duration = ctx.duration.plus(frameDuration);
 			}
 		} catch (Exception e) {
-			rep.carp(adtsframe.getLocator(), "AAC decode failure: %s", e);
+			rep.carp(ctx.getLocator(), "AAC decode failure: %s", e);
 		};
 	}
 
@@ -104,7 +117,7 @@ public class AacAdtsFrameConsumer implements AdtsFrameConsumer {
 	}
 
 	@Override
-	public ADTSContext createContext() {
-		return new AacAdtsContext();
+	public ADTSContext createContext(MediaContext parentContext) {
+		return new AacAdtsContext(parentContext);
 	}
 }

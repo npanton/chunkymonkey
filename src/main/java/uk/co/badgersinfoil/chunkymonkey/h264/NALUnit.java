@@ -87,11 +87,9 @@ public class NALUnit {
 		}
 	}
 
-	private Locator locator;
 	private int header;
 
-	public NALUnit(Locator locator, int header) {
-		this.locator = locator;
+	public NALUnit(int header) {
 		this.header = header;
 	}
 
@@ -112,10 +110,6 @@ public class NALUnit {
 		 .append(" nalRefIdc=").append(nalRefIdc())
 		 .append(" nalUnitType=").append(nalUnitType());
 		return b.toString();
-	}
-
-	public Locator getLocator() {
-		return locator;
 	}
 
 	@Override

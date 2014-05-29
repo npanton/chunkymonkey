@@ -3,12 +3,13 @@ package uk.co.badgersinfoil.chunkymonkey.rtp;
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.rtp.RtpParser.RtpContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.BufferTransportStreamParser;
 
 public class RtpBuffer {
 
-	public class FecRecoveredLocator implements Locator {
+	public static class FecRecoveredLocator implements Locator {
 
 		private Locator parent;
 		private int seq;
@@ -36,40 +37,95 @@ public class RtpBuffer {
 		}
 
 	}
+	public static class RtpLocator implements Locator {
+
+		private Locator parent;
+		private int seq;
+
+		public RtpLocator(int seq, Locator parent) {
+			this.seq = seq;
+			this.parent = parent;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder b = new StringBuilder();
+			b.append("RTP Packet seq=").append(seq);
+			Locator parent = getParent();
+			if (parent != null) {
+				b.append("\n  at ");
+				b.append(parent);
+			}
+			return b.toString();
+		}
+
+		@Override
+		public Locator getParent() {
+			return parent;
+		}
+
+	}
+
+	public static class RtpBufferContext implements MediaContext {
+
+		private MediaContext parentContext;
+		private MediaContext consumerContext;
+		private BufferEntry lastEntry;
+
+		public RtpBufferContext(MediaContext parentContext) {
+			this.parentContext = parentContext;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return lastEntry.recovered
+				? new FecRecoveredLocator(lastEntry.seq, parentContext.getLocator())
+				: new RtpLocator(lastEntry.seq, parentContext.getLocator());
+		}
+
+		public MediaContext consumerContext() {
+			return consumerContext;
+		}
+
+		public void setConsumerContext(MediaContext consumerContext) {
+			this.consumerContext = consumerContext;
+		}
+	}
 
 	public class BufferEntry {
 
 		public int seq;
 		public boolean consumed = false;
-		private Locator loc;
 		private ByteBuf payload;
+		public boolean recovered;
 
 		public BufferEntry(int seq) {
 			this.seq = seq;
 		}
 
-		public BufferEntry(int seq, ByteBuf payload, Locator loc) {
+		public BufferEntry(int seq, ByteBuf payload) {
 			this.seq = seq;
 			this.payload = payload;
-			this.loc = loc;
 		}
 
-		public void maybeConsume(RtpContext ctx, BufferTransportStreamParser consumer) {
+		public void maybeConsume(RtpBufferContext ctx, BufferTransportStreamParser consumer) {
 			if (!consumed) {
 				if (payload == null) {
 //					consumer.discontinuity(ctx.consumerContext);
 				} else {
-					consumer.buffer(ctx.consumerContext(), payload, loc);
+					ctx.lastEntry = this;
+					consumer.buffer(ctx.consumerContext(), payload);
 				}
 			}
 			consumed = true;
 		}
 
-		public void consume(RtpContext ctx, BufferTransportStreamParser consumer) {
+		public void consume(RtpBufferContext ctx, BufferTransportStreamParser consumer) {
 			if (consumed) {
 				throw new IllegalStateException("already consumed");
 			}
-			consumer.buffer(ctx.consumerContext(), payload, loc);
+			ctx.lastEntry = this;
+			consumer.buffer(ctx.consumerContext(), payload);
 			consumed = true;
 		}
 	}
@@ -104,13 +160,13 @@ public class RtpBuffer {
 		packets.ensureCapacity(maxPackets);
 	}
 
-	public void add(RtpContext ctx, BufferTransportStreamParser consumer, RtpPacket p) {
-		Locator parent = null;
-		BufferEntry e = new BufferEntry(p.sequenceNumber(), p.payload(), new RtpParser.RtpLocator(p, parent));
+	public void add(RtpBufferContext ctx, BufferTransportStreamParser consumer, RtpPacket p) {
+		BufferEntry e = new BufferEntry(p.sequenceNumber(), p.payload());
+		e.recovered = false;
 		add(ctx, consumer, e);
 	}
 
-	private void add(RtpContext ctx, BufferTransportStreamParser consumer, BufferEntry add) {
+	private void add(RtpBufferContext ctx, BufferTransportStreamParser consumer, BufferEntry add) {
 		// TODO: handle reorderings and repeats
 		if (!packets.isEmpty()) {
 			// ideally seqDiff==1, but might be higher if we missed
@@ -168,8 +224,7 @@ public class RtpBuffer {
 	{
 		BufferEntry e = findSeq(missingSeq);
 		e.payload = recovered;
-		Locator parent = null;
-		e.loc = new FecRecoveredLocator(missingSeq, parent);
+		e.recovered = true;
 	}
 
 	public int minSeqNumber() {

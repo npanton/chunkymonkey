@@ -1,6 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
 import io.netty.buffer.ByteBuf;
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 
 public class ValidatingNalUnitConsumer implements NalUnitConsumer {
@@ -14,7 +15,7 @@ public class ValidatingNalUnitConsumer implements NalUnitConsumer {
 	@Override
 	public void start(NalUnitContext ctx, NALUnit u) {
 		if (u.forbiddenZeroBit() != 0) {
-			rep.carp(u.getLocator(), "forbidden_zero_bit should always be 0, found: "+u.forbiddenZeroBit());
+			rep.carp(ctx.getLocator(), "forbidden_zero_bit should always be 0, found: "+u.forbiddenZeroBit());
 		}
 	}
 	@Override
@@ -34,6 +35,10 @@ public class ValidatingNalUnitConsumer implements NalUnitConsumer {
 			@Override
 			public H264Context getH264Context() {
 				return ctx;
+			}
+			@Override
+			public Locator getLocator() {
+				return ctx.getLocator();
 			}
 		};
 	}

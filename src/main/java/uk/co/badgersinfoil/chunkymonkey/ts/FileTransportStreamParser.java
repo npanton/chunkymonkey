@@ -16,12 +16,19 @@ public class FileTransportStreamParser {
 	public static class FileContext implements MediaContext {
 
 		private MediaContext ctx;
+		public File currentFile;
+		public long packetNo;
 
 		public void setConsumerContext(MediaContext ctx) {
 			this.ctx = ctx;
 		}
 		public MediaContext getConsumerContext() {
 			return ctx;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return new TSPacketLocator(new URILocator(currentFile.toURI()), packetNo);
 		}
 	}
 
@@ -32,13 +39,12 @@ public class FileTransportStreamParser {
 	}
 
 	public void parse(FileContext fctx, File f) throws IOException {
-		Locator locator = new URILocator(f.toURI());
+		fctx.currentFile = f;
 		RandomAccessFile file = new RandomAccessFile(f, "r");
 		try {
 			FileChannel ch = file.getChannel();
 			long size = ch.size();
 			long offset=0, mapped=0;
-			long packetNo = 0;
 			while (true) {
 				final long remaining = size - offset;
 				if (remaining == 0) {
@@ -55,11 +61,12 @@ public class FileTransportStreamParser {
 				long packetCount = mapped / TSPacket.TS_PACKET_LENGTH;
 				MediaContext ctx = fctx.getConsumerContext();
 				for (int i=0; i<packetCount ; i++) {
+					fctx.packetNo++;
 					ByteBuf pk = buf.slice(i*TSPacket.TS_PACKET_LENGTH, TSPacket.TS_PACKET_LENGTH);
-					TSPacket packet = new TSPacket(locator, packetNo++, pk);
+					TSPacket packet = new TSPacket(pk);
 					if (!packet.synced()) {
 						// TODO: better diagnostics.  re-sync?
-						throw new RuntimeException("Transport stream synchronisation lost @packet#"+i+" in "+locator);
+						throw new RuntimeException("Transport stream synchronisation lost at "+fctx.getLocator());
 					}
 					consumer.packet(ctx, packet);
 				}

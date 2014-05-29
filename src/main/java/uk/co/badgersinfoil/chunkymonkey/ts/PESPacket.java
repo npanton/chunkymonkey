@@ -28,14 +28,14 @@ public class PESPacket {
 					this.checkBit2 = checkBit2;
 					this.checkBit3 = checkBit3;
 		}
-		
+
 		public boolean isValid() {
 			return expectedCheck == actualCheck
 			       && checkBit1 == 1
 			       && checkBit2 == 1
 			       && checkBit3 == 1;
 		}
-		
+
 		public long getTs() {
 			if (!isValid()) {
 				throw new RuntimeException("Can't retreve timestamp value when isValid() is false");
@@ -65,7 +65,7 @@ public class PESPacket {
 			b.append(">");
 			return b.toString();
 		}
-		
+
 		public String toSexidecimal() {
 			long t = getTs();
 			final long TICKS = 90000;
@@ -99,14 +99,12 @@ public class PESPacket {
 	}
 
 	private ByteBuf buf;
-	private Locator loc;
 
-	public PESPacket(Locator loc, ByteBuf buf) {
-		this.loc = loc;
+	public PESPacket(ByteBuf buf) {
 		//FIXME: massive hack! how does the buffer change under us?
 		this.buf = buf.copy();
 	}
-	
+
 	public int packetStartCodePrefix() {
 		return (buf.getByte(0) & 0xff) << 16
 		      |(buf.getByte(1) & 0xff) << 8
@@ -133,7 +131,7 @@ public class PESPacket {
 			this.pts = pts;
 			this.dts = dts;
 		}
-		
+
 		public boolean isPtsPresent() {
 			return pts;
 		}
@@ -233,7 +231,7 @@ public class PESPacket {
 			return buf.slice(offset,
 			                 buf.readableBytes() - offset);
 		}
-		
+
 		@Override
 		public String toString() {
 			StringBuilder b = new StringBuilder();
@@ -287,9 +285,5 @@ public class PESPacket {
 			b.append(" ").append(getParsedPESPaload().toString());
 		}
 		return b.toString();
-	}
-
-	public Locator getLocator() {
-		return loc;
 	}
 }

@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
@@ -16,6 +17,11 @@ public class HlsTsPacketValidator implements TSPacketConsumer {
 		public HlsTsPacketValidatorContext(MediaContext parent) {
 			this.parent = parent;
 		}
+
+		@Override
+		public Locator getLocator() {
+			return parent.getLocator();
+		}
 	}
 
 	private Reporter rep;
@@ -28,7 +34,7 @@ public class HlsTsPacketValidator implements TSPacketConsumer {
 	public void packet(MediaContext ctx, TSPacket packet) {
 		HlsTsPacketValidatorContext vctx = (HlsTsPacketValidatorContext)ctx;
 		if (vctx.packetCount == 0 && packet.PID() != 0) {
-			rep.carp(packet.getLocator(), "First packet should be PAT (i.e. PID 0), but has PID %d instead", packet.PID());
+			rep.carp(ctx.getLocator(), "First packet should be PAT (i.e. PID 0), but has PID %d instead", packet.PID());
 		}
 		if (packet.PID() == 0) {
 			vctx.patCount++;

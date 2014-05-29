@@ -13,9 +13,15 @@ public class BufferTransportStreamParser {
 
 		public MediaContext consumerContext;
 		private MediaContext parent;
+		private long packetNo = 0;
 
 		public BufferContext(MediaContext parent) {
 			this.parent = parent;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return new TSPacketLocator(parent.getLocator(), packetNo);
 		}
 	}
 
@@ -31,15 +37,16 @@ public class BufferTransportStreamParser {
 	 * {@link TSPacket#TS_PACKET_LENGTH} bytes long), passing each to the
 	 * TSPacketConsumer instance supplied on construction.
 	 */
-	public void buffer(MediaContext c, ByteBuf payload, Locator locator) {
+	public void buffer(MediaContext c, ByteBuf payload) {
 		BufferContext ctx = (BufferContext)c;
 		int count = payload.readableBytes() / TSPacket.TS_PACKET_LENGTH;
 		for (int i=0; i<count; i++) {
 			ByteBuf pk = payload.slice(i*TSPacket.TS_PACKET_LENGTH, TSPacket.TS_PACKET_LENGTH);
-			TSPacket packet = new TSPacket(locator, i, pk);
+			ctx.packetNo++;
+			TSPacket packet = new TSPacket(pk);
 			if (!packet.synced()) {
 				// TODO: better diagnostics.  re-sync?
-				throw new RuntimeException("Transport stream synchronisation lost @packet#"+i+" in "+locator);
+				throw new RuntimeException("Transport stream synchronisation lost @packet#"+ctx.packetNo+" in "+ctx.getLocator());
 			}
 			consumer.packet(ctx.consumerContext, packet);
 		}

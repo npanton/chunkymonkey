@@ -14,6 +14,7 @@ import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramTSContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable.StreamDescriptorIterator;
 import uk.co.badgersinfoil.chunkymonkey.ts.StreamType;
+import uk.co.badgersinfoil.chunkymonkey.ts.TransportStreamParser.TransportStreamParserContext;
 
 public class HlsCodecValidatingPmtConsumer implements PmtConsumer {
 
@@ -44,10 +45,10 @@ public class HlsCodecValidatingPmtConsumer implements PmtConsumer {
 			// TODO: be more forgiving about entries that the HLS
 			//       spec probably doesn't require to be listed in
 			//       the master manifest CODECS list
-			rep.carp(pmt.getLocator(), "No match for TS segment PMT entries %s in HLS manifest CODECS %s", missing, hlsCtx.getCodecList());
+			rep.carp(progCtx.getLocator(), "No match for TS segment PMT entries %s in HLS manifest CODECS %s", missing, hlsCtx.getCodecList());
 		}
 		if (!codecList.isEmpty()) {
-			rep.carp(pmt.getLocator(), "HLS manifest CODECS entries not found in TS segment PMT: %s", codecList);
+			rep.carp(progCtx.getLocator(), "HLS manifest CODECS entries not found in TS segment PMT: %s", codecList);
 		}
 	}
 
@@ -74,6 +75,6 @@ public class HlsCodecValidatingPmtConsumer implements PmtConsumer {
 	}
 
 	private HlsMediaPlaylistContext findHlsContext(ProgramTSContext progCtx) {
-		return ((HlsSegmentTsContext)progCtx.getTransportContext().getParent()).ctx;
+		return ((HlsSegmentTsContext)((TransportStreamParserContext)progCtx.getTransportContext().getParent()).getParent()).ctx;
 	}
 }

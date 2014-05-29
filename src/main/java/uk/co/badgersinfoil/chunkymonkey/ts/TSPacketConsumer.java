@@ -1,10 +1,14 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 
 
 public interface TSPacketConsumer {
-	public class NullContext implements MediaContext { }
+	public class NullContext implements MediaContext {
+		@Override
+		public Locator getLocator() { return null; }
+	}
 
 	TSPacketConsumer NULL = new TSPacketConsumer() {
 		@Override

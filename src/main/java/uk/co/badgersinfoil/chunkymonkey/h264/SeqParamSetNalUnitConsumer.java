@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
+import uk.co.badgersinfoil.chunkymonkey.Locator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -16,6 +17,10 @@ public class SeqParamSetNalUnitConsumer implements NalUnitConsumer {
 		@Override
 		public H264Context getH264Context() {
 			return ctx;
+		}
+		@Override
+		public Locator getLocator() {
+			return ctx.getLocator();
 		}
 
 	}

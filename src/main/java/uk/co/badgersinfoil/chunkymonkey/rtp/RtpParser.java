@@ -11,25 +11,24 @@ import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.rtp.FecPacket.Direction;
+import uk.co.badgersinfoil.chunkymonkey.rtp.RtpBuffer.RtpBufferContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.BufferTransportStreamParser;
 
 public class RtpParser {
-	public static class RtpLocator implements Locator {
+	public static class RtpStreamLocator implements Locator {
 
+		private long ssrc;
 		private Locator parent;
-		private RtpPacket packet;
 
-		public RtpLocator(RtpPacket p, Locator parent) {
+		public RtpStreamLocator(long ssrc, Locator parent) {
+			this.ssrc = ssrc;
 			this.parent = parent;
-			packet = p;
 		}
 
 		@Override
 		public String toString() {
 			StringBuilder b = new StringBuilder();
-			b.append("RTP Packet seq=").append(packet.sequenceNumber())
-			 .append(" ts=").append(packet.timestamp())
-			 .append(" ssrc=").append(packet.ssrc());
+			b.append("RTP Stream ssrc=").append(ssrc);
 			Locator parent = getParent();
 			if (parent != null) {
 				b.append("\n  at ");
@@ -45,20 +44,20 @@ public class RtpParser {
 
 	}
 	public static class RtpContext implements MediaContext {
-		private MulticastReceiver.UdpConnectionLocator connLocator;
 		private long ssrc = -1;
 		private int lastSeq = -1;
 		private long lastTimestamp = -1;
 		private Set<Long> bannedSsrcs = new HashSet<>();
-		private MediaContext consumerContext;
+//		private MediaContext consumerContext;
 		public CorrectionMatrix correctionMatrix;
 		public long fecSsrc = -1;
 		private Set<Long> bannedFecSsrcs = new HashSet<>();
 		public int lastFecSeq = -1;
+		private MediaContext parentContext;
+		public RtpBufferContext rtpBufferContext;
 
-		public RtpContext(BufferTransportStreamParser consumer, MediaContext consumerContext, MulticastReceiver.UdpConnectionLocator connLocator) {
-			this.consumerContext = consumerContext;
-			this.connLocator = connLocator;
+		public RtpContext(BufferTransportStreamParser consumer, MediaContext parentContext) {
+			this.parentContext = parentContext;
 			correctionMatrix = new CorrectionMatrix(consumer);
 		}
 
@@ -72,8 +71,9 @@ public class RtpParser {
 			this.ssrc = ssrc;
 		}
 
-		public MediaContext consumerContext() {
-			return consumerContext;
+		@Override
+		public Locator getLocator() {
+			return new RtpStreamLocator(ssrc, parentContext.getLocator());
 		}
 	}
 
@@ -82,8 +82,9 @@ public class RtpParser {
 		private FecPacket fecPkt;
 		private Locator parent;
 
-		public FecPacketLcator(FecPacket fecPkt) {
+		public FecPacketLcator(FecPacket fecPkt, Locator parent) {
 			this.fecPkt = fecPkt;
+			this.parent = parent;
 		}
 
 		@Override
@@ -215,7 +216,7 @@ public class RtpParser {
 		 * Called with a media packet
 		 */
 		public void packet(RtpContext ctx, RtpPacket p) {
-			rtpBuffer.add(ctx, consumer, p);
+			rtpBuffer.add(ctx.rtpBufferContext, consumer, p);
 			processQueuedFec(ctx);
 		}
 		private void processQueuedFec(RtpContext ctx) {
@@ -246,9 +247,8 @@ public class RtpParser {
 			// its seen,
 			if (!ctx.bannedSsrcs.contains(p.ssrc())) {
 				ctx.bannedSsrcs.add(p.ssrc());
-				RtpLocator loc = new RtpLocator(p, ctx.connLocator);
 //				err.unexpectedSsrc(loc, ctx.ssrc, p.ssrc());
-System.err.println("unexpected SSRC "+p.ssrc()+", wanted "+ctx.ssrc);
+System.err.println("unexpected SSRC "+p.ssrc()+", wanted "+ctx.ssrc+" (seq:"+p.sequenceNumber()+")");
 			}
 		} else {
 			if (ctx.lastSeq != -1) {
@@ -272,8 +272,7 @@ System.err.println(missing+" packets missing.  Last "+ctx.lastSeq+", this "+p.se
 			// its seen,
 			if (!ctx.bannedFecSsrcs.contains(p.ssrc())) {
 				ctx.bannedFecSsrcs.add(p.ssrc());
-				RtpLocator loc = new RtpLocator(p, ctx.connLocator);
-				rep.carp(loc, "unexpected SSRC %d (expecting %d)", p.ssrc(), ctx.fecSsrc);
+				rep.carp(ctx.getLocator(), "unexpected SSRC %d, expecting %d (seq:%d)", p.ssrc(), ctx.fecSsrc, p.sequenceNumber());
 			}
 			return;
 		}
@@ -292,7 +291,7 @@ System.err.println(missing+" FEC packets missing.  Last "+ctx.lastFecSeq+", this
 		if (header.direction() == Direction.COLS) {
 			ctx.correctionMatrix.fecPacket(ctx, header);
 		} else {
-			rep.carp(new FecPacketLcator(header), "Packet specifies, %s, but only %s is supported", header.direction(), Direction.COLS);
+			rep.carp(new FecPacketLcator(header, ctx.getLocator()), "Packet specifies, %s, but only %s is supported", header.direction(), Direction.COLS);
 		}
 	}
 
@@ -300,7 +299,11 @@ System.err.println(missing+" FEC packets missing.  Last "+ctx.lastFecSeq+", this
 		this.rep = rep;
 	}
 
-	public RtpContext createContext(MediaContext ctx, MulticastReceiver.UdpConnectionLocator connLocator) {
-		return new RtpContext(consumer, consumer.createContext(ctx), connLocator);
+	public RtpContext createContext(MediaContext ctx) {
+		RtpContext rtpContext = new RtpContext(consumer, ctx);
+		RtpBufferContext rtpBufferContext = new RtpBufferContext(rtpContext);
+		rtpContext.rtpBufferContext = rtpBufferContext;
+		rtpBufferContext.setConsumerContext(consumer.createContext(rtpBufferContext));
+		return rtpContext;
 	}
 }

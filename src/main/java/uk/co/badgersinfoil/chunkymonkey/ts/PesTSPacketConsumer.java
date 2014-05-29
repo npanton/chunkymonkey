@@ -8,20 +8,18 @@ import uk.co.badgersinfoil.chunkymonkey.ts.ProgramMapTable.StreamDescriptorItera
 public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 
 	public static class PesStreamTSContext extends StreamTSContext {
-		private ProgramTSContext progCtx;
+		private ProgramTSContext parentContext;
 		private int elementryPID;
 		private int streamType;
 		private boolean payloadStarted = false;
 		private Reporter rep;
-		private PESConsumer pesConsumer;
 		private int pesPacketNo;
-		private ElementryContext eCtx;
+		private ElementryContext consumerContext;
 		private int lastContinuityCount = -1;
 
-		public PesStreamTSContext(ProgramTSContext progCtx, int elementryPID, ElementryContext eCtx) {
-			this.progCtx = progCtx;
+		public PesStreamTSContext(ProgramTSContext parentContext, int elementryPID) {
+			this.parentContext = parentContext;
 			this.elementryPID = elementryPID;
-			this.eCtx = eCtx;
 		}
 
 		public boolean isContinuous(TSPacket packet) {
@@ -43,7 +41,12 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 			return lastContinuityCount;
 		}
 		public ElementryContext getElementryContext() {
-			return eCtx;
+			return consumerContext;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return new PESLocator(parentContext.getLocator(), elementryPID, pesPacketNo);
 		}
 	}
 
@@ -76,15 +79,6 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 
 	private PESConsumer pesConsumer;
 
-//	private StreamContext ctx;
-
-//	public PesTSPacketConsumer(int elementryPID, int streamType, PESConsumer pesConsumer, StreamContext ctx) {
-//		this.elementryPID = elementryPID;
-//		this.streamType = streamType;
-//		this.pesConsumer = pesConsumer;
-//		this.ctx = ctx;
-//	}
-
 	public PesTSPacketConsumer(PESConsumer pesConsumer) {
 		this.pesConsumer = pesConsumer;
 	}
@@ -98,41 +92,42 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 		}
 		if (!ctx.isContinuous(packet)) {
 // TODO: push error logging responsibility elsewhere,
-System.err.println(String.format("TS continuity error (PID %d) counter now %d, last value %d", packet.PID(), packet.continuityCounter(), ctx.getLastContinuityCount())+"\n  at "+packet.getLocator());
-			pesConsumer.continuityError(ctx.eCtx);
+System.err.println(String.format("TS continuity error (PID %d) counter now %d, last value %d", packet.PID(), packet.continuityCounter(), ctx.getLastContinuityCount())+"\n  at "+tsCtx.getLocator());
+			pesConsumer.continuityError(ctx.consumerContext);
 		}
 		ctx.setLastContinuityCount(packet.continuityCounter());
 		boolean startIndicator = packet.payloadUnitStartIndicator();
 		if (startIndicator) {
 			if (ctx.payloadStarted) {
-				pesConsumer.end(ctx.eCtx);
+				pesConsumer.end(ctx.consumerContext);
 			} else {
 				ctx.payloadStarted = true;
 			}
-			Locator loc = new PESLocator(packet.getLocator(), ctx.elementryPID, ctx.pesPacketNo++);
-			PESPacket pesPacket = new PESPacket(loc, packet.getPayload());
-			pesConsumer.start(ctx.eCtx, pesPacket);
+			PESPacket pesPacket = new PESPacket(packet.getPayload());
+			ctx.pesPacketNo++;
+			pesConsumer.start(ctx.consumerContext, pesPacket);
 		} else if (ctx.payloadStarted && packet.adaptionControl().contentPresent() && packet.getPayloadLength() > 0) {
 			// (in theory, contentPresent==true && payloadLength==0
 			// is not allowed, but non-conformant streams may
 			// present this combination, so we have deliberately
 			// excluded that case in the condition above)
-			pesConsumer.continuation(ctx.eCtx, packet, packet.getPayload());
+			pesConsumer.continuation(ctx.consumerContext, packet, packet.getPayload());
 		}  // else, drop data for which we lack a PES header
 	}
 
 	@Override
 	public void end(MediaContext tsCtx) {
 		PesStreamTSContext ctx = (PesStreamTSContext)tsCtx;
-		pesConsumer.end(ctx.eCtx);
+		pesConsumer.end(ctx.consumerContext);
 	}
 
 	@Override
 	public StreamTSContext createContext(ProgramTSContext ctx,
 	                                     StreamDescriptorIterator streamDesc)
 	{
-		ElementryContext eCtx = pesConsumer.createContext();
-		return new PesStreamTSContext(ctx, streamDesc.elementryPID(), eCtx);
+		PesStreamTSContext pesStreamTSContext = new PesStreamTSContext(ctx, streamDesc.elementryPID());
+		pesStreamTSContext.consumerContext = pesConsumer.createContext(pesStreamTSContext);
+		return pesStreamTSContext;
 	}
 
 	@Override

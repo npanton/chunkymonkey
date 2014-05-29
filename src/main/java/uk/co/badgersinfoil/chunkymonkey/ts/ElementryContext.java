@@ -1,5 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
-public interface ElementryContext {
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+
+public interface ElementryContext extends MediaContext {
 
 }

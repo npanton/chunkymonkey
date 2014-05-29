@@ -7,6 +7,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer.NalUnitContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
@@ -298,8 +299,8 @@ public class H264PesConsumer implements PESConsumer {
 
 	private void header(H264Context ctx, int b) {
 		ctx.continuityError(false);
-		PesNalUnitLocator loc = new PesNalUnitLocator(ctx.getPesPacket().getLocator(), ctx.nextUnitIndex());
-		NALUnit u = new NALUnit(loc, b);
+		ctx.incUnitIndex();
+		NALUnit u = new NALUnit(b);
 		NalUnitConsumer consumer = getNalUnitConsumerFor(u.nalUnitType());
 		NalUnitContext nalCtx = ctx.nalContext(u.nalUnitType());
 		ctx.setNalUnit(u);
@@ -364,8 +365,8 @@ System.err.println("H264PesConsumer.end() - end of H264 PES packet we decided to
 	}
 
 	@Override
-	public ElementryContext createContext() {
-		H264Context ctx = new H264Context();
+	public ElementryContext createContext(MediaContext parentContext) {
+		H264Context ctx = new H264Context(parentContext);
 		for (Entry<UnitType, NalUnitConsumer> e : nalUnitConsumers.entrySet()) {
 			ctx.addNalContext(e.getKey(), e.getValue());
 		}

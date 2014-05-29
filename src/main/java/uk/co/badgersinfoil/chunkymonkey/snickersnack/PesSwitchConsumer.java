@@ -1,6 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.snickersnack;
 
 import io.netty.buffer.ByteBuf;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket;
@@ -44,7 +45,7 @@ public class PesSwitchConsumer implements PESConsumer {
 			delegate.continuityError(ctx);
 		}
 	}
-	
+
 	public boolean enabled() {
 		return enabled;
 	}
@@ -53,7 +54,7 @@ public class PesSwitchConsumer implements PESConsumer {
 	}
 
 	@Override
-	public ElementryContext createContext() {
-		return delegate.createContext();
+	public ElementryContext createContext(MediaContext parentContext) {
+		return delegate.createContext(parentContext);
 	}
 }

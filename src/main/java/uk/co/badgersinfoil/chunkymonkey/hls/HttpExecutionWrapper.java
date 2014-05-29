@@ -18,6 +18,7 @@ import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 
 /**
@@ -25,6 +26,40 @@ import uk.co.badgersinfoil.chunkymonkey.Reporter;
  * capture and report on diagnostic information for (network) failures.
  */
 public abstract class HttpExecutionWrapper<T> {
+
+	public class SockContext implements MediaContext {
+
+		private InetAddress remote;
+		private MediaContext parentContext;
+
+		public SockContext(InetAddress remote, MediaContext parentContext) {
+			this.remote = remote;
+			this.parentContext = parentContext;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return new SockLocator(remote, parentContext.getLocator());
+		}
+
+	}
+
+	public class PackagerInstanceContext implements MediaContext {
+
+		private String instanceId;
+		private MediaContext parentContext;
+
+		public PackagerInstanceContext(String instanceId, MediaContext parentContext) {
+			this.instanceId = instanceId;
+			this.parentContext = parentContext;
+		}
+
+		@Override
+		public Locator getLocator() {
+			return new PackagerInstanceLocator(instanceId, parentContext.getLocator());
+		}
+
+	}
 
 	private Reporter rep;
 
@@ -46,7 +81,7 @@ public abstract class HttpExecutionWrapper<T> {
 			}
 		};
 
-	public T execute(HttpClient httpclient, HttpUriRequest req, Locator loc, HttpStat stat) {
+	public T execute(HttpClient httpclient, HttpUriRequest req, MediaContext ctx, HttpStat stat) {
 		HttpClientContext context = HttpClientContext.create();
 		CloseableHttpResponse resp = null;
 		stat.start();
@@ -55,14 +90,14 @@ public abstract class HttpExecutionWrapper<T> {
 			stat.headers(resp.getStatusLine().getStatusCode());
 			// TODO: pull X-Pkgr-Instance handling out into optional component
 			if (resp.containsHeader("X-Pkgr-Instance")) {
-				loc = new PackagerInstanceLocator(resp.getLastHeader("X-Pkgr-Instance").getValue(), loc);
+				ctx = new PackagerInstanceContext(resp.getLastHeader("X-Pkgr-Instance").getValue(), ctx);
 			}
 			T result = null;
 			int statusCode = resp.getStatusLine().getStatusCode();
 			if (statusCode == 200 || statusCode == 304) {
 				result = handleResponse(context, resp, stat);
 			} else {
-				rep.carp(loc, "Request failed %d %s - headers: %s", resp.getStatusLine().getStatusCode(), resp.getStatusLine().getReasonPhrase(), Arrays.toString(resp.getAllHeaders()));
+				rep.carp(ctx.getLocator(), "Request failed %d %s - headers: %s", resp.getStatusLine().getStatusCode(), resp.getStatusLine().getReasonPhrase(), Arrays.toString(resp.getAllHeaders()));
 			}
 			stat.end();
 			resp.close();
@@ -72,44 +107,44 @@ public abstract class HttpExecutionWrapper<T> {
 			stat.sock(remote);
 			stat.timeout();
 			if (remote != null) {
-				loc = new SockLocator(remote, loc);
+				ctx = new SockContext(remote, ctx);
 			}
 			// e.bytesTransferred always seems to be 0, so we don't
 			// bother reporting it
 			if (resp == null || resp.getStatusLine() != null) {
-				rep.carp(loc, "HTTP request failed after %dms: %s", stat.getDurationMillis(), e.getMessage());
+				rep.carp(ctx.getLocator(), "HTTP request failed after %dms: %s", stat.getDurationMillis(), e.getMessage());
 			} else {
-				rep.carp(loc, "HTTP request failed after %dms, initial %s response: %s", stat.getDurationMillis(), resp.getStatusLine(), e.getMessage());
+				rep.carp(ctx.getLocator(), "HTTP request failed after %dms, initial %s response: %s", stat.getDurationMillis(), resp.getStatusLine(), e.getMessage());
 			}
 		} catch (ConnectionClosedException e) {
 			InetAddress remote = getRemote(context);
 			if (remote != null) {
-				loc = new SockLocator(remote, loc);
+				ctx = new SockContext(remote, ctx);
 				stat.sock(remote);
 			}
 			stat.prematureClose();
 			if (resp == null || resp.getFirstHeader("Connection") == null) {
-				rep.carp(loc, "%s, after %dms", e.getMessage(), stat.getDurationMillis());
+				rep.carp(ctx.getLocator(), "%s, after %dms", e.getMessage(), stat.getDurationMillis());
 			} else {
-				rep.carp(loc, "%s, after %dms (response included %s)", e.getMessage(), stat.getDurationMillis(), resp.getFirstHeader("Connection"));
+				rep.carp(ctx.getLocator(), "%s, after %dms (response included %s)", e.getMessage(), stat.getDurationMillis(), resp.getFirstHeader("Connection"));
 			}
 		} catch (ConnectTimeoutException e) {
 			InetAddress remote = getRemote(context);
 			if (remote != null) {
-				loc = new SockLocator(remote, loc);
+				ctx = new SockContext(remote, ctx);
 				stat.sock(remote);
 			}
 			stat.connectTimeout();
-			rep.carp(loc, "%s, after %dms", e.getMessage(), stat.getDurationMillis());
+			rep.carp(ctx.getLocator(), "%s, after %dms", e.getMessage(), stat.getDurationMillis());
 		} catch (IOException e) {
 			InetAddress remote = getRemote(context);
 			if (remote != null) {
-				loc = new SockLocator(remote, loc);
+				ctx = new SockContext(remote, ctx);
 				stat.sock(remote);
 			}
 			stat.failed();
 			// TODO: parent Locator
-			rep.carp(loc, "HTTP request failed: %s", e.toString());
+			rep.carp(ctx.getLocator(), "HTTP request failed: %s", e.toString());
 		}
 		return null;
 	}
