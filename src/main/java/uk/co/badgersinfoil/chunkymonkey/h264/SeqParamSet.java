@@ -37,6 +37,16 @@ public class SeqParamSet {
 				}
 			}
 		}
+
+		public StringBuilder toString(StringBuilder b) {
+			b.append("scallingList4x4=").append(Arrays.toString(scalingList4x4))
+			 .append("scallingList8x8=").append(Arrays.toString(scalingList8x8));
+			return b;
+		}
+		@Override
+		public String toString() {
+			return toString(new StringBuilder()).toString();
+		}
 	}
 	public static class HrdParameters {
 
@@ -68,7 +78,7 @@ public class SeqParamSet {
 			dpbOutputDelayLengthMinus1 = bits.readBits(5);
 			timeOffsetLength = bits.readBits(5);
 		}
-		
+
 		public int cpbCntMinus1() {
 			return cpbCntMinus1;
 		}
@@ -105,7 +115,7 @@ public class SeqParamSet {
 			timeScale = bits.readBits(8) << 24 | bits.readBits(8) << 16 | bits.readBits(8) << 8 | bits.readBits(8);
 			fixedFrameRateFlag = bits.readBool();
 		}
-		
+
 		public long numUnitsInTick() {
 			return numUnitsInTick;
 		}
@@ -115,7 +125,7 @@ public class SeqParamSet {
 		public boolean fixedFrameRateFlag() {
 			return fixedFrameRateFlag;
 		}
-		
+
 		public StringBuilder toString(StringBuilder b) {
 			return b.append(" numUnitsInTick=").append(numUnitsInTick())
 			        .append(" timeScale=").append(timeScale())
@@ -382,8 +392,15 @@ public class SeqParamSet {
 	private boolean constraintSet3Flag;
 	private int levelIdc;
 	private int seqParamSetId;
+
+	// the following group of properties only valid when isProfileWithExtraInfo()==true
 	private ChromaFormat chromaFormat;
-	private boolean separateColourPlaneFlag;
+	private boolean separateColourPlaneFlag = false;
+	private int bitDepthLumaMinus8;
+	private int bitDepthChromaMinus8;
+	private boolean qpprimeYZeroTransformBypassFlag;
+	private ScalingMatrix scalingMatrix = null;
+
 	private int log2MaxFrameNumMinus4;
 	private int picOrderCntType;
 	private int log2MaxPicOrderCntLsbMinus4;
@@ -411,23 +428,19 @@ public class SeqParamSet {
 		int reserved_zero_4bits = bits.readBits(4);
 		levelIdc = bits.readBits(8);
 		seqParamSetId = bits.readUE();
-		if (profileIdc == 100 || profileIdc == 110
-		   || profileIdc == 122 || profileIdc == 244
-		   || profileIdc == 44 || profileIdc == 83
-		   || profileIdc == 86)
-		{
+		if (isProfileWithExtraInfo(profileIdc)) {
 			int chromaFormatIdc = bits.readUE();
 			// TODO: report values outside allowed range (rather than throwing),
 			chromaFormat = ChromaFormat.forIndex(chromaFormatIdc);
 			if (chromaFormatIdc == 3) {
 				separateColourPlaneFlag = bits.readBool();
 			}
-			int bitDepthLumaMinus8 = bits.readUE();
-			int bit_depth_chroma_minus8 = bits.readUE();
-			boolean qpprimeYZeroTransformBypassFlag = bits.readBool();
+			bitDepthLumaMinus8 = bits.readUE();
+			bitDepthChromaMinus8 = bits.readUE();
+			qpprimeYZeroTransformBypassFlag = bits.readBool();
 			boolean seqScalingMatrixPresent = bits.readBool();
 			if (seqScalingMatrixPresent) {
-				ScalingMatrix scalingMatrix = new ScalingMatrix(bits, chromaFormatIdc);
+				scalingMatrix = new ScalingMatrix(bits, chromaFormatIdc);
 			}
 		} else {
 			chromaFormat = ChromaFormat.YUV420;
@@ -437,6 +450,7 @@ public class SeqParamSet {
 		switch (picOrderCntType) {
 		case 0:
 			log2MaxPicOrderCntLsbMinus4  = bits.readUE();
+			// TODO: check range is 0-12
 			break;
 		case 1:
 			deltaPicOrderAlwaysZeroFlag = bits.readBool();
@@ -468,7 +482,20 @@ public class SeqParamSet {
 			vuiParameters = new VuiParameters(bits);
 		}
 	}
-	
+
+	private static boolean isProfileWithExtraInfo(int profileIdc) {
+		return profileIdc == 100 || profileIdc == 110
+		   || profileIdc == 122 || profileIdc == 244
+		   || profileIdc == 44 || profileIdc == 83
+		   || profileIdc == 86;
+	}
+
+	private static void assertProfileWithExtraInfo(int profileIdc) {
+		if (!isProfileWithExtraInfo(profileIdc)) {
+			throw new IllegalStateException("property not available for profile "+profileIdc);
+		}
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder b = new StringBuilder();
@@ -477,8 +504,21 @@ public class SeqParamSet {
 		 .append(" constraintSet1Flag=").append(constraintSet1Flag())
 		 .append(" constraintSet2Flag=").append(constraintSet2Flag())
 		 .append(" levelIdc=").append(levelIdc())
-		 .append(" seqParamSetId=").append(seqParamSetId())
-		 .append(" log2MaxFrameNumMinus4=").append(log2MaxFrameNumMinus4())
+		 .append(" seqParamSetId=").append(seqParamSetId());
+		if (isProfileWithExtraInfo(profileIdc)) {
+			b.append(" chromaFormat=").append(chromaFormat());
+			if (chromaFormat() == ChromaFormat.YUV444) {
+				b.append("separateColourPlaneFlag="+separateColourPlaneFlag());
+			}
+			b.append(" bitDepthLumaMinus8=").append(bitDepthLumaMinus8())
+			 .append(" bitDepthChromaMinus8=").append(bitDepthChromaMinus8())
+			 .append(" qpprimeYZeroTransformBypassFlag=").append(qpprimeYZeroTransformBypassFlag());
+			if (scalingMatrix() != null) {
+				b.append(" scalingMatrix=");
+				scalingMatrix.toString(b);
+			}
+		}
+		b.append(" log2MaxFrameNumMinus4=").append(log2MaxFrameNumMinus4())
 		 .append(" picOrderCntType=").append(picOrderCntType());
 		switch (picOrderCntType) {
 		case 0:
@@ -535,6 +575,25 @@ public class SeqParamSet {
 	}
 	public ChromaFormat chromaFormat() {
 		return chromaFormat;
+	}
+	public boolean separateColourPlaneFlag() {
+		return separateColourPlaneFlag;
+	}
+	public int bitDepthLumaMinus8() {
+		assertProfileWithExtraInfo(profileIdc);
+		return bitDepthLumaMinus8;
+	}
+	public int bitDepthChromaMinus8() {
+		assertProfileWithExtraInfo(profileIdc);
+		return bitDepthChromaMinus8;
+	}
+	public boolean qpprimeYZeroTransformBypassFlag() {
+		assertProfileWithExtraInfo(profileIdc);
+		return qpprimeYZeroTransformBypassFlag;
+	}
+	public ScalingMatrix scalingMatrix() {
+		assertProfileWithExtraInfo(profileIdc);
+		return scalingMatrix;
 	}
 
 	public int log2MaxFrameNumMinus4() {

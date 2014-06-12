@@ -10,9 +10,9 @@ import io.netty.buffer.Unpooled;
  * NB incomplete - only processes and makes available the slice header, not
  * the data in the body of the slice.
  */
-public class SliceLayerWithoutPartitioningNalUnitConsumer implements NalUnitConsumer {
+public class SliceLayerWithoutPartitioningNonIdrNalUnitConsumer implements NalUnitConsumer {
 
-	public static class SliceLayerWithoutPartitioningContext implements NalUnitContext {
+	public static class SliceLayerWithoutPartitioningNonIdrContext implements NalUnitContext {
 
 		private H264Context parent;
 		public NALUnit currentUnit;
@@ -20,7 +20,7 @@ public class SliceLayerWithoutPartitioningNalUnitConsumer implements NalUnitCons
 		H264BitBuf bits;
 		public MediaContext consumerContext;
 
-		public SliceLayerWithoutPartitioningContext(H264Context parent) {
+		public SliceLayerWithoutPartitioningNonIdrContext(H264Context parent) {
 			this.parent = parent;
 		}
 
@@ -35,10 +35,10 @@ public class SliceLayerWithoutPartitioningNalUnitConsumer implements NalUnitCons
 		}
 	}
 
-	private SliceLayerWithoutPartitioningConsumer consumer;
+	private SliceLayerWithoutPartitioningNonIdrConsumer consumer;
 	private Reporter rep = Reporter.NULL;
 
-	public SliceLayerWithoutPartitioningNalUnitConsumer(SliceLayerWithoutPartitioningConsumer consumer) {
+	public SliceLayerWithoutPartitioningNonIdrNalUnitConsumer(SliceLayerWithoutPartitioningNonIdrConsumer consumer) {
 		this.consumer = consumer;
 	}
 
@@ -48,14 +48,17 @@ public class SliceLayerWithoutPartitioningNalUnitConsumer implements NalUnitCons
 
 	@Override
 	public void start(NalUnitContext nctx, NALUnit u) {
-		SliceLayerWithoutPartitioningContext ctx = (SliceLayerWithoutPartitioningContext)nctx;
+		if (u.nalRefIdc() == 0) {
+			rep.carp(nctx.getLocator(), "nal_ref_idc should not be 0 when nal_unit_type is %s: got %d", u.nalUnitType(), u.nalRefIdc());
+		}
+		SliceLayerWithoutPartitioningNonIdrContext ctx = (SliceLayerWithoutPartitioningNonIdrContext)nctx;
 		ctx.currentUnit = u;
 		ctx.bits = new H264BitBuf(ctx.buf);
 	}
 
 	@Override
 	public void data(NalUnitContext nctx, ByteBuf buf, int offset, int length) {
-		SliceLayerWithoutPartitioningContext ctx = (SliceLayerWithoutPartitioningContext)nctx;
+		SliceLayerWithoutPartitioningNonIdrContext ctx = (SliceLayerWithoutPartitioningNonIdrContext)nctx;
 		if (ctx.bits == null) {
 			return;
 		}
@@ -74,20 +77,20 @@ public class SliceLayerWithoutPartitioningNalUnitConsumer implements NalUnitCons
 
 	@Override
 	public void end(NalUnitContext nctx) {
-		SliceLayerWithoutPartitioningContext ctx = (SliceLayerWithoutPartitioningContext)nctx;
+		SliceLayerWithoutPartitioningNonIdrContext ctx = (SliceLayerWithoutPartitioningNonIdrContext)nctx;
 		ctx.buf.clear();
 	}
 
 	@Override
 	public void continuityError(NalUnitContext nctx) {
-		SliceLayerWithoutPartitioningContext ctx = (SliceLayerWithoutPartitioningContext)nctx;
+		SliceLayerWithoutPartitioningNonIdrContext ctx = (SliceLayerWithoutPartitioningNonIdrContext)nctx;
 		ctx.buf.clear();
 		ctx.bits = null;
 	}
 
 	@Override
 	public NalUnitContext createContext(H264Context hctx) {
-		SliceLayerWithoutPartitioningContext ctx = new SliceLayerWithoutPartitioningContext(hctx);
+		SliceLayerWithoutPartitioningNonIdrContext ctx = new SliceLayerWithoutPartitioningNonIdrContext(hctx);
 		ctx.consumerContext = consumer.createContext(ctx);
 		return ctx;
 	}

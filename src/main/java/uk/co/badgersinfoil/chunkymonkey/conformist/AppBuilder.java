@@ -22,6 +22,10 @@ import uk.co.badgersinfoil.chunkymonkey.h264.PicParamSetNalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiHeaderConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiNalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeqParamSetNalUnitConsumer;
+import uk.co.badgersinfoil.chunkymonkey.h264.SliceLayerWithoutPartitioningConsumer;
+import uk.co.badgersinfoil.chunkymonkey.h264.SliceLayerWithoutPartitioningNalUnitConsumer;
+import uk.co.badgersinfoil.chunkymonkey.h264.SliceLayerWithoutPartitioningNonIdrConsumer;
+import uk.co.badgersinfoil.chunkymonkey.h264.SliceLayerWithoutPartitioningNonIdrNalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMediaPlaylistProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsSegmentProcessor;
@@ -212,6 +216,12 @@ public class AppBuilder {
 		PicParamSetNalUnitConsumer picParamSetNalUnitConsumer = new PicParamSetNalUnitConsumer();
 		picParamSetNalUnitConsumer.setReporder(rep);
 		nalUnitConsumers.put(UnitType.PIC_PARAMETER_SET, picParamSetNalUnitConsumer);
+		SliceLayerWithoutPartitioningNalUnitConsumer sliceLayerWithoutPartitioningNalUnitConsumer = new SliceLayerWithoutPartitioningNalUnitConsumer(SliceLayerWithoutPartitioningConsumer.NULL);
+		sliceLayerWithoutPartitioningNalUnitConsumer.setReporter(rep);
+		nalUnitConsumers.put(UnitType.SLICE_LAYER_WITHOUT_PARTITIONING_NON_IDR, sliceLayerWithoutPartitioningNalUnitConsumer);
+		SliceLayerWithoutPartitioningNonIdrNalUnitConsumer sliceLayerWithoutPartitioningNonIdrNalUnitConsumer = new SliceLayerWithoutPartitioningNonIdrNalUnitConsumer(SliceLayerWithoutPartitioningNonIdrConsumer.NULL);
+		sliceLayerWithoutPartitioningNonIdrNalUnitConsumer.setReporter(rep);
+		nalUnitConsumers.put(UnitType.SLICE_LAYER_WITHOUT_PARTITIONING_IDR, sliceLayerWithoutPartitioningNonIdrNalUnitConsumer);
 		PESConsumer.MultiPesConsumer consumers
 			= new PESConsumer.MultiPesConsumer(
 				new HlsValidatingPesConsumer(rep),

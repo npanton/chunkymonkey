@@ -5,6 +5,13 @@ import uk.co.badgersinfoil.chunkymonkey.h264.SliceLayerWithoutPartitioningNalUni
 
 public interface SliceLayerWithoutPartitioningConsumer {
 
+	static final SliceLayerWithoutPartitioningConsumer NULL = new SliceLayerWithoutPartitioningConsumer() {
+		@Override
+		public void header(MediaContext consumerContext, SliceHeader header) { }
+		@Override
+		public MediaContext createContext(SliceLayerWithoutPartitioningContext ctx) { return null; }
+	};
+
 	void header(MediaContext consumerContext, SliceHeader header);
 
 	MediaContext createContext(SliceLayerWithoutPartitioningContext ctx);
