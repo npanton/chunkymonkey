@@ -4,28 +4,23 @@ import java.util.Arrays;
 import io.netty.buffer.ByteBuf;
 
 public class SeqParamSet {
-	public static class ScalingMatrix {
-		public static class ScalingList {
-			private int[] scalingList;
-			private boolean useDefaultScalingMatrixFlag;
+	public static enum ChromaFormat {
+		MONOCHROME,
+		YUV420,
+		YUV422,
+		YUV444;
 
-			public ScalingList(H264BitBuf bits, int size) {
-			        scalingList = new int[size];
-			        int lastScale = 8;
-			        int nextScale = 8;
-			        for (int j = 0; j < size; j++) {
-			            if (nextScale != 0) {
-			                int deltaScale = bits.readSE();
-			                nextScale = (lastScale + deltaScale + 256) % 256;
-			                useDefaultScalingMatrixFlag = j == 0 && nextScale == 0;
-			            }
-			            scalingList[j] = nextScale == 0 ? lastScale : nextScale;
-			            lastScale = scalingList[j];
-			        }
+		public static ChromaFormat forIndex(int i) {
+			switch (i) {
+			case 0: return MONOCHROME;
+			case 1: return YUV420;
+			case 2: return YUV422;
+			case 3: return YUV444;
+			default: throw new IllegalArgumentException("Valid indexes are in the range 0-3: "+i);
 			}
-			
 		}
-
+	}
+	public static class ScalingMatrix {
 		private ScalingList[] scalingList4x4 = new ScalingList[8];
 		private ScalingList[] scalingList8x8 = new ScalingList[8];
 
@@ -387,7 +382,7 @@ public class SeqParamSet {
 	private boolean constraintSet3Flag;
 	private int levelIdc;
 	private int seqParamSetId;
-	private int chromaFormatIdc;
+	private ChromaFormat chromaFormat;
 	private boolean separateColourPlaneFlag;
 	private int log2MaxFrameNumMinus4;
 	private int picOrderCntType;
@@ -421,7 +416,9 @@ public class SeqParamSet {
 		   || profileIdc == 44 || profileIdc == 83
 		   || profileIdc == 86)
 		{
-			chromaFormatIdc = bits.readUE();
+			int chromaFormatIdc = bits.readUE();
+			// TODO: report values outside allowed range (rather than throwing),
+			chromaFormat = ChromaFormat.forIndex(chromaFormatIdc);
 			if (chromaFormatIdc == 3) {
 				separateColourPlaneFlag = bits.readBool();
 			}
@@ -433,7 +430,7 @@ public class SeqParamSet {
 				ScalingMatrix scalingMatrix = new ScalingMatrix(bits, chromaFormatIdc);
 			}
 		} else {
-//			chromaFormatIdc = YUV 420
+			chromaFormat = ChromaFormat.YUV420;
 		}
 		log2MaxFrameNumMinus4 = bits.readUE();
 		picOrderCntType = bits.readUE();
@@ -536,6 +533,10 @@ public class SeqParamSet {
 	public int seqParamSetId() {
 		return seqParamSetId;
 	}
+	public ChromaFormat chromaFormat() {
+		return chromaFormat;
+	}
+
 	public int log2MaxFrameNumMinus4() {
 		return log2MaxFrameNumMinus4;
 	}

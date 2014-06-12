@@ -51,16 +51,29 @@ public class BitBuf {
 		}
 		return resultBits;
 	}
-	
+
 	public int readBit() {
 		return readBits0(1);
 	}
-	
+
 	public boolean readBool() {
 		return readBits0(1) != 0;
 	}
-	
+
 	public int readableBits() {
 		return remainingBits + buf.readableBytes() * 8;
+	}
+
+	/**
+	 * Allows the next few bits to be seen, but only up to the next byte
+	 * boundary.
+	 */
+	public int peek(int n) {
+		if (n > remainingBits) {
+			throw new IllegalArgumentException(n+" is greater than remaining bits in the current byte, "+remainingBits);
+		}
+		final int mask = 0xff00 >> n;
+		int shift = (8 - n);
+		return (lastByte & mask) >> shift;
 	}
 }

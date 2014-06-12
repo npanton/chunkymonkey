@@ -29,4 +29,13 @@ public class H264BitBuf extends BitBuf {
 		int sign = ((val & 0x1) << 1) - 1;
 		return ((val >> 1) + (val & 0x1)) * sign;
 	}
+
+	public boolean moreRbspData() {
+		return readableBits() >= 8
+			|| peek(readableBits()) != predictRbspTrailingBits();
+	}
+
+	private int predictRbspTrailingBits() {
+		return 1 << (readableBits()-1);
+	}
 }

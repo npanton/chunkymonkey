@@ -18,6 +18,7 @@ import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStream
 import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer;
+import uk.co.badgersinfoil.chunkymonkey.h264.PicParamSetNalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiHeaderConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiNalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeqParamSetNalUnitConsumer;
@@ -207,6 +208,9 @@ public class AppBuilder {
 		nalUnitConsumers.put(UnitType.SEI, seiNalUnitConsumer);
 		SeqParamSetNalUnitConsumer seqParamSetNalUnitConsumer = new SeqParamSetNalUnitConsumer();
 		nalUnitConsumers.put(UnitType.SEQ_PARAMETER_SET, seqParamSetNalUnitConsumer);
+		PicParamSetNalUnitConsumer picParamSetNalUnitConsumer = new PicParamSetNalUnitConsumer();
+		picParamSetNalUnitConsumer.setReporder(rep);
+		nalUnitConsumers.put(UnitType.PIC_PARAMETER_SET, picParamSetNalUnitConsumer);
 		PESConsumer.MultiPesConsumer consumers
 			= new PESConsumer.MultiPesConsumer(
 				new HlsValidatingPesConsumer(rep),

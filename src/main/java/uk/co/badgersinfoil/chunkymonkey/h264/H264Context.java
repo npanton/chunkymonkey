@@ -17,6 +17,7 @@ public class H264Context implements ElementryContext {
 	private PESPacket pesPacket;
 	private int unitIndex = 0;
 	private SeqParamSet lastSeqParamSet;
+	private PicParamSet lastPicParamSet;
 	private boolean nalStarted;
 	private NALUnit nalUnit;
 	private ParseState parseState;
@@ -67,6 +68,12 @@ public class H264Context implements ElementryContext {
 	}
 	public SeqParamSet lastSeqParamSet() {
 		return lastSeqParamSet;
+	}
+	public void lastPicParamSet(PicParamSet params) {
+		lastPicParamSet = params;
+	}
+	public PicParamSet lastPicParamSet() {
+		return lastPicParamSet;
 	}
 	public boolean nalStarted() {
 		return nalStarted;
