@@ -6,6 +6,7 @@ import io.airlift.command.HelpOption;
 import io.airlift.command.Option;
 import io.airlift.command.SingleCommand;
 import io.netty.util.ResourceLeakDetector;
+import java.io.File;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -19,6 +20,8 @@ import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStream
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStreamProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistContext;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor;
+import uk.co.badgersinfoil.chunkymonkey.ts.FileTransportStreamParser;
+import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 
 @Command(name = "conformist", description = "Media stream checker")
 public class Main {
@@ -50,12 +53,26 @@ public class Main {
 		ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(16);
 		Reporter rep = new ConsoleReporter();
 		if (urls.size() == 1) {
-			HlsMasterPlaylistProcessor processor = b.buildSingle(scheduledExecutor, rep);
 			URI uri = new URI(urls.get(0));
-			HlsMasterPlaylistContext ctx = processor.createContext(uri);
-			Server server = ServerBuilder.create(ctx).build();
-			processor.start(ctx);
-			server.start();
+			if ("http".equals(uri.getScheme())) {
+				// assume HTTP means HLS,
+				b.hls(true);
+				HlsMasterPlaylistProcessor processor = b.buildSingle(scheduledExecutor, rep);
+				HlsMasterPlaylistContext ctx = processor.createContext(uri);
+				Server server = ServerBuilder.create(ctx).build();
+				processor.start(ctx);
+				server.start();
+			} else if (uri.isAbsolute()) {
+				System.err.println("Only http (HLS) or local files (TS) supported: "+uri);
+				System.exit(-1);
+			} else {
+				b.hls(false);
+				TSPacketConsumer consumer = b.createConsumer(rep);
+				FileTransportStreamParser parser = new FileTransportStreamParser(consumer);
+				FileTransportStreamParser.FileContext ctx = parser.createContext();
+				parser.parse(ctx, new File(uri.getPath()));
+				return;
+			}
 		} else if (urls.size() == 2) {
 			HlsRedundantStreamProcessor processor = b.buildRedundant(scheduledExecutor, rep);
 			URI uri1 = new URI(urls.get(0));

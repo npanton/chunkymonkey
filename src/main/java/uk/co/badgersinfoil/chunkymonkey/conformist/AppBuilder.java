@@ -53,6 +53,12 @@ public class AppBuilder {
 
 	private String userAgent = "conformist";
 
+	boolean hls = true;
+
+	public void hls(boolean hls) {
+		this.hls = hls;
+	}
+
 	public HlsMasterPlaylistProcessor buildSingle(ScheduledExecutorService scheduledExecutor, Reporter rep) {
 		CloseableHttpClient httpclient
 			= HttpClientBuilder.create()
@@ -140,18 +146,33 @@ public class AppBuilder {
 		defaultStreamProc.setPesConsumer(new ValidatingPesConsumer(rep));
 		defaultStreamProc.setReporter(rep);
 		StreamProcRegistry streamProcRegistry = new StreamProcRegistry(map, defaultStreamProc);
-		PmtConsumer pmtConsumer = new PmtConsumer.Multi(
-			new PmtConsumerImpl(pidFilter, streamProcRegistry),
-			new HlsCodecValidatingPmtConsumer(rep)
-		);
+		PmtConsumer pmtConsumer;
+		if (hls) {
+			pmtConsumer = new PmtConsumer.Multi(
+				new PmtConsumerImpl(pidFilter, streamProcRegistry),
+				new HlsCodecValidatingPmtConsumer(rep)
+			);
+		} else {
+			pmtConsumer = new PmtConsumer.Multi(
+					new PmtConsumerImpl(pidFilter, streamProcRegistry)
+				);
+		}
 		PmtTSPacketConsumerConsumer pmtTsConsumer = new PmtTSPacketConsumerConsumer(pmtConsumer);
 		pidFilter.defaultFilter(0, new PATConsumer(pidFilter, pmtTsConsumer))
 		         .defaultFilter(0x1fff, TSPacketConsumer.NULL);
-		MultiTSPacketConsumer consumer = new MultiTSPacketConsumer(
-			new TSPacketValidator(rep),
-			new HlsTsPacketValidator(rep),
-			pidFilter
-		);
+		MultiTSPacketConsumer consumer;
+		if (hls) {
+			consumer = new MultiTSPacketConsumer(
+				new TSPacketValidator(rep),
+				new HlsTsPacketValidator(rep),
+				pidFilter
+			);
+		} else {
+			consumer = new MultiTSPacketConsumer(
+					new TSPacketValidator(rep),
+					pidFilter
+				);
+		}
 		return new HlsStreamPtsValidator(consumer, rep);
 	}
 
@@ -161,12 +182,19 @@ public class AppBuilder {
 		AdtsFrameConsumer adtsFrameConsumer = new AdtsFrameConsumer.Multi(new ValidatingAdtsFrameConsumer(rep), aacAdtsFrameConsumer);
 		AdtsPesConsumer adtsConsumer = new AdtsPesConsumer(adtsFrameConsumer);
 		adtsConsumer.setReportor(rep);
-		PESConsumer.MultiPesConsumer consumers
-			= new PESConsumer.MultiPesConsumer(
+		PESConsumer.MultiPesConsumer consumers;
+		if (hls) {
+			consumers = new PESConsumer.MultiPesConsumer(
 				new HlsValidatingPesConsumer(rep),
 				new ValidatingPesConsumer(rep),
 				adtsConsumer
 			);
+		} else {
+			consumers = new PESConsumer.MultiPesConsumer(
+					new ValidatingPesConsumer(rep),
+					adtsConsumer
+				);
+		}
 		return new PesTSPacketConsumer(consumers);
 	}
 
