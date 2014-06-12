@@ -205,6 +205,7 @@ public class AppBuilder {
 		Map<Integer, SeiHeaderConsumer> seiConsumers = new HashMap<>();
 		//seiConsumers.put(SeiHeader.PIC_TIMING, new PicTimingSeiConsumer(picTiming));
 		SeiNalUnitConsumer seiNalUnitConsumer = new SeiNalUnitConsumer(seiConsumers);
+		seiNalUnitConsumer.setReporter(rep);
 		nalUnitConsumers.put(UnitType.SEI, seiNalUnitConsumer);
 		SeqParamSetNalUnitConsumer seqParamSetNalUnitConsumer = new SeqParamSetNalUnitConsumer();
 		nalUnitConsumers.put(UnitType.SEQ_PARAMETER_SET, seqParamSetNalUnitConsumer);

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
-import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer.NalUnitContext;
+import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeiHeaderConsumer.SeiHeaderContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -70,9 +70,14 @@ public class SeiNalUnitConsumer implements NalUnitConsumer {
 
 	private Map<Integer, SeiHeaderConsumer> seiConsumers = new HashMap<>();
 	private SeiHeaderConsumer defaultSeiConsumer = SeiHeaderConsumer.NULL;
+	private Reporter rep = Reporter.NULL;
 
 	public SeiNalUnitConsumer(Map<Integer, SeiHeaderConsumer> seiConsumers) {
 		this.seiConsumers.putAll(seiConsumers);
+	}
+
+	public void setReporter(Reporter rep) {
+		this.rep = rep;
 	}
 
 	private SeiHeaderConsumer getSeiConsumerForType(int type) {
@@ -85,6 +90,9 @@ public class SeiNalUnitConsumer implements NalUnitConsumer {
 
 	@Override
 	public void start(NalUnitContext ctx, NALUnit u) {
+		if (u.nalRefIdc() != 0) {
+			rep.carp(ctx.getLocator(), "nal_ref_idc should be 0 when nal_unit_type is %s: got %d", u.nalUnitType(), u.nalRefIdc());
+		}
 	}
 	@Override
 	public void data(NalUnitContext nalCtx, ByteBuf buf, int offset, int length) {
