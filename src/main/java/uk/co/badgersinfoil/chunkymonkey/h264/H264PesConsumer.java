@@ -29,10 +29,12 @@ public class H264PesConsumer implements PESConsumer {
 
 		private Locator parent;
 		private int index;
+		private UnitType unitType;
 
-		public PesNalUnitLocator(Locator parent, int index) {
+		public PesNalUnitLocator(Locator parent, int index, UnitType unitType) {
 			this.parent = parent;
 			this.index = index;
+			this.unitType = unitType;
 		}
 
 		@Override
@@ -42,7 +44,7 @@ public class H264PesConsumer implements PESConsumer {
 
 		@Override
 		public String toString() {
-			return "NAL Unit #"+index+"\n  at "+parent.toString();
+			return "NAL Unit #"+index+" ("+unitType+")\n  at "+parent.toString();
 		}
 	}
 

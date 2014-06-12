@@ -106,6 +106,6 @@ public class H264Context implements ElementryContext {
 	}
 	@Override
 	public Locator getLocator() {
-		return new PesNalUnitLocator(parentContext.getLocator(), unitIndex);
+		return new PesNalUnitLocator(parentContext.getLocator(), unitIndex, nalUnit.nalUnitType());
 	}
 }
