@@ -67,10 +67,10 @@ public class Main {
 				b.hls(true);
 				HlsMasterPlaylistProcessor processor = b.buildSingle(scheduledExecutor, rep);
 				HlsMasterPlaylistContext ctx = processor.createContext(uri);
-				Server server = ServerBuilder.create(ctx).build();
-				processor.start(ctx);
-				server.start();
 				if (timeLimit == null) {
+					Server server = ServerBuilder.create(ctx).build();
+					processor.start(ctx);
+					server.start();
 					while (true) {
 						Thread.sleep(10_000);
 					}
