@@ -14,6 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import org.eclipse.jetty.server.Server;
+import uk.co.badgersinfoil.chunkymonkey.AnsiConsoleReporter;
 import uk.co.badgersinfoil.chunkymonkey.ConsoleReporter;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.conformist.api.ServerBuilder;
@@ -36,6 +37,9 @@ public class Main {
 	@Option(name = { "--time-limit" }, description = "Stop consuming the stream after this many seconds from startup" )
 	public Integer timeLimit;
 
+	@Option(name = { "--colour" }, description = "Use ANSI colour sequences in output logging")
+	public boolean colour = false;
+
 	@Arguments(description="URL of the stream to check", required=true)
 	List<String> urls;
 
@@ -55,7 +59,7 @@ public class Main {
 			b.setUserAgent(userAgent);
 		}
 		ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(16);
-		Reporter rep = new ConsoleReporter();
+		Reporter rep = colour ? new AnsiConsoleReporter() : new ConsoleReporter();
 		if (urls.size() == 1) {
 			URI uri = new URI(urls.get(0));
 			if ("http".equals(uri.getScheme())) {
