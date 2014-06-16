@@ -3,6 +3,7 @@ package uk.co.badgersinfoil.chunkymonkey.hls;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
@@ -29,6 +30,7 @@ public class HlsMediaPlaylistContext implements MediaContext {
 	public HttpStats playlistStats = new HttpStats();
 	private List<Rfc6381Codec> codecList;
 	protected HttpCondition httpCondition = new HttpCondition();
+	private AtomicBoolean running = new AtomicBoolean(true);
 
 	public HlsMediaPlaylistContext(HlsMasterPlaylistContext ctx,
 	                               URI manifest,
@@ -63,5 +65,12 @@ public class HlsMediaPlaylistContext implements MediaContext {
 	@Override
 	public Locator getLocator() {
 		return new URILocator(manifest, ctx.getLocator());
+	}
+
+	public boolean running() {
+		return running.get();
+	}
+	public void running(boolean running) {
+		this.running.set(running);
 	}
 }

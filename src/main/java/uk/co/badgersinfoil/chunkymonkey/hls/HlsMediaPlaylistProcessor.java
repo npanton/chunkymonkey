@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.Header;
@@ -113,6 +114,9 @@ public class HlsMediaPlaylistProcessor {
 
 	private void scheduleNextRefresh(final HlsMediaPlaylistContext ctx,
 			long now) {
+		if (!ctx.running()) {
+			return;
+		}
 		long durationMillis;
 		if (ctx.lastTargetDuration == null) {
 			durationMillis = DEFAULT_RETRY_MILLIS;
@@ -171,8 +175,8 @@ public class HlsMediaPlaylistProcessor {
 	                                    final int seq,
 	                                    final Element e)
 	{
-		if (!ctx.haveProcessedMediaSeq(seq)) {
-			scheduler.submit(new Callable<Void>() {
+		if (ctx.running() && !ctx.haveProcessedMediaSeq(seq)) {
+			Future<Void> segmentFuture = scheduler.submit(new Callable<Void>() {
 				@Override
 				public Void call() throws Exception {
 					try {
@@ -200,6 +204,9 @@ public class HlsMediaPlaylistProcessor {
 	}
 
 	private void scheduleRetry(final HlsMediaPlaylistContext ctx) {
+		if (!ctx.running()) {
+			return;
+		}
 		long delay = ctx.lastTargetDuration == null ? DEFAULT_RETRY_MILLIS : ctx.lastTargetDuration * 1000 / 2;
 		scheduler.schedule(new Callable<Void>() {
 			@Override
@@ -315,5 +322,10 @@ public class HlsMediaPlaylistProcessor {
 				// ignore
 			}
 		}
+	}
+
+	public void stop(HlsMediaPlaylistContext mctx) {
+		mctx.running(false);
+		// TODO: cancel any pending Future instances
 	}
 }

@@ -210,7 +210,9 @@ public class HlsMasterPlaylistProcessor {
 	public void stop(final HlsMasterPlaylistContext ctx) {
 		running = false;
 		ctx.topLevelManifestFuture.cancel(true);
-		// TODO: stop media playlist processing too
+		for (HlsMediaPlaylistContext mctx : ctx.mediaContexts.values()) {
+			mediaPlaylistProcessor.stop(mctx);
+		}
 	}
 
 	public void setConfig(RequestConfig config) {
