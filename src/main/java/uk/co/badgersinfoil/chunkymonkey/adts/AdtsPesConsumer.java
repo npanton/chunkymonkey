@@ -76,8 +76,7 @@ public class AdtsPesConsumer implements PESConsumer {
 		adtsCtx.frameNumber = 0;
 		adtsCtx.continuityError = false;
 		if (adtsCtx.adtsFrame != null) {
-			// TODO: use a Reporter instance?
-			System.err.println("last ADTS frame from previous PES packet not complete on new PES packet start");
+			rep.carp(adtsCtx.getLocator(), "last ADTS frame from previous PES packet not complete on new PES packet start");
 			adtsCtx.adtsFrame = null;
 		}
 		ByteBuf buf = pesPacket.getParsedPESPaload().getContent();
