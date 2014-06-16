@@ -11,6 +11,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import org.eclipse.jetty.server.Server;
 import uk.co.badgersinfoil.chunkymonkey.ConsoleReporter;
@@ -31,6 +32,9 @@ public class Main {
 
 	@Option(name = { "--user-agent" }, description = "User-Agent header value to send in HTTP requests.")
 	public String userAgent;
+
+	@Option(name = { "--time-limit" }, description = "Stop consuming the stream after this many seconds from startup" )
+	public Integer timeLimit;
 
 	@Arguments(description="URL of the stream to check", required=true)
 	List<String> urls;
@@ -62,6 +66,17 @@ public class Main {
 				Server server = ServerBuilder.create(ctx).build();
 				processor.start(ctx);
 				server.start();
+				if (timeLimit == null) {
+					while (true) {
+						Thread.sleep(10_000);
+					}
+				} else {
+					Thread.sleep(timeLimit * 1000);
+				}
+				System.err.println("Shutting down HLS processing");
+				processor.stop(ctx);
+				scheduledExecutor.shutdown();
+				scheduledExecutor.awaitTermination(5, TimeUnit.SECONDS);
 			} else if (uri.isAbsolute()) {
 				System.err.println("Only http (HLS) or local files (TS) supported: "+uri);
 				System.exit(-1);
@@ -82,10 +97,5 @@ public class Main {
 		} else {
 			System.err.println("wrong number of arguments, "+urls.size()+", expected 1 or 2.");
 		}
-		// TODO: what to do with the main thread in the meantime?
-		while (true) {
-			Thread.sleep(10_000);
-		}
-		//processor.stop(ctx);
 	}
 }
