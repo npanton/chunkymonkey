@@ -106,7 +106,6 @@ public class AppBuilder {
 		mediaProc.setConfig(RequestConfig.custom().setConnectTimeout(1000).build());
 		HlsMasterPlaylistProcessor masterProc = new HlsMasterPlaylistProcessor(scheduledExecutor, httpclient, mediaProc, createCodecsParser());
 		masterProc.setResponseChecker(new HttpResponseChecker.Multi(
-			new MasterPlaylistResponseChecker(rep),
 			new CorsHeaderChecker(rep),
 			new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
 			new CachingHeaderCheck(rep, 1),
