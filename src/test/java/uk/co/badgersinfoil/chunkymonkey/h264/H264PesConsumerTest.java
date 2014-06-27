@@ -22,6 +22,7 @@ import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket.Parsed;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
+import static uk.co.badgersinfoil.chunkymonkey.TestUtil.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class H264PesConsumerTest {
@@ -201,9 +202,5 @@ public class H264PesConsumerTest {
 		when(pesPacket.getParsedPESPaload()).thenReturn(payload);
 		when(payload.getContent()).thenReturn(content);
 		return pesPacket;
-	}
-
-	private ByteBuf hexToBuf(String hex) throws DecoderException {
-		return Unpooled.wrappedBuffer(Hex.decodeHex(hex.toCharArray()));
 	}
 }
