@@ -3,7 +3,6 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -97,6 +96,18 @@ public class PESPacket {
 		ids.add(H222_1_E_STREAM);
 		UNPARSED_STREAM_IDS = Collections.unmodifiableSet(ids);
 	}
+	public static enum DataAlignment {
+		ALIGNED,
+		NOT_ALIGNED;
+
+		public static DataAlignment forIndicator(int i) {
+			switch (i) {
+			case 0: return NOT_ALIGNED;
+			case 1: return ALIGNED;
+			default: throw new IllegalArgumentException("Invalid indicator value: "+i);
+			}
+		}
+	}
 
 	private ByteBuf buf;
 
@@ -166,8 +177,8 @@ public class PESPacket {
 		public int pesPriority() {
 			return (buf.getByte(6) & 0b00001000) >> 3;
 		}
-		public int dataAlignmentIndicator() {
-			return (buf.getByte(6) & 0b00000100) >> 2;
+		public DataAlignment dataAlignmentIndicator() {
+			return DataAlignment.forIndicator((buf.getByte(6) & 0b00000100) >> 2);
 		}
 		public int copyright() {
 			return (buf.getByte(6) & 0b00000010) >> 1;
