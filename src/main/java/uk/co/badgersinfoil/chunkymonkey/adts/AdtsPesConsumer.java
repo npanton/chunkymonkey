@@ -10,6 +10,7 @@ import uk.co.badgersinfoil.chunkymonkey.snickersnack.MyPicTimingConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket;
+import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket.DataAlignment;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket.Timestamp;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket;
 
@@ -73,23 +74,42 @@ public class AdtsPesConsumer implements PESConsumer {
 	public void start(ElementryContext ctx, PESPacket pesPacket) {
 		ADTSElementryContext adtsCtx = (ADTSElementryContext)ctx;
 		adtsCtx.currentPesPacket = pesPacket;
-		adtsCtx.frameNumber = 0;
 		adtsCtx.continuityError = false;
-		if (adtsCtx.adtsFrame != null) {
-			rep.carp(adtsCtx.getLocator(), "last ADTS frame from previous PES packet not complete on new PES packet start");
-			adtsCtx.adtsFrame = null;
+		if (pesPacket.getParsedPESPaload().dataAlignmentIndicator() == DataAlignment.ALIGNED) {
+			if (adtsCtx.lastElapsedDuration == null) {
+				adtsCtx.lastPesDuration = adtsCtx.adtsContext.getDuration();
+			} else {
+				adtsCtx.lastPesDuration = adtsCtx.adtsContext.getDuration().minus(adtsCtx.lastElapsedDuration);
+			}
+			adtsCtx.lastElapsedDuration = adtsCtx.adtsContext.getDuration();
+			adtsCtx.lastPts = adtsCtx.currentPts;
+
+
+			if (adtsCtx.adtsFrame != null) {
+				if (adtsCtx.adtsFrame.isHeaderComplete() && adtsCtx.adtsFrame.syncWord() == 0xfff) {
+					rep.carp(adtsCtx.getLocator(), "last ADTS frame (#%s) from previous PES packet not complete on new PES packet(%s) start (%d bytes required)",
+						adtsCtx.frameNumber,
+						pesPacket.getParsedPESPaload().dataAlignmentIndicator(),
+						adtsCtx.adtsFrame.frameLength());
+				}
+				adtsCtx.adtsFrame = null;
+				adtsCtx.lastPesDuration = null;
+			}
+			adtsCtx.frameNumber = 0;
 		}
 		ByteBuf buf = pesPacket.getParsedPESPaload().getContent();
 		parsePacket(adtsCtx, buf);
 
-		if (adtsCtx.currentPesPacket.getParsedPESPaload().ptsDdsFlags().isPtsPresent()) {
-			Timestamp pts = adtsCtx.currentPesPacket.getParsedPESPaload().pts();
-			if (pts.isValid()) {
-				// TODO: move PTS_UNITS somewhere sensible
-				adtsCtx.currentPts = new MediaTimestamp(pts.getTs(), MyPicTimingConsumer.PTS_UNITS);
+		if (pesPacket.getParsedPESPaload().dataAlignmentIndicator() == DataAlignment.ALIGNED) {
+			if (adtsCtx.currentPesPacket.getParsedPESPaload().ptsDdsFlags().isPtsPresent()) {
+				Timestamp pts = adtsCtx.currentPesPacket.getParsedPESPaload().pts();
+				if (pts.isValid()) {
+					// TODO: move PTS_UNITS somewhere sensible
+					adtsCtx.currentPts = new MediaTimestamp(pts.getTs(), MyPicTimingConsumer.PTS_UNITS);
+				}
 			}
+			checkPtsVsMediaTime(adtsCtx, pesPacket);
 		}
-		checkPtsVsMediaTime(adtsCtx, pesPacket);
 	}
 
 	private void checkPtsVsMediaTime(ADTSElementryContext adtsCtx,
@@ -111,6 +131,9 @@ public class AdtsPesConsumer implements PESConsumer {
 	}
 
 	private void parsePacket(ADTSElementryContext adtsCtx, ByteBuf buf) {
+		if (adtsCtx.adtsFrame != null && adtsCtx.adtsFrame.isHeaderComplete() && adtsCtx.adtsFrame.syncWord() != 0xfff) {
+			return;
+		}
 		while (buf != null) {
 			if (adtsCtx.adtsFrame == null) {
 				adtsCtx.frameNumber++;
@@ -119,6 +142,7 @@ public class AdtsPesConsumer implements PESConsumer {
 				adtsCtx.adtsFrame.append(buf);
 			}
 			if (adtsCtx.adtsFrame.isHeaderComplete() && adtsCtx.adtsFrame.syncWord() != 0xfff) {
+				rep.carp(adtsCtx.getLocator(), "Bad ADTS header syncword: %x", adtsCtx.adtsFrame.syncWord());
 				// TODO: inform consumer and clear out adtsCtx
 				return;
 			}
@@ -144,13 +168,6 @@ public class AdtsPesConsumer implements PESConsumer {
 	@Override
 	public void end(ElementryContext ctx) {
 		ADTSElementryContext adtsCtx = (ADTSElementryContext)ctx;
-		if (adtsCtx.lastElapsedDuration == null) {
-			adtsCtx.lastPesDuration = adtsCtx.adtsContext.getDuration();
-		} else {
-			adtsCtx.lastPesDuration = adtsCtx.adtsContext.getDuration().minus(adtsCtx.lastElapsedDuration);
-		}
-		adtsCtx.lastElapsedDuration = adtsCtx.adtsContext.getDuration();
-		adtsCtx.lastPts = adtsCtx.currentPts;
 	}
 
 	@Override
