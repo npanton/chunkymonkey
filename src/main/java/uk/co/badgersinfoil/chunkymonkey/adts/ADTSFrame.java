@@ -104,7 +104,6 @@ public class ADTSFrame {
 		}
 	}
 	private int payloadStart() {
-		assertComplete();
 		return crcPresent() ? HEADER_CRC_LENGTH : HEADER_MIN_LENGTH;
 	}
 	public ByteBuf payload() {
