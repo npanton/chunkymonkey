@@ -1,6 +1,5 @@
 package uk.co.badgersinfoil.chunkymonkey.adts;
 
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.aac.AacProfile;
 import uk.co.badgersinfoil.chunkymonkey.aac.ChannelConfiguration;
 import uk.co.badgersinfoil.chunkymonkey.aac.SamplingFrequencyIndex;
