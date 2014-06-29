@@ -141,10 +141,17 @@ public class AdtsPesConsumer implements PESConsumer {
 			} else {
 				adtsCtx.adtsFrame.append(buf);
 			}
-			if (adtsCtx.adtsFrame.isHeaderComplete() && adtsCtx.adtsFrame.syncWord() != 0xfff) {
-				rep.carp(adtsCtx.getLocator(), "Bad ADTS header syncword: %x", adtsCtx.adtsFrame.syncWord());
-				// TODO: inform consumer and clear out adtsCtx
-				return;
+			if (adtsCtx.adtsFrame.isHeaderComplete()) {
+				if (adtsCtx.adtsFrame.syncWord() != 0xfff) {
+					rep.carp(adtsCtx.getLocator(), "Bad ADTS header syncword: %x", adtsCtx.adtsFrame.syncWord());
+					// TODO: inform consumer and clear out adtsCtx
+					return;
+				}
+				if (adtsCtx.adtsFrame.isFrameLengthInvalid()) {
+					rep.carp(adtsCtx.getLocator(), "Bad ADTS header frame length: %x", adtsCtx.adtsFrame.frameLength());
+					// TODO: inform consumer and clear out adtsCtx
+					return;
+				}
 			}
 			if (adtsCtx.adtsFrame.isComplete()) {
 				consumer.frame(adtsCtx.adtsContext, adtsCtx.adtsFrame);

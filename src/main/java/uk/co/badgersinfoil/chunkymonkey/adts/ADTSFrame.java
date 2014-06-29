@@ -72,6 +72,9 @@ public class ADTSFrame {
 	public int copyrightStart() {
 		return (buf.getByte(3) & 0b00000100) >> 2;
 	}
+	public boolean isFrameLengthInvalid() {
+		return frameLength() <= payloadStart();
+	}
 	/**
 	 * Includes the length of the frame header (7 or 9 bytes, depending on crcPresent() flag).
 	 */
@@ -103,18 +106,31 @@ public class ADTSFrame {
 			throw new RuntimeException("Frame is not yet complete");
 		}
 	}
-	private int payloadStart() {
+	public int payloadStart() {
 		return crcPresent() ? HEADER_CRC_LENGTH : HEADER_MIN_LENGTH;
 	}
+	/**
+	 * @throws IllegalStateException if the length field value is smaller
+	 *         than the size of this frames headers
+	 */
 	public ByteBuf payload() {
 		assertComplete();
 		int offset = payloadStart();
+		if (frameLength() <= offset) {
+			throw new IllegalStateException("frame length ("+frameLength()+") <= paload start ("+offset+")");
+		}
 		return buf.slice(offset, payloadLength());
 	}
-
+	/**
+	 * @throws IllegalStateException if the length field value is smaller
+	 *         than the size of this frames headers
+	 */
 	public ByteBuf trailingData() {
 		assertComplete();
 		int offset = frameLength();
+		if (offset <= payloadStart()) {
+			throw new IllegalStateException("frame length ("+offset+") <= paload start ("+payloadStart()+")");
+		}
 		if (offset == buf.readableBytes()) {
 			return null;
 		}
