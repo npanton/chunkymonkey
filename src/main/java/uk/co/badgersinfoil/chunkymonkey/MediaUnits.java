@@ -11,7 +11,7 @@ public class MediaUnits {
 		this.unitName = unitName;
 	}
 
-	public long toMillies(long value) {
+	public long toMillis(long value) {
 		return value * base * 1000 / scale;
 	}
 	public long toMicros(long value) {

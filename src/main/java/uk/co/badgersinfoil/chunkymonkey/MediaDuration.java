@@ -16,7 +16,7 @@ public class MediaDuration {
 		return value;
 	}
 	public long toMillis() {
-		return units.toMillies(value);
+		return units.toMillis(value);
 	}
 	public long toMicros() {
 		return units.toMicros(value);
