@@ -62,7 +62,7 @@ public class Main {
 		Reporter rep = colour ? new AnsiConsoleReporter() : new ConsoleReporter();
 		if (urls.size() == 1) {
 			URI uri = new URI(urls.get(0));
-			if ("http".equals(uri.getScheme())) {
+			if ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) {
 				// assume HTTP means HLS,
 				b.hls(true);
 				HlsMasterPlaylistProcessor processor = b.buildSingle(scheduledExecutor, rep);
