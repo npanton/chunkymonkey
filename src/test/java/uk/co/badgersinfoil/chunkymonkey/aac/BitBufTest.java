@@ -29,11 +29,18 @@ public class BitBufTest {
 		BitBuf b = new BitBuf(bytes);
 		assertEquals(0b0000001001000000, b.readBits(16));
 	}
-	
+
 	@Test
 	public void signBit() {
 		ByteBuf bytes = Unpooled.wrappedBuffer(new byte[] {(byte)0b11111111});
 		BitBuf b = new BitBuf(bytes);
 		assertEquals(1, b.readBits(1));
+	}
+	@Test
+	public void peekOnBoundry() {
+		ByteBuf bytes = Unpooled.wrappedBuffer(new byte[] {(byte)0b11111111});
+		BitBuf b = new BitBuf(bytes);
+		b.peek(8);
+		// should not raise an exception
 	}
 }

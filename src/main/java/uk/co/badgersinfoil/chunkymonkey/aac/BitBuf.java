@@ -69,6 +69,10 @@ public class BitBuf {
 	 * boundary.
 	 */
 	public int peek(int n) {
+		if (remainingBits == 0) {
+			lastByte = buf.readUnsignedByte();
+			remainingBits = 8;
+		}
 		if (n > remainingBits) {
 			throw new IllegalArgumentException(n+" is greater than remaining bits in the current byte, "+remainingBits);
 		}

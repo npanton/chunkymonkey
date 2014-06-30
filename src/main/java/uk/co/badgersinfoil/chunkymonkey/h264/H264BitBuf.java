@@ -31,8 +31,8 @@ public class H264BitBuf extends BitBuf {
 	}
 
 	public boolean moreRbspData() {
-		return readableBits() >= 8
-			|| peek(readableBits()) != predictRbspTrailingBits();
+		return readableBits() > 8
+			|| readableBits() > 0 && peek(readableBits()) != predictRbspTrailingBits();
 	}
 
 	private int predictRbspTrailingBits() {
