@@ -75,6 +75,7 @@ public class Main {
 						Thread.sleep(10_000);
 					}
 				} else {
+					processor.start(ctx);
 					Thread.sleep(timeLimit * 1000);
 				}
 				System.err.println("Shutting down HLS processing");
