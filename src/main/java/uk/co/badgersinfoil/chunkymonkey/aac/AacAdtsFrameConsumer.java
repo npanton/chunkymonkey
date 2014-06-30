@@ -86,7 +86,7 @@ public class AacAdtsFrameConsumer implements AdtsFrameConsumer {
 			}
 		};
 */
-		try {
+//		try {
 //			SyntacticElements syn = new SyntacticElements(config);
 //			syn.setElementListener(elementListener);
 //			syn.decode(new BitStream(adtsframe.payload()));
@@ -107,9 +107,9 @@ public class AacAdtsFrameConsumer implements AdtsFrameConsumer {
 			} else {
 				ctx.duration = ctx.duration.plus(frameDuration);
 			}
-		} catch (Exception e) {
-			rep.carp(ctx.getLocator(), "AAC decode failure: %s", e);
-		};
+//		} catch (Exception e) {
+//			rep.carp(ctx.getLocator(), "AAC decode failure: %s", e);
+//		};
 	}
 
 	public void setReporter(Reporter rep) {
