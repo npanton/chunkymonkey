@@ -4,8 +4,13 @@ import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
 
 public class ValidatingAdtsFrameConsumer implements AdtsFrameConsumer {
+
+	@LogFormat("Bad sync word 0x{syncword} (expected 0xfff)")
+	public static final class BadSyncwordEvent extends Event { }
 
 	public class ValidatingADTSContext implements ADTSContext {
 		private ADTSFrame lastFrame = null;
@@ -36,7 +41,10 @@ public class ValidatingAdtsFrameConsumer implements AdtsFrameConsumer {
 	public void frame(ADTSContext adtsCtx, ADTSFrame frame) {
 		ValidatingADTSContext ctx = (ValidatingADTSContext)adtsCtx;
 		if (frame.syncWord() != 0xfff) {
-			rep.carp(ctx.getLocator(), "Bad sync word 0x%s (expected 0xfff)", Integer.toHexString(frame.syncWord()));
+			new BadSyncwordEvent()
+				.with("syncword", Integer.toHexString(frame.syncWord()))  // make hex formatting part of the @LogFormat
+				.at(ctx)
+				.to(rep);
 		}
 		if (ctx.lastFrame != null) {
 			// the spec requires the following headers to be the

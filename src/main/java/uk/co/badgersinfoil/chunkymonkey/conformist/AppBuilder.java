@@ -183,7 +183,10 @@ public class AppBuilder {
 	private PesTSPacketConsumer createAdtsConsumer(Reporter rep) {
 		AacAdtsFrameConsumer aacAdtsFrameConsumer = new AacAdtsFrameConsumer();
 		aacAdtsFrameConsumer.setReporter(rep);
-		AdtsFrameConsumer adtsFrameConsumer = new AdtsFrameConsumer.Multi(new ValidatingAdtsFrameConsumer(rep), aacAdtsFrameConsumer);
+		AdtsFrameConsumer adtsFrameConsumer = new AdtsFrameConsumer.Multi(
+			new ValidatingAdtsFrameConsumer(rep),
+			aacAdtsFrameConsumer
+		);
 		AdtsPesConsumer adtsConsumer = new AdtsPesConsumer(adtsFrameConsumer);
 		adtsConsumer.setReportor(rep);
 		PESConsumer.MultiPesConsumer consumers;

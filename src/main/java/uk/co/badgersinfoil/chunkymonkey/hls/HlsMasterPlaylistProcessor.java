@@ -19,12 +19,22 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.CodecsParser;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.Rfc6381Codec;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.UnknownCodec;
 
 public class HlsMasterPlaylistProcessor {
+
+	@LogFormat("Missing CODECS header info for entry {playlistUri}")
+	public static class MissingCodecsEvent extends Event {}
+	@LogFormat("Unknown codec {codec} for media playlist {playlistUri}")
+	public static class UnknownCodecEvent extends Event {}
+	@LogFormat("Followed {redirectCount} redirect(s) to: {finalUri}")
+	public static class RedirectionEvent extends Event {}
+
 
 	private ScheduledExecutorService scheduler;
 	private HttpClient httpclient;
@@ -146,12 +156,19 @@ public class HlsMasterPlaylistProcessor {
 		if (playlistInfo != null) {
 			String codecs = playlistInfo.getCodecs();
 			if (codecs == null) {
-				rep.carp(new URILocator(ctx.getManifestLocation()), "Missing CODECS header info for entry %s", manifest);
+				new MissingCodecsEvent()
+					.with("playlistUri", manifest)
+					.at(ctx)
+					.to(rep);
 			} else {
 				codecList = codecsParser.parseCodecs(codecs);
 				for (Rfc6381Codec c : codecList) {
 					if (c instanceof UnknownCodec) {
-						rep.carp(new URILocator(ctx.getManifestLocation()), "Unknown codec %s for media playlist %s", c, manifest);
+						new UnknownCodecEvent()
+							.with("codec", c)
+							.with("playlistUri", manifest)
+							.at(ctx)
+							.to(rep);
 					}
 				}
 			}
@@ -187,7 +204,11 @@ public class HlsMasterPlaylistProcessor {
 					} catch (URISyntaxException e) {
 						e.printStackTrace();
 					}
-					rep.carp(new URILocator(ctx.getManifestSpecified(), loc), "Followed %d redirect(s) to: %s", redirects.size(), finalUri==null ? redirects.get(redirects.size()-1) : finalUri);
+					new RedirectionEvent()
+						.with("redirectCount", redirects.size())
+						.with("finalUri", finalUri==null ? redirects.get(redirects.size()-1) : finalUri)
+						.at(ctx)
+						.to(rep);
 				}
 				responseChecker.check(ctx, resp, context);
 				ctx.lastUpdated = System.currentTimeMillis();

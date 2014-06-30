@@ -20,12 +20,26 @@ import org.apache.http.protocol.HttpRequestExecutor;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
 
 /**
  * Wraps {@link HttpClient#execute(HttpUriRequest, HttpContext)} in order to
  * capture and report on diagnostic information for (network) failures.
  */
 public abstract class HttpExecutionWrapper<T> {
+	@LogFormat("{message}, after {durationMillis}ms")
+	public static class ConnectTimeoutEvent extends Event {}
+	@LogFormat("Request failed {statusCode} {reasonPhrase} - headers: {responseHeaders}")
+	public static class RequestFailedEvent extends Event {}
+	@LogFormat("HTTP request failed after {durationMillis}ms: {message}")
+	public static class SocketTimeoutEvent extends Event {}
+	@LogFormat("HTTP request failed after {durationMillis}ms (initial {statusLine} response): {message}")
+	public static class SocketTimeoutAfterHeadersEvent extends Event {}
+	@LogFormat("{message}, after {durationMillis}ms")
+	public static class ConnectionClosedEvent extends Event {}
+	@LogFormat("HTTP request failed: {message}")
+	public static class HttpFailedEvent extends Event {}
 
 	public class SockContext implements MediaContext {
 
@@ -97,7 +111,12 @@ public abstract class HttpExecutionWrapper<T> {
 			if (statusCode == 200 || statusCode == 304) {
 				result = handleResponse(context, resp, stat);
 			} else {
-				rep.carp(ctx.getLocator(), "Request failed %d %s - headers: %s", resp.getStatusLine().getStatusCode(), resp.getStatusLine().getReasonPhrase(), Arrays.toString(resp.getAllHeaders()));
+				new RequestFailedEvent()
+					.with("statusCode", resp.getStatusLine().getStatusCode())
+					.with("reasonPhrase", resp.getStatusLine().getReasonPhrase())
+					.with("responseHeaders", Arrays.toString(resp.getAllHeaders()))
+					.at(ctx)
+					.to(rep);
 			}
 			stat.end();
 			resp.close();
@@ -112,9 +131,18 @@ public abstract class HttpExecutionWrapper<T> {
 			// e.bytesTransferred always seems to be 0, so we don't
 			// bother reporting it
 			if (resp == null || resp.getStatusLine() != null) {
-				rep.carp(ctx.getLocator(), "HTTP request failed after %dms: %s", stat.getDurationMillis(), e.getMessage());
+				new SocketTimeoutEvent()
+					.with("durationMillis", stat.getDurationMillis())
+					.with("message", e.getMessage())
+					.at(ctx)
+					.to(rep);
 			} else {
-				rep.carp(ctx.getLocator(), "HTTP request failed after %dms, initial %s response: %s", stat.getDurationMillis(), resp.getStatusLine(), e.getMessage());
+				new SocketTimeoutAfterHeadersEvent()
+					.with("durationMillis", stat.getDurationMillis())
+					.with("statusLine", resp.getStatusLine())
+					.with("message", e.getMessage())
+					.at(ctx)
+					.to(rep);
 			}
 		} catch (ConnectionClosedException e) {
 			InetAddress remote = getRemote(context);
@@ -123,11 +151,11 @@ public abstract class HttpExecutionWrapper<T> {
 				stat.sock(remote);
 			}
 			stat.prematureClose();
-			if (resp == null || resp.getFirstHeader("Connection") == null) {
-				rep.carp(ctx.getLocator(), "%s, after %dms", e.getMessage(), stat.getDurationMillis());
-			} else {
-				rep.carp(ctx.getLocator(), "%s, after %dms (response included %s)", e.getMessage(), stat.getDurationMillis(), resp.getFirstHeader("Connection"));
-			}
+			new ConnectionClosedEvent()
+				.with("message", e.getMessage())
+				.with("durationMillis", stat.getDurationMillis())
+				.at(ctx)
+				.to(rep);
 		} catch (ConnectTimeoutException e) {
 			InetAddress remote = getRemote(context);
 			if (remote != null) {
@@ -135,7 +163,11 @@ public abstract class HttpExecutionWrapper<T> {
 				stat.sock(remote);
 			}
 			stat.connectTimeout();
-			rep.carp(ctx.getLocator(), "%s, after %dms", e.getMessage(), stat.getDurationMillis());
+			new ConnectTimeoutEvent()
+				.with("message", e.getMessage())
+				.with("durationMillis", stat.getDurationMillis())
+				.at(ctx)
+				.to(rep);
 		} catch (IOException e) {
 			InetAddress remote = getRemote(context);
 			if (remote != null) {
@@ -143,8 +175,11 @@ public abstract class HttpExecutionWrapper<T> {
 				stat.sock(remote);
 			}
 			stat.failed();
-			// TODO: parent Locator
-			rep.carp(ctx.getLocator(), "HTTP request failed: %s", e.toString());
+			new HttpFailedEvent()
+				.with("message", e.getMessage())
+				.with("durationMillis", stat.getDurationMillis())
+				.at(ctx)
+				.to(rep);
 		}
 		return null;
 	}
