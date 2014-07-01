@@ -12,11 +12,16 @@ import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.TransportStreamParser;
 
 public class HlsSegmentProcessor {
+
+	@LogFormat("Took {actualMillis}ms to download, but playback duration is {playbackMillis}ms")
+	class SlowDownloadEvent extends Event { }
 
 	private static final float MAX_DOWNLOAD_DURATION = 0.8f;  // 80%
 
@@ -76,7 +81,11 @@ public class HlsSegmentProcessor {
 				stat.end();
 				long expectedDurationMillis = element.getDuration() * 1000;
 				if (stat.getDurationMillis() > expectedDurationMillis * MAX_DOWNLOAD_DURATION) {
-					rep.carp(segCtx.getLocator(), "Took %dms to download, but playback duration is %dms", stat.getDurationMillis(), expectedDurationMillis);
+					new SlowDownloadEvent()
+						.with("actualMillis", stat.getDurationMillis())
+						.with("playbackMillis", expectedDurationMillis)
+						.at(segCtx)
+						.to(rep);
 				}
 				return null;
 			}
