@@ -3,6 +3,8 @@ package uk.co.badgersinfoil.chunkymonkey.conformist;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsValidatingPesConsumer.HlsValidatingPesContext;
 import uk.co.badgersinfoil.chunkymonkey.snickersnack.MyPicTimingConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
@@ -17,6 +19,9 @@ import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.TransportContext;
 
 public class HlsStreamPtsValidator implements TSPacketConsumer {
+
+	@LogFormat("HLS segment initial PTS {thisPts} for this stream and initial PTS {otherPts} for stream PID={otherPid} differ by {diffMicros}µs")
+	public static class InitialPTSMissmatchEvent extends Event { }
 
 	private class PCRtoPTSValidatorContext implements MediaContext {
 
@@ -79,12 +84,13 @@ public class HlsStreamPtsValidator implements TSPacketConsumer {
 										firstStream = hlsCtx;
 									} else {
 										if (hlsCtx.initialPts != null && hlsCtx.initialPts.getTs() != firstStream.initialPts.getTs()) {
-											rep.carp(hlsCtx.getLocator(),
-											         "HLS segment initial PTS %d for this stream and initial PTS %d for stream PID=%d differ by %dµs",
-											         hlsCtx.initialPts.getTs(),
-											         firstStream.initialPts.getTs(),
-											         ((PESLocator)firstStream.getLocator()).getElementryPID(),
-											         millisDiff(firstStream.initialPts.getTs(), hlsCtx.initialPts.getTs()));
+											new InitialPTSMissmatchEvent()
+												.with("thisPts", hlsCtx.initialPts.getTs())
+												.with("otherPts", firstStream.initialPts.getTs())
+												.with("otherPid", ((PESLocator)firstStream.getLocator()).getElementryPID())
+												.with("diffMicros", millisDiff(firstStream.initialPts.getTs(), hlsCtx.initialPts.getTs()))
+												.at(hlsCtx)
+												.to(rep);
 										}
 									}
 								}
