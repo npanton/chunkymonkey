@@ -59,7 +59,7 @@ public class Main {
 			b.setUserAgent(userAgent);
 		}
 		ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(16);
-		Reporter rep = colour ? new AnsiConsoleReporter() : new ConsoleReporter();
+		Reporter rep = b.createFilter(colour ? new AnsiConsoleReporter() : new ConsoleReporter());
 		if (urls.size() == 1) {
 			URI uri = new URI(urls.get(0));
 			if ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) {

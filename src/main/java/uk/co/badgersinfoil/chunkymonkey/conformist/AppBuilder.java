@@ -9,11 +9,13 @@ import org.apache.http.client.protocol.RequestAcceptEncoding;
 import org.apache.http.client.protocol.ResponseContentEncoding;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import uk.co.badgersinfoil.chunkymonkey.FilterReporter;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.aac.AacAdtsFrameConsumer;
 import uk.co.badgersinfoil.chunkymonkey.adts.AdtsFrameConsumer;
 import uk.co.badgersinfoil.chunkymonkey.adts.AdtsPesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.adts.ValidatingAdtsFrameConsumer;
+import uk.co.badgersinfoil.chunkymonkey.conformist.CachingHeaderCheck.ExpiresMaxAgeMissmatchEvent;
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStreamProcessor;
 import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
@@ -33,6 +35,7 @@ import uk.co.badgersinfoil.chunkymonkey.hls.HlsTsPacketValidator;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsValidatingPesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpExecutionWrapper;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
+import uk.co.badgersinfoil.chunkymonkey.hls.HlsMediaPlaylistProcessor.EtagSameLastmodChangedEvent;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.AudioObjectTypeParser;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.Avc1CodecParser;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.CodecsParser;
@@ -53,6 +56,7 @@ import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketValidator;
 import uk.co.badgersinfoil.chunkymonkey.ts.UnhandledStreamTSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.ValidatingPesConsumer;
+import static org.hamcrest.CoreMatchers.*;
 
 public class AppBuilder {
 
@@ -235,5 +239,14 @@ public class AppBuilder {
 
 	public void setUserAgent(String userAgent) {
 		this.userAgent = userAgent;
+	}
+
+	public FilterReporter createFilter(Reporter rep) {
+		return new FilterReporter(rep,
+			not(anyOf(
+				instanceOf(ExpiresMaxAgeMissmatchEvent.class),
+				instanceOf(EtagSameLastmodChangedEvent.class)
+			))
+		);
 	}
 }
