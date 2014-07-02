@@ -17,12 +17,17 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.URILocator;
 import net.chilicat.m3u8.Element;
 import net.chilicat.m3u8.ParseException;
 import net.chilicat.m3u8.Playlist;
 
 public class HlsMediaPlaylistProcessor {
+
+	@LogFormat("ETag header is still {etag}, but Last-Modified has changed from {oldLastModified} to {newLastModified}")
+	public static class EtagSameLastmodChangedEvent extends Event { }
 
 	private static final long DEFAULT_RETRY_MILLIS = 5000;
 	private ScheduledExecutorService scheduler;
@@ -270,11 +275,12 @@ public class HlsMediaPlaylistProcessor {
 				         ctx.httpCondition.getLastETag(),
 				         resp.getLastHeader("ETag").getValue());
 			} else {
-				rep.carp(ctx.getLocator(),
-				         "ETag header is still %s, but Last-Modified has changed from %s to %s",
-				         ctx.httpCondition.getLastETag(),
-				         ctx.httpCondition.getLastLastModified(),
-				         resp.getLastHeader("Last-Modified").getValue());
+				new EtagSameLastmodChangedEvent()
+					.with("etag", ctx.httpCondition.getLastETag())
+					.with("oldLastModified", ctx.httpCondition.getLastLastModified())
+					.with("newLastModified", resp.getLastHeader("Last-Modified").getValue())
+					.at(ctx)
+					.to(rep);
 			}
 		} else if (lastModMatch) {
 			rep.carp(ctx.getLocator(),

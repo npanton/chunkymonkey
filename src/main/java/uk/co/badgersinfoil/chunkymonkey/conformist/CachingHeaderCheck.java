@@ -11,9 +11,14 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.DateUtils;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
 
 public class CachingHeaderCheck implements HttpResponseChecker {
+
+	@LogFormat("Response 'Expires' in {expirySeconds} seconds, but max-age is {maxAgeSeconds} seconds ({expiresHeader}, {dateHeader})")
+	public static class ExpiresMaxAgeMissmatchEvent extends Event { }
 
 	private Reporter rep;
 	private int minMaxAge;
@@ -58,7 +63,13 @@ public class CachingHeaderCheck implements HttpResponseChecker {
 					rep.carp(mctx.getLocator(), "Response 'Expires' in the past: %s vs %s", expiresHeader, dateHeader);
 				} else {
 					if (maxAgeValue!= null && max / 1000 != maxAgeValue) {
-						rep.carp(mctx.getLocator(), "Response 'Expires' in %d seconds, but max-age is %d seconds (%s, %s)", max / 1000, maxAgeValue, expiresHeader, dateHeader);
+						new ExpiresMaxAgeMissmatchEvent()
+							.with("expirySeconds", max / 1000)
+							.with("maxAgeSeconds", maxAgeValue)
+							.with("expiresHeader", expiresHeader)
+							.with("dateHeader", dateHeader)
+							.at(mctx)
+							.to(rep);
 					}
 				}
 			}
