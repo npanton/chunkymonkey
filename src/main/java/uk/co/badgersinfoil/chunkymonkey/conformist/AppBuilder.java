@@ -88,7 +88,7 @@ public class AppBuilder {
 				.build();
 		HlsSegmentProcessor segProc = new HlsSegmentProcessor(rep, httpclient, createConsumer(rep));
 		segProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
-				new CachingHeaderCheck(rep, 60),
+				new CachingHeaderCheck(rep, 1),
 				new CorsHeaderChecker(rep),
 				new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),
 				new ContentLengthCheck(rep),
