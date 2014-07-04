@@ -20,7 +20,7 @@ import uk.co.badgersinfoil.chunkymonkey.ts.TransportContext;
 
 public class HlsStreamPtsValidator implements TSPacketConsumer {
 
-	@LogFormat("HLS segment initial PTS {thisPts} for this stream and initial PTS {otherPts} for stream PID={otherPid} differ by {diffMicros}µs")
+	@LogFormat("HLS segment initial PTS {thisPts} for this stream and initial PTS {otherPts} for stream PID={otherPid} {otherType} differ by {diffMicros}µs")
 	public static class InitialPTSMissmatchEvent extends Event { }
 
 	private class PCRtoPTSValidatorContext implements MediaContext {
@@ -88,6 +88,7 @@ public class HlsStreamPtsValidator implements TSPacketConsumer {
 												.with("thisPts", hlsCtx.initialPts.getTs())
 												.with("otherPts", firstStream.initialPts.getTs())
 												.with("otherPid", ((PESLocator)firstStream.getLocator()).getElementryPID())
+												.with("otherType", ((PESLocator)firstStream.getLocator()).getStreamType())
 												.with("diffMicros", millisDiff(firstStream.initialPts.getTs(), hlsCtx.initialPts.getTs()))
 												.at(hlsCtx)
 												.to(rep);

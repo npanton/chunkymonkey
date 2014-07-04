@@ -10,16 +10,17 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 	public static class PesStreamTSContext extends StreamTSContext {
 		private ProgramTSContext parentContext;
 		private int elementryPID;
-		private int streamType;
 		private boolean payloadStarted = false;
+		private StreamType streamType;
 		private Reporter rep;
 		private int pesPacketNo;
 		private ElementryContext consumerContext;
 		private int lastContinuityCount = -1;
 
-		public PesStreamTSContext(ProgramTSContext parentContext, int elementryPID) {
+		public PesStreamTSContext(ProgramTSContext parentContext, int elementryPID, StreamType streamType) {
 			this.parentContext = parentContext;
 			this.elementryPID = elementryPID;
+			this.streamType = streamType;
 		}
 
 		public boolean isContinuous(TSPacket packet) {
@@ -46,7 +47,7 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 
 		@Override
 		public Locator getLocator() {
-			return new PESLocator(parentContext.getLocator(), elementryPID, pesPacketNo);
+			return new PESLocator(parentContext.getLocator(), elementryPID, streamType, pesPacketNo);
 		}
 	}
 
@@ -55,10 +56,12 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 		private Locator parent;
 		private int elementryPID;
 		private int pesPacketNumber;
+		private StreamType streamType;
 
-		public PESLocator(Locator parent, int elementryPID, int pesPacketNumber) {
+		public PESLocator(Locator parent, int elementryPID, StreamType streamType, int pesPacketNumber) {
 			this.parent = parent;
 			this.elementryPID = elementryPID;
+			this.streamType = streamType;
 			this.pesPacketNumber = pesPacketNumber;
 		}
 
@@ -71,9 +74,13 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 			return elementryPID;
 		}
 
+		public StreamType getStreamType() {
+			return streamType;
+		}
+
 		@Override
 		public String toString() {
-			return "PES Packet #"+pesPacketNumber+" (PID="+elementryPID+")\n  at "+parent.toString();
+			return "PES Packet #"+pesPacketNumber+" (PID="+elementryPID+", "+streamType.getName()+")\n  at "+parent.toString();
 		}
 	}
 
@@ -125,7 +132,7 @@ System.err.println(String.format("TS continuity error (PID %d) counter now %d, l
 	public StreamTSContext createContext(ProgramTSContext ctx,
 	                                     StreamDescriptorIterator streamDesc)
 	{
-		PesStreamTSContext pesStreamTSContext = new PesStreamTSContext(ctx, streamDesc.elementryPID());
+		PesStreamTSContext pesStreamTSContext = new PesStreamTSContext(ctx, streamDesc.elementryPID(), streamDesc.streamType());
 		pesStreamTSContext.consumerContext = pesConsumer.createContext(pesStreamTSContext);
 		return pesStreamTSContext;
 	}
