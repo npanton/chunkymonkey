@@ -83,6 +83,7 @@ public class AppBuilder {
 			                   .build();
 		RequestConfig requestConfig = RequestConfig.custom()
 				.setConnectTimeout(1000)
+				.setConnectionRequestTimeout(1000)
 				.setSocketTimeout(4000)
 				.build();
 		HlsSegmentProcessor segProc = new HlsSegmentProcessor(rep, httpclient, createConsumer(rep));
