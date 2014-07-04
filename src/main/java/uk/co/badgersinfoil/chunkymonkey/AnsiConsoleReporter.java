@@ -39,6 +39,6 @@ public class AnsiConsoleReporter implements Reporter {
 		System.err.print(String.format("%tF %tT: ", ts, ts));
 		System.err.print("\033[39m");
 		System.err.println(formatter.format(event, logFormat));
-		System.err.println("\033[37m  at "+event.locator());
+		System.err.println("\033[37m  at "+event.locator()+"\033[39m");
 	}
 }
