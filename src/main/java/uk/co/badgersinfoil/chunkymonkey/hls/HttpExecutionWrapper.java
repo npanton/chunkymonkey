@@ -197,7 +197,7 @@ public abstract class HttpExecutionWrapper<T> {
 			}
 			stat.failed();
 			new HttpFailedEvent()
-				.with("message", e.getMessage())
+				.with("message", e.toString())
 				.with("durationMillis", stat.getDurationMillis())
 				.at(ctx)
 				.to(rep);
