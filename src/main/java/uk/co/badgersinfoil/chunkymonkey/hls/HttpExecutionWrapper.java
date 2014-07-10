@@ -16,6 +16,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
@@ -31,6 +32,8 @@ import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
 public abstract class HttpExecutionWrapper<T> {
 	@LogFormat("{message}, after {durationMillis}ms")
 	public static class ConnectTimeoutEvent extends Event {}
+	@LogFormat("Failed to obtain a connection from pool after {durationMillis}ms")
+	public static class ConnectPoolTimeoutEvent extends Event {}
 	@LogFormat("Request failed {statusCode} {reasonPhrase} - headers: {responseHeaders}")
 	public static class RequestFailedEvent extends Event {}
 	@LogFormat("HTTP request failed after {durationMillis}ms: {message}")
@@ -155,6 +158,12 @@ public abstract class HttpExecutionWrapper<T> {
 			stat.prematureClose();
 			new ConnectionClosedEvent()
 				.with("message", e.getMessage())
+				.with("durationMillis", stat.getDurationMillis())
+				.at(ctx)
+				.to(rep);
+		} catch (ConnectionPoolTimeoutException e) {
+			stat.failed();
+			new ConnectPoolTimeoutEvent()
 				.with("durationMillis", stat.getDurationMillis())
 				.at(ctx)
 				.to(rep);
