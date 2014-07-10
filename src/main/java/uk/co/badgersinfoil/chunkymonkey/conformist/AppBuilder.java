@@ -1,14 +1,29 @@
 package uk.co.badgersinfoil.chunkymonkey.conformist;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
+import javax.net.ssl.SSLSocketFactory;
+import org.apache.http.HttpHost;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.protocol.RequestAcceptEncoding;
 import org.apache.http.client.protocol.ResponseContentEncoding;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContexts;
+import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.protocol.HttpContext;
 import uk.co.badgersinfoil.chunkymonkey.FilterReporter;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.aac.AacAdtsFrameConsumer;
@@ -78,14 +93,13 @@ public class AppBuilder {
 			= HttpClientBuilder.create()
 			                   .setUserAgent(userAgent)
 			                   .setRequestExecutor(HttpExecutionWrapper.CONN_INFO_SNARFING_REQUEST_EXECUTOR)
-			                   .setMaxConnPerRoute(10)
-			                   .setMaxConnTotal(40)
 			                   // remember 'Content-Length' from before any decompression,
 			                   .addInterceptorFirst(new ContentLengthSnarfer())
 			                   // add content compression support,
 			                   .addInterceptorFirst(new RequestAcceptEncoding())
 			                   .addInterceptorFirst(new ResponseContentEncoding())
 			                   .setDefaultRequestConfig(requestConfig)
+			                   .setConnectionManager(buildConnectionManager())
 			                   .build();
 		HlsSegmentProcessor segProc = new HlsSegmentProcessor(rep, httpclient, createConsumer(rep));
 		segProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
@@ -122,6 +136,24 @@ public class AppBuilder {
 		masterProc.setReporter(rep);
 		masterProc.setConfig(RequestConfig.custom().setConnectTimeout(1000).build());
 		return masterProc;
+	}
+
+	private HttpClientConnectionManager buildConnectionManager() {
+		Registry<ConnectionSocketFactory> reg = RegistryBuilder.<ConnectionSocketFactory>create()
+			        .register("http", HttpExecutionWrapper.CONNECT_FAILURE_CLASSIFYING_SOCKET_FACTORY)
+			        .register("https", buildSllSocketFactory())
+			        .build();
+		PoolingHttpClientConnectionManager manager = new PoolingHttpClientConnectionManager(reg);
+		manager.setDefaultMaxPerRoute(30);
+		manager.setMaxTotal(40);
+		return manager;
+	}
+
+	private ConnectionSocketFactory buildSllSocketFactory() {
+		X509HostnameVerifier hostnameVerifier = SSLConnectionSocketFactory.BROWSER_COMPATIBLE_HOSTNAME_VERIFIER;
+		return new SSLConnectionSocketFactory(
+				SSLContexts.createDefault(),
+				hostnameVerifier);
 	}
 
 	private CodecsParser createCodecsParser() {

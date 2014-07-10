@@ -1,13 +1,17 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpException;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -17,6 +21,9 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
+import org.apache.http.conn.HttpHostConnectException;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.impl.execchain.RequestAbortedException;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
@@ -31,8 +38,10 @@ import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
  * capture and report on diagnostic information for (network) failures.
  */
 public abstract class HttpExecutionWrapper<T> {
-	@LogFormat("{message}, after {durationMillis}ms")
+	@LogFormat("{remoteAddress}: {message}, after {durationMillis}ms")
 	public static class ConnectTimeoutEvent extends Event {}
+	@LogFormat("{message} connecting to {remoteAddress}")
+	public static class ConnectFailedEvent extends Event {}
 	@LogFormat("Failed to obtain a connection from pool after {durationMillis}ms")
 	public static class ConnectPoolTimeoutEvent extends Event {}
 	@LogFormat("Request failed {statusCode} {reasonPhrase} - headers: {responseHeaders}")
@@ -102,8 +111,88 @@ public abstract class HttpExecutionWrapper<T> {
 			}
 		};
 
+	/**
+	 * When httpclient fails to connect to an IP address, this object allows
+	 * us to capture and record information about the failure, which might
+	 * otherwise be obscured if httpclient is able to retry connecting to
+	 * other IP addresses associated with the given hostname.
+	 */
+	public static final ConnectionSocketFactory CONNECT_FAILURE_CLASSIFYING_SOCKET_FACTORY
+		= new ConnectionSocketFactory() {
+			private ConnectionSocketFactory delegate = PlainConnectionSocketFactory.INSTANCE;
+
+			@Override
+			public Socket createSocket(HttpContext context)
+				throws IOException
+			{
+				return delegate.createSocket(context);
+			}
+
+			@Override
+			public Socket connectSocket(int connectTimeout,
+			                            Socket sock,
+			                            HttpHost host,
+			                            InetSocketAddress remoteAddress,
+			                            InetSocketAddress localAddress,
+			                            HttpContext context)
+				throws IOException
+			{
+				HttpStat stat = (HttpStat)context.getAttribute("chunkymonkey-http-stat");
+				Reporter rep = (Reporter)context.getAttribute("chunkymonkey-reporter");
+				MediaContext ctx = (MediaContext)context.getAttribute("chunkymonkey-context");
+				try {
+					return delegate.connectSocket(connectTimeout, sock, host, remoteAddress, localAddress, context);
+				} catch (ConnectException e) {
+					report(e, stat, rep, remoteAddress, ctx);
+					throw e;
+				} catch (SocketTimeoutException e) {
+					report(e, stat, rep, remoteAddress, ctx);
+					throw e;
+				} catch (IOException e) {
+					System.err.println("Problem connecting to "+remoteAddress);
+					e.printStackTrace();
+					throw e;
+				}
+			}
+
+			private void report(ConnectException e,
+			                    HttpStat stat,
+			                    Reporter rep,
+			                    InetSocketAddress remoteAddress,
+			                    MediaContext ctx)
+			{
+				stat.sock(remoteAddress.getAddress());
+				stat.connectFailed();
+				new ConnectFailedEvent()
+					.with("message", e.getMessage())
+					.with("remoteAddress", remoteAddress.getAddress())
+					.at(ctx)
+					.to(rep);
+			}
+
+			private void report(SocketTimeoutException e,
+			                    HttpStat stat,
+			                    Reporter rep,
+			                    InetSocketAddress remoteAddress,
+			                    MediaContext ctx)
+			{
+				stat.sock(remoteAddress.getAddress());
+				stat.connectTimeout();
+				new ConnectTimeoutEvent()
+					.with("message", e.getMessage())
+					.with("remoteAddress", remoteAddress.getAddress())
+					.with("durationMillis", stat.getDurationMillis())
+					.at(ctx)
+					.to(rep);
+			}
+		};
+
+
 	public T execute(HttpClient httpclient, HttpUriRequest req, MediaContext ctx, HttpStat stat) {
 		HttpClientContext context = HttpClientContext.create();
+		context.setAttribute("chunkymonkey-http-stat", stat);
+		context.setAttribute("chunkymonkey-reporter", rep);
+		context.setAttribute("chunkymonkey-context", ctx);
 		CloseableHttpResponse resp = null;
 		stat.start();
 		try {
@@ -169,17 +258,11 @@ public abstract class HttpExecutionWrapper<T> {
 				.at(ctx)
 				.to(rep);
 		} catch (ConnectTimeoutException e) {
-			InetAddress remote = getRemote(context);
-			if (remote != null) {
-				ctx = new SockContext(remote, ctx);
-				stat.sock(remote);
-			}
-			stat.connectTimeout();
-			new ConnectTimeoutEvent()
-				.with("message", e.getMessage())
-				.with("durationMillis", stat.getDurationMillis())
-				.at(ctx)
-				.to(rep);
+			stat.failed();
+			// already handled by CONNECT_FAILURE_CLASSIFYING_SOCKET_FACTORY
+		} catch (HttpHostConnectException e) {
+			stat.failed();
+			// already handled by CONNECT_FAILURE_CLASSIFYING_SOCKET_FACTORY
 		} catch (RequestAbortedException e) {
 			// our ScheduledExecutorService is presumably being
 			// shut down, so ignore this.
