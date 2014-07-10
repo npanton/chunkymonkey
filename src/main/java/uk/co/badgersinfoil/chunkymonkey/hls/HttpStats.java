@@ -49,6 +49,9 @@ public class HttpStats {
 	}
 
 	private void connectTimeoutByRemoteIp(InetAddress remote) {
+		if (remote == null) {
+			throw new IllegalArgumentException("remote address can't be null");
+		}
 		AtomicLong count;
 		synchronized (connectTimeoutsByRemoteIp) {
 			count = connectTimeoutsByRemoteIp.get(remote);
@@ -61,6 +64,9 @@ public class HttpStats {
 	}
 
 	private void timeoutByRemoteIp(InetAddress remote) {
+		if (remote == null) {
+			throw new IllegalArgumentException("remote address can't be null");
+		}
 		AtomicLong count;
 		synchronized (timeoutsByRemoteIp) {
 			count = timeoutsByRemoteIp.get(remote);
@@ -73,6 +79,9 @@ public class HttpStats {
 	}
 
 	private void prematureCloseByRemoteIp(InetAddress remote) {
+		if (remote == null) {
+			throw new IllegalArgumentException("remote address can't be null");
+		}
 		AtomicLong count;
 		synchronized (prematureClosesByRemoteIp) {
 			count = prematureClosesByRemoteIp.get(remote);

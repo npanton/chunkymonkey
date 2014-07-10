@@ -56,6 +56,9 @@ public class HttpStat {
 	}
 
 	public void sock(InetAddress remote) {
+		if (remote == null) {
+			throw new IllegalArgumentException("remote address must not be null");
+		}
 		this.remote = remote;
 	}
 
