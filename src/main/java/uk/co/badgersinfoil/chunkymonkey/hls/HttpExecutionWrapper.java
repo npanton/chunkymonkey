@@ -3,6 +3,7 @@ package uk.co.badgersinfoil.chunkymonkey.hls;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpClientConnection;
@@ -40,6 +41,8 @@ public abstract class HttpExecutionWrapper<T> {
 	public static class ConnectionClosedEvent extends Event {}
 	@LogFormat("HTTP request failed: {message}")
 	public static class HttpFailedEvent extends Event {}
+	@LogFormat("Unknown host {unknownHost}")
+	public static class UnknownHostEvent extends Event {}
 
 	public class SockContext implements MediaContext {
 
@@ -165,6 +168,12 @@ public abstract class HttpExecutionWrapper<T> {
 			new ConnectTimeoutEvent()
 				.with("message", e.getMessage())
 				.with("durationMillis", stat.getDurationMillis())
+				.at(ctx)
+				.to(rep);
+		} catch (UnknownHostException e) {
+			stat.failed();
+			new UnknownHostEvent()
+				.with("unknownHost", e.getMessage())
 				.at(ctx)
 				.to(rep);
 		} catch (IOException e) {
