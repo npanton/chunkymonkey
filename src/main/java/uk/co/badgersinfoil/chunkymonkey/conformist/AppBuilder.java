@@ -69,6 +69,11 @@ public class AppBuilder {
 	}
 
 	public HlsMasterPlaylistProcessor buildSingle(ScheduledExecutorService scheduledExecutor, Reporter rep) {
+		RequestConfig requestConfig = RequestConfig.custom()
+				.setConnectTimeout(1000)
+				.setConnectionRequestTimeout(1000)
+				.setSocketTimeout(4000)
+				.build();
 		CloseableHttpClient httpclient
 			= HttpClientBuilder.create()
 			                   .setUserAgent(userAgent)
@@ -80,12 +85,8 @@ public class AppBuilder {
 			                   // add content compression support,
 			                   .addInterceptorFirst(new RequestAcceptEncoding())
 			                   .addInterceptorFirst(new ResponseContentEncoding())
+			                   .setDefaultRequestConfig(requestConfig)
 			                   .build();
-		RequestConfig requestConfig = RequestConfig.custom()
-				.setConnectTimeout(1000)
-				.setConnectionRequestTimeout(1000)
-				.setSocketTimeout(4000)
-				.build();
 		HlsSegmentProcessor segProc = new HlsSegmentProcessor(rep, httpclient, createConsumer(rep));
 		segProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
 				new CachingHeaderCheck(rep, 1),
@@ -96,7 +97,6 @@ public class AppBuilder {
 				new KeepAliveHeaderCheck(rep),
 				new ContentTypeHeaderCheck("video/MP2T", rep)
 			));
-		segProc.setConfig(requestConfig);
 		HlsMediaPlaylistProcessor mediaProc = new HlsMediaPlaylistProcessor(scheduledExecutor, httpclient, segProc);
 		mediaProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
 			new CachingHeaderCheck(rep, 1),  // TODO: hack - duration should be derived at runtime (and > 1)
