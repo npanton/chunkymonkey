@@ -17,6 +17,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
+import org.apache.http.impl.execchain.RequestAbortedException;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
@@ -179,6 +180,9 @@ public abstract class HttpExecutionWrapper<T> {
 				.with("durationMillis", stat.getDurationMillis())
 				.at(ctx)
 				.to(rep);
+		} catch (RequestAbortedException e) {
+			// our ScheduledExecutorService is presumably being
+			// shut down, so ignore this.
 		} catch (UnknownHostException e) {
 			stat.failed();
 			new UnknownHostEvent()
