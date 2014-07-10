@@ -119,7 +119,6 @@ public abstract class HttpExecutionWrapper<T> {
 					.to(rep);
 			}
 			stat.end();
-			resp.close();
 			return result;
 		} catch (SocketTimeoutException e) {
 			InetAddress remote = getRemote(context);
@@ -180,6 +179,13 @@ public abstract class HttpExecutionWrapper<T> {
 				.with("durationMillis", stat.getDurationMillis())
 				.at(ctx)
 				.to(rep);
+		} finally {
+			if (resp != null) {
+				try {
+					resp.close();
+				} catch (IOException e) {
+				}
+			}
 		}
 		return null;
 	}
