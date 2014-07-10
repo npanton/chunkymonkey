@@ -7,7 +7,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -119,9 +121,6 @@ public class HlsMediaPlaylistProcessor {
 
 	private void scheduleNextRefresh(final HlsMediaPlaylistContext ctx,
 			long now) {
-		if (!ctx.running()) {
-			return;
-		}
 		long durationMillis;
 		if (ctx.lastTargetDuration == null) {
 			durationMillis = DEFAULT_RETRY_MILLIS;
@@ -134,7 +133,7 @@ public class HlsMediaPlaylistProcessor {
 		long delay = durationMillis - adjustment;
 		// scheduleAtFixedRate() would be a good fit were it not that
 		// we couldn't handle EXT-X-TARGETDURATION changing,
-		scheduler.schedule(new Callable<Void>() {
+		trySchedule(new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
 				try {
@@ -145,6 +144,21 @@ public class HlsMediaPlaylistProcessor {
 				return null;
 			}
 		}, delay, TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * Ignores any rejection of the attempt to schedule the given callable,
+	 * returning null rather than a ScheduledFuture in that case.
+	 */
+	private <T> ScheduledFuture<T> trySchedule(Callable<T> callable, long delay, TimeUnit unit) {
+		try {
+			return scheduler.schedule(callable, delay, unit);
+		} catch (RejectedExecutionException e) {
+			// the scheduler was shut down, so just
+			// drop the work on the floor
+
+			return null;
+		}
 	}
 
 	/**
@@ -209,11 +223,8 @@ public class HlsMediaPlaylistProcessor {
 	}
 
 	private void scheduleRetry(final HlsMediaPlaylistContext ctx) {
-		if (!ctx.running()) {
-			return;
-		}
 		long delay = ctx.lastTargetDuration == null ? DEFAULT_RETRY_MILLIS : ctx.lastTargetDuration * 1000 / 2;
-		scheduler.schedule(new Callable<Void>() {
+		trySchedule(new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
 				try {

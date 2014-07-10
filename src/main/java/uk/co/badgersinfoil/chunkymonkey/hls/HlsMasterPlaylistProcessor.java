@@ -6,7 +6,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import net.chilicat.m3u8.Element;
 import net.chilicat.m3u8.ParseException;
@@ -87,19 +89,17 @@ public class HlsMasterPlaylistProcessor {
 			e.printStackTrace();
 		}
 		if (playlist == null) {
-			if (ctx.running()) {
-				ctx.topLevelManifestFuture = scheduler.schedule(new Callable<Void>() {
-					@Override
-					public Void call() throws Exception {
-						try {
-							loadTopLevelManifest(ctx);
-						} catch (Throwable e) {
-							e.printStackTrace();
-						}
-						return null;
+			ctx.topLevelManifestFuture = trySchedule(new Callable<Void>() {
+				@Override
+				public Void call() throws Exception {
+					try {
+						loadTopLevelManifest(ctx);
+					} catch (Throwable e) {
+						e.printStackTrace();
 					}
-				}, 1, TimeUnit.MINUTES);
-			}
+					return null;
+				}
+			}, 1, TimeUnit.MINUTES);
 			return;
 		}
 		// TODO: handle the unlikely case that the kind of
@@ -107,20 +107,18 @@ public class HlsMasterPlaylistProcessor {
 		if (isMasterPlaylist(playlist)) {
 			processMasterPlaylistEntries(ctx, playlist);
 			ctx.lastTopLevel = playlist;
-			if (ctx.running()) {
-				// reload in 5 mins in case it changes
-				ctx.topLevelManifestFuture = scheduler.schedule(new Callable<Void>() {
-					@Override
-					public Void call() throws Exception {
-						try {
-							loadTopLevelManifest(ctx);
-						} catch (Throwable e) {
-							e.printStackTrace();
-						}
-						return null;
+			// reload in 5 mins in case it changes
+			ctx.topLevelManifestFuture = trySchedule(new Callable<Void>() {
+				@Override
+				public Void call() throws Exception {
+					try {
+						loadTopLevelManifest(ctx);
+					} catch (Throwable e) {
+						e.printStackTrace();
 					}
-				}, 5, TimeUnit.MINUTES);
-			}
+					return null;
+				}
+			}, 5, TimeUnit.MINUTES);
 		} else {
 			// this is not a real top-level manifest, but
 			// as a special case handle it anyway,
@@ -128,6 +126,21 @@ public class HlsMasterPlaylistProcessor {
 			ctx.mediaContexts.put(ctx.getManifestLocation(), mediaCtx);
 			// TODO: making a second request for the same manifest now is inefficient,
 			mediaPlaylistProcessor.process(mediaCtx);
+		}
+	}
+
+	/**
+	 * Ignores any rejection of the attempt to schedule the given callable,
+	 * returning null rather than a ScheduledFuture in that case.
+	 */
+	private <T> ScheduledFuture<T> trySchedule(Callable<T> callable, long delay, TimeUnit unit) {
+		try {
+			return scheduler.schedule(callable, delay, unit);
+		} catch (RejectedExecutionException e) {
+			// the scheduler was shut down, so just
+			// drop the work on the floor
+
+			return null;
 		}
 	}
 
