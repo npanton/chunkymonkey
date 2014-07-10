@@ -14,6 +14,10 @@ public class HttpStat {
 		 */
 		CONNECT_TIMEOUT,
 		/**
+		 * Failure trying to connect to the remote host (e.g. connection refused / network unreachable.
+		 */
+		CONNECT_FAILED,
+		/**
 		 * Completed without network failure (may still have had HTTP
 		 * error status)
 		 */
@@ -70,6 +74,11 @@ public class HttpStat {
 	public void connectTimeout() {
 		end = System.currentTimeMillis();
 		endState = EndState.CONNECT_TIMEOUT;
+	}
+
+	public void connectFailed() {
+		end = System.currentTimeMillis();
+		endState = EndState.CONNECT_FAILED;
 	}
 
 	public void prematureClose() {
