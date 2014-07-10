@@ -42,7 +42,6 @@ public class HlsMasterPlaylistProcessor {
 	private HttpResponseChecker responseChecker = HttpResponseChecker.NULL;
 	private Reporter rep = Reporter.NULL;
 	private RequestConfig config;
-	private boolean running;
 	private CodecsParser codecsParser;
 
 	public HlsMasterPlaylistProcessor(ScheduledExecutorService scheduler, HttpClient httpclient, HlsMediaPlaylistProcessor mediaPlaylistProcessor, CodecsParser codecsParser) {
@@ -65,7 +64,7 @@ public class HlsMasterPlaylistProcessor {
 	}
 
 	public void start(final HlsMasterPlaylistContext ctx) {
-		running = true;
+		ctx.running(true);
 		ctx.topLevelManifestFuture = scheduler.submit(new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
@@ -88,7 +87,7 @@ public class HlsMasterPlaylistProcessor {
 			e.printStackTrace();
 		}
 		if (playlist == null) {
-			if (running) {
+			if (ctx.running()) {
 				ctx.topLevelManifestFuture = scheduler.schedule(new Callable<Void>() {
 					@Override
 					public Void call() throws Exception {
@@ -108,7 +107,7 @@ public class HlsMasterPlaylistProcessor {
 		if (isMasterPlaylist(playlist)) {
 			processMasterPlaylistEntries(ctx, playlist);
 			ctx.lastTopLevel = playlist;
-			if (running) {
+			if (ctx.running()) {
 				// reload in 5 mins in case it changes
 				ctx.topLevelManifestFuture = scheduler.schedule(new Callable<Void>() {
 					@Override
@@ -229,7 +228,7 @@ public class HlsMasterPlaylistProcessor {
 	}
 
 	public void stop(final HlsMasterPlaylistContext ctx) {
-		running = false;
+		ctx.running(false);
 		ctx.topLevelManifestFuture.cancel(true);
 		for (HlsMediaPlaylistContext mctx : ctx.mediaContexts.values()) {
 			mediaPlaylistProcessor.stop(mctx);

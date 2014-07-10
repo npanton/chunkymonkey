@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.URILocator;
@@ -18,6 +19,7 @@ public class HlsMasterPlaylistContext implements MediaContext {
 	private URI manifestRedirectLocation;
 	public long lastUpdated;
 	public HttpCondition httpCondition = new HttpCondition();
+	private AtomicBoolean running = new AtomicBoolean(true);
 
 	public HlsMasterPlaylistContext(URI manifest) {
 		this.manifest = manifest;
@@ -46,5 +48,12 @@ public class HlsMasterPlaylistContext implements MediaContext {
 	@Override
 	public Locator getLocator() {
 		return new URILocator(getManifestLocation());
+	}
+
+	public boolean running() {
+		return running.get();
+	}
+	public void running(boolean running) {
+		this.running.set(running);
 	}
 }
