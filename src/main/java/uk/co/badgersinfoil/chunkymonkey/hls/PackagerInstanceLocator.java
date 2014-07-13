@@ -1,6 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
-import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 
 public class PackagerInstanceLocator implements Locator {
 

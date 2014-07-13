@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.ts.PIDFilterPacketConsumer.FilterEntry;
 
 

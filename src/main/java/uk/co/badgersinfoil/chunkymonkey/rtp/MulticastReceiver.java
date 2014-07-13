@@ -13,8 +13,8 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Set;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.rtp.RtpParser.RtpContext;
 
 public class MulticastReceiver {

@@ -1,6 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.seidump;
 
-import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.h264.PicTimingConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.PicTimingHeader;
 import uk.co.badgersinfoil.chunkymonkey.h264.PicTimingSeiConsumer.PicTimingSeiContext;

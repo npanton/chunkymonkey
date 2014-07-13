@@ -1,7 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.ts.ProgramAssociationTable.ProgramEntry;
 
 public class PmtTSPacketConsumerConsumer implements TSPacketConsumer {

@@ -2,8 +2,8 @@ package uk.co.badgersinfoil.chunkymonkey.h264;
 
 import java.util.HashMap;
 import java.util.Map;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer.ParseState;
 import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer.PesNalUnitLocator;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;

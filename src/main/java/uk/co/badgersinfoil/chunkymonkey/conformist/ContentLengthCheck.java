@@ -5,7 +5,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
 
 public class ContentLengthCheck implements HttpResponseChecker {

@@ -6,9 +6,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.URILocator;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.Rfc6381Codec;
 import net.chilicat.m3u8.PlaylistInfo;
 

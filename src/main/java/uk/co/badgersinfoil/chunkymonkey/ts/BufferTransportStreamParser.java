@@ -1,8 +1,8 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import io.netty.buffer.ByteBuf;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 
 /**
  * Common code for handlers of buffers containing multiple transport stream

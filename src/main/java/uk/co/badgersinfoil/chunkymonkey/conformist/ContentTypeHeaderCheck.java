@@ -3,7 +3,7 @@ package uk.co.badgersinfoil.chunkymonkey.conformist;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 
 public class ContentTypeHeaderCheck extends AbstractSingleHeaderCheck {
 

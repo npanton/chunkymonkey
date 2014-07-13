@@ -2,8 +2,8 @@ package uk.co.badgersinfoil.chunkymonkey.rtp;
 
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.rtp.RtpParser.RtpContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.BufferTransportStreamParser;
 

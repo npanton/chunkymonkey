@@ -27,11 +27,11 @@ import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.impl.execchain.RequestAbortedException;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
-import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 
 /**
  * Wraps {@link HttpClient#execute(HttpUriRequest, HttpContext)} in order to

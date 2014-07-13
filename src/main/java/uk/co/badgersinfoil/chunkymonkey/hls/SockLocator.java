@@ -1,7 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
 import java.net.InetAddress;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 
 public class SockLocator implements Locator {
 

@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.URILocator;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import net.chilicat.m3u8.Playlist;
 
 public class HlsMasterPlaylistContext implements MediaContext {

@@ -8,9 +8,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import net.chilicat.m3u8.Element;
 import net.chilicat.m3u8.PlaylistInfo;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.MasterPlaylistComparator.PlaylistComparisonResult;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistContext;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor;
 

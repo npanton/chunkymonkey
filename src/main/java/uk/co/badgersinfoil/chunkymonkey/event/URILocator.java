@@ -1,9 +1,9 @@
-package uk.co.badgersinfoil.chunkymonkey;
+package uk.co.badgersinfoil.chunkymonkey.event;
 
 import java.net.URI;
 
 public class URILocator implements Locator {
-	
+
 	private URI uri;
 	private Locator parent;
 
@@ -25,7 +25,7 @@ public class URILocator implements Locator {
 	public URI getUri() {
 		return uri;
 	}
-	
+
 	@Override
 	public String toString() {
 		if (parent == null) {

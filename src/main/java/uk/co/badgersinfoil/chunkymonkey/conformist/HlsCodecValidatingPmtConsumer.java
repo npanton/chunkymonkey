@@ -3,7 +3,7 @@ package uk.co.badgersinfoil.chunkymonkey.conformist;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMediaPlaylistContext;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsSegmentProcessor.HlsSegmentTsContext;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.AudioObjectTypeCodec;

@@ -1,11 +1,11 @@
 package uk.co.badgersinfoil.chunkymonkey.adts;
 
 import io.netty.buffer.ByteBuf;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
 import uk.co.badgersinfoil.chunkymonkey.MediaTimestamp;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.snickersnack.MyPicTimingConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESConsumer;

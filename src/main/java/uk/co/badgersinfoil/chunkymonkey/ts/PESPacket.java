@@ -3,7 +3,7 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 

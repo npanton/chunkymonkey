@@ -3,8 +3,8 @@ package uk.co.badgersinfoil.chunkymonkey.event;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
-import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
-import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 
 
 public class EventFormatterTest {

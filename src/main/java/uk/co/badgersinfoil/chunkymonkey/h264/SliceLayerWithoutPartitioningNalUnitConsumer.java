@@ -1,8 +1,8 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 

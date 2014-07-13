@@ -3,8 +3,8 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 
 public class PIDFilterPacketConsumer implements TSPacketConsumer {
 	private Map<Integer, TSPacketConsumer> defaultFilterMap = new HashMap<>();

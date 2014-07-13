@@ -1,8 +1,7 @@
-package uk.co.badgersinfoil.chunkymonkey;
+package uk.co.badgersinfoil.chunkymonkey.event;
 
-import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
-import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
-import uk.co.badgersinfoil.chunkymonkey.event.EventFormatter;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 
 public class AnsiConsoleReporter implements Reporter {
 

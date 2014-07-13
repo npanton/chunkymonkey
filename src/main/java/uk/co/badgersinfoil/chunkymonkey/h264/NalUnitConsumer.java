@@ -1,7 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import io.netty.buffer.ByteBuf;
 
 public interface NalUnitConsumer {

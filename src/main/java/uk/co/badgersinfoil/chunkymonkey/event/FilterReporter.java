@@ -1,4 +1,4 @@
-package uk.co.badgersinfoil.chunkymonkey;
+package uk.co.badgersinfoil.chunkymonkey.event;
 
 import org.hamcrest.Matcher;
 

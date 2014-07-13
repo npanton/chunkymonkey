@@ -1,6 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
-import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 
 public class NALUnit {
 

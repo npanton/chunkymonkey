@@ -1,10 +1,9 @@
-package uk.co.badgersinfoil.chunkymonkey;
+package uk.co.badgersinfoil.chunkymonkey.event;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import uk.co.badgersinfoil.chunkymonkey.event.EventFormatter;
 
 public class ConsoleReporter implements Reporter {
 

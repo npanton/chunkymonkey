@@ -14,14 +14,14 @@ import net.sourceforge.jaad.aac.syntax.FIL;
 import net.sourceforge.jaad.aac.syntax.PCE;
 import net.sourceforge.jaad.aac.syntax.SyntacticElements;
 */
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
 import uk.co.badgersinfoil.chunkymonkey.MediaUnits;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.adts.ADTSContext;
 import uk.co.badgersinfoil.chunkymonkey.adts.ADTSFrame;
 import uk.co.badgersinfoil.chunkymonkey.adts.AdtsFrameConsumer;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 
 public class AacAdtsFrameConsumer implements AdtsFrameConsumer {
 

@@ -1,4 +1,4 @@
-package uk.co.badgersinfoil.chunkymonkey;
+package uk.co.badgersinfoil.chunkymonkey.event;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 
 public interface Reporter {
 	@Retention(RetentionPolicy.RUNTIME)

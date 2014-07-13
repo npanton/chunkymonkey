@@ -2,7 +2,7 @@ package uk.co.badgersinfoil.chunkymonkey.snickersnack;
 
 import java.util.HashMap;
 import java.util.Map;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.PicTimingSeiConsumer;

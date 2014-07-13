@@ -3,9 +3,9 @@ package uk.co.badgersinfoil.chunkymonkey.adts;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 
 public interface AdtsFrameConsumer {
 

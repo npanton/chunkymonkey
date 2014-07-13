@@ -1,6 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.rtp;
 
-import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 
 public interface RTPErrorHandler {
 

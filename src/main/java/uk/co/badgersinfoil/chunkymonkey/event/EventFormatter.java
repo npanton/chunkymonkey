@@ -4,8 +4,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
-import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 
 public class EventFormatter {
 

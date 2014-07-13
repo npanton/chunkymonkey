@@ -1,10 +1,10 @@
 package uk.co.badgersinfoil.chunkymonkey.conformist;
 
-import uk.co.badgersinfoil.chunkymonkey.Locator;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.Reporter.Event;
-import uk.co.badgersinfoil.chunkymonkey.Reporter.LogFormat;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsValidatingPesConsumer.HlsValidatingPesContext;
 import uk.co.badgersinfoil.chunkymonkey.snickersnack.MyPicTimingConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.ElementryContext;

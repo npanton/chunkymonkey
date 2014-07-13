@@ -1,8 +1,8 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
 import java.net.URI;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
-import uk.co.badgersinfoil.chunkymonkey.URILocator;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 
 public class SegmentLocator extends URILocator {
 

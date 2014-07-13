@@ -1,9 +1,9 @@
 package uk.co.badgersinfoil.chunkymonkey.ts;
 
 import io.netty.buffer.ByteBuf;
-import uk.co.badgersinfoil.chunkymonkey.Locator;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket.Parsed;
 import uk.co.badgersinfoil.chunkymonkey.ts.PESPacket.Timestamp;
 

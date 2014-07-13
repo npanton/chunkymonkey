@@ -2,8 +2,8 @@ package uk.co.badgersinfoil.chunkymonkey.seidump;
 
 import java.util.HashMap;
 import java.util.Map;
-import uk.co.badgersinfoil.chunkymonkey.ConsoleReporter;
-import uk.co.badgersinfoil.chunkymonkey.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.ConsoleReporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.PicTimingSeiConsumer;

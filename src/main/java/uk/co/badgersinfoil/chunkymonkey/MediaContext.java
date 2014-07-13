@@ -1,5 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey;
 
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
+
 public interface MediaContext {
 	/**
 	 * Returns a Locator implementation representing the current this
