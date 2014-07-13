@@ -21,7 +21,7 @@ import uk.co.badgersinfoil.chunkymonkey.ts.TransportStreamParser;
 public class HlsSegmentProcessor {
 
 	@LogFormat("Took {actualMillis}ms to download, but playback duration is {playbackMillis}ms")
-	class SlowDownloadEvent extends Event { }
+	public static class SlowDownloadEvent extends Event { }
 
 	private static final float MAX_DOWNLOAD_DURATION = 0.8f;  // 80%
 
