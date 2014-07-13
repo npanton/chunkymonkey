@@ -49,6 +49,10 @@ public class PesTSPacketConsumer implements StreamTSPacketConsumer {
 		public Locator getLocator() {
 			return new PESLocator(parentContext.getLocator(), elementryPID, streamType, pesPacketNo);
 		}
+
+		public ProgramTSContext getParentContext() {
+			return parentContext;
+		}
 	}
 
 	public static class PESLocator implements Locator {

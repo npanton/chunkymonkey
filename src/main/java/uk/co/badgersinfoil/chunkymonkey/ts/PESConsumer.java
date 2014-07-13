@@ -48,6 +48,9 @@ public interface PESConsumer {
 			public Locator getLocator() {
 				return parentContext.getLocator();
 			}
+			public MediaContext getParentContext() {
+				return parentContext;
+			}
 		}
 		private static class Entry {
 			public PESConsumer consumer;

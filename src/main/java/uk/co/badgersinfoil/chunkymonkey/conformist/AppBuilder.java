@@ -1,13 +1,8 @@
 package uk.co.badgersinfoil.chunkymonkey.conformist;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
-import javax.net.ssl.SSLSocketFactory;
-import org.apache.http.HttpHost;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.protocol.RequestAcceptEncoding;
@@ -16,14 +11,12 @@ import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.protocol.HttpContext;
 import uk.co.badgersinfoil.chunkymonkey.FilterReporter;
 import uk.co.badgersinfoil.chunkymonkey.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.aac.AacAdtsFrameConsumer;
@@ -251,6 +244,7 @@ public class AppBuilder {
 		seiNalUnitConsumer.setReporter(rep);
 		nalUnitConsumers.put(UnitType.SEI, seiNalUnitConsumer);
 		SeqParamSetNalUnitConsumer seqParamSetNalUnitConsumer = new SeqParamSetNalUnitConsumer();
+		seqParamSetNalUnitConsumer.setConsumer(new HlsResolutionValidatingSeqParamSetConsumer(rep));
 		nalUnitConsumers.put(UnitType.SEQ_PARAMETER_SET, seqParamSetNalUnitConsumer);
 		PicParamSetNalUnitConsumer picParamSetNalUnitConsumer = new PicParamSetNalUnitConsumer();
 		picParamSetNalUnitConsumer.setReporder(rep);

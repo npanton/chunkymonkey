@@ -1,15 +1,17 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
 import uk.co.badgersinfoil.chunkymonkey.Locator;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 public class SeqParamSetNalUnitConsumer implements NalUnitConsumer {
 
-	public class SeqParamSetNalUnitContext implements NalUnitContext {
+	public static class SeqParamSetNalUnitContext implements NalUnitContext {
 
 		private H264Context ctx;
 		ByteBuf seqParamSetBuffer = Unpooled.buffer();
+		private MediaContext consumerContext;
 
 		public SeqParamSetNalUnitContext(H264Context ctx) {
 			this.ctx = ctx;
@@ -22,8 +24,20 @@ public class SeqParamSetNalUnitConsumer implements NalUnitConsumer {
 		public Locator getLocator() {
 			return ctx.getLocator();
 		}
-
+		public void setConsumerContext(MediaContext consumerContext) {
+			this.consumerContext = consumerContext;
+		}
+		public MediaContext getConsumerContext() {
+			return consumerContext;
+		}
 	}
+
+	private SeqParamSetConsumer consumer = SeqParamSetConsumer.NULL;
+
+	public void setConsumer(SeqParamSetConsumer consumer) {
+		this.consumer = consumer;
+	}
+
 	@Override
 	public void start(NalUnitContext ctx, NALUnit u) {
 	}
@@ -37,6 +51,7 @@ public class SeqParamSetNalUnitConsumer implements NalUnitConsumer {
 		SeqParamSetNalUnitContext sctx = (SeqParamSetNalUnitContext)ctx;
 		ByteBuf buf = sctx.seqParamSetBuffer;
 		SeqParamSet params = new SeqParamSet(buf);
+		consumer.seqParamSet(sctx.getConsumerContext(), params);
 		sctx.getH264Context().lastSeqParamSet(params);
 		buf.clear();
 	}
@@ -48,6 +63,8 @@ public class SeqParamSetNalUnitConsumer implements NalUnitConsumer {
 	}
 	@Override
 	public NalUnitContext createContext(H264Context ctx) {
-		return new SeqParamSetNalUnitContext(ctx);
+		SeqParamSetNalUnitContext spsCtx = new SeqParamSetNalUnitContext(ctx);
+		spsCtx.setConsumerContext(consumer.createContext(spsCtx));
+		return spsCtx;
 	}
 }

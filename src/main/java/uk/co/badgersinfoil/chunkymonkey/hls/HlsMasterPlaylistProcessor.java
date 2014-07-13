@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
+import java.awt.Dimension;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -10,6 +11,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import net.chilicat.m3u8.Element;
 import net.chilicat.m3u8.ParseException;
 import net.chilicat.m3u8.Playlist;
@@ -34,9 +37,12 @@ public class HlsMasterPlaylistProcessor {
 	public static class MissingCodecsEvent extends Event {}
 	@LogFormat("Unknown codec {codec} for media playlist {playlistUri}")
 	public static class UnknownCodecEvent extends Event {}
+	@LogFormat("Bad RESOLUTION {resolution}")
+	public static class BadResolutionEvent extends Event {}
 	@LogFormat("Followed {redirectCount} redirect(s) to: {finalUri}")
 	public static class RedirectionEvent extends Event {}
 
+	private static final Pattern RESOLUTION = Pattern.compile("(\\d+)x(\\d+)");
 
 	private ScheduledExecutorService scheduler;
 	private HttpClient httpclient;
@@ -165,6 +171,7 @@ public class HlsMasterPlaylistProcessor {
 
 	private HlsMediaPlaylistContext createMediaPlaylistContext(HlsMasterPlaylistContext ctx, URI manifest, PlaylistInfo playlistInfo) {
 		List<Rfc6381Codec> codecList = null;
+		Dimension resolution = null;
 		if (playlistInfo != null) {
 			String codecs = playlistInfo.getCodecs();
 			if (codecs == null) {
@@ -184,8 +191,17 @@ public class HlsMasterPlaylistProcessor {
 					}
 				}
 			}
+			Matcher m = RESOLUTION.matcher(playlistInfo.getResolution());
+			if (m.matches()) {
+				resolution = new Dimension(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)));
+			} else {
+				new BadResolutionEvent()
+					.with("resolution", playlistInfo.getResolution())
+					.at(ctx)
+					.to(rep);
+			}
 		}
-		return new HlsMediaPlaylistContext(ctx, manifest, playlistInfo, codecList);
+		return new HlsMediaPlaylistContext(ctx, manifest, playlistInfo, codecList, resolution);
 	}
 
 

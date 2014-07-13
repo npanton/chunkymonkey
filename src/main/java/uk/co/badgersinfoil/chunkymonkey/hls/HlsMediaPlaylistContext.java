@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
+import java.awt.Dimension;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -31,16 +32,19 @@ public class HlsMediaPlaylistContext implements MediaContext {
 	private List<Rfc6381Codec> codecList;
 	protected HttpCondition httpCondition = new HttpCondition();
 	private AtomicBoolean running = new AtomicBoolean(true);
+	private Dimension resolution;
 
 	public HlsMediaPlaylistContext(HlsMasterPlaylistContext ctx,
 	                               URI manifest,
 	                               PlaylistInfo playlistInfo,
-	                               List<Rfc6381Codec> codecList)
+	                               List<Rfc6381Codec> codecList,
+	                               Dimension resolution)
 	{
 		this.ctx = ctx;
 		this.manifest = manifest;
 		this.playlistInfo = playlistInfo;
 		this.codecList = codecList;
+		this.resolution = resolution;
 	}
 
 	public boolean haveProcessedMediaSeq(int seq) {
@@ -72,5 +76,8 @@ public class HlsMediaPlaylistContext implements MediaContext {
 	}
 	public void running(boolean running) {
 		this.running.set(running);
+	}
+	public Dimension getResolution() {
+		return resolution;
 	}
 }
