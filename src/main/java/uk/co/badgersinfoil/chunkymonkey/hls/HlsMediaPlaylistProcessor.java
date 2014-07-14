@@ -18,7 +18,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
-import uk.co.badgersinfoil.chunkymonkey.event.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
@@ -29,7 +29,7 @@ import net.chilicat.m3u8.Playlist;
 public class HlsMediaPlaylistProcessor {
 
 	@LogFormat("ETag header is still {etag}, but Last-Modified has changed from {oldLastModified} to {newLastModified}")
-	public static class EtagSameLastmodChangedEvent extends Event { }
+	public static class EtagSameLastmodChangedEvent extends Alert { }
 
 	private static final long DEFAULT_RETRY_MILLIS = 5000;
 	private ScheduledExecutorService scheduler;

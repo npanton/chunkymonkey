@@ -9,7 +9,7 @@ import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 public class EventFormatterTest {
 
 	@LogFormat("{a}b")
-	public class TestEvent extends Event { }
+	public class TestEvent extends Alert { }
 
 	private EventFormatter f = new EventFormatter();
 

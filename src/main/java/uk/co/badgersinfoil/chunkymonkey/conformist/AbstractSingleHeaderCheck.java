@@ -5,7 +5,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.event.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
@@ -13,9 +13,9 @@ import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
 public abstract class AbstractSingleHeaderCheck implements HttpResponseChecker {
 
 	@LogFormat("There should not be multiple '{headerName}' headers: {headerList}")
-	public static final class UnexpectedMultipleHeaderEvent extends Event { }
+	public static final class UnexpectedMultipleHeaderEvent extends Alert { }
 	@LogFormat("Response header missing '{headerName}'")
-	public static final class MissingHeaderEvent extends Event { }
+	public static final class MissingHeaderEvent extends Alert { }
 
 	private String headerName;
 	protected Reporter rep;

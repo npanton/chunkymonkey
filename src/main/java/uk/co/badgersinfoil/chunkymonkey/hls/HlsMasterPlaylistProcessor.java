@@ -23,7 +23,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
-import uk.co.badgersinfoil.chunkymonkey.event.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
@@ -34,13 +34,13 @@ import uk.co.badgersinfoil.chunkymonkey.rfc6381.UnknownCodec;
 public class HlsMasterPlaylistProcessor {
 
 	@LogFormat("Missing CODECS header info for entry {playlistUri}")
-	public static class MissingCodecsEvent extends Event {}
+	public static class MissingCodecsEvent extends Alert {}
 	@LogFormat("Unknown codec {codec} for media playlist {playlistUri}")
-	public static class UnknownCodecEvent extends Event {}
+	public static class UnknownCodecEvent extends Alert {}
 	@LogFormat("Bad RESOLUTION {resolution}")
-	public static class BadResolutionEvent extends Event {}
+	public static class BadResolutionEvent extends Alert {}
 	@LogFormat("Followed {redirectCount} redirect(s) to: {finalUri}")
-	public static class RedirectionEvent extends Event {}
+	public static class RedirectionEvent extends Alert {}
 
 	private static final Pattern RESOLUTION = Pattern.compile("(\\d+)x(\\d+)");
 

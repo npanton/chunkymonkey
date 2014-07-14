@@ -1,7 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.conformist;
 
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.event.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
@@ -21,7 +21,7 @@ import uk.co.badgersinfoil.chunkymonkey.ts.TransportContext;
 public class HlsStreamPtsValidator implements TSPacketConsumer {
 
 	@LogFormat("HLS segment initial PTS {thisPts} for this stream and initial PTS {otherPts} for stream PID={otherPid} {otherType} differ by {diffMicros}µs")
-	public static class InitialPTSMissmatchEvent extends Event { }
+	public static class InitialPTSMissmatchEvent extends Alert { }
 
 	private class PCRtoPTSValidatorContext implements MediaContext {
 

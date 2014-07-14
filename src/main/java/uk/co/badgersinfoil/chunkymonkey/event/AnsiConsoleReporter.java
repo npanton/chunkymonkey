@@ -1,7 +1,5 @@
 package uk.co.badgersinfoil.chunkymonkey.event;
 
-import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
-
 public class AnsiConsoleReporter implements Reporter {
 
 	private EventFormatter formatter = new EventFormatter();

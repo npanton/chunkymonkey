@@ -28,7 +28,7 @@ import org.apache.http.impl.execchain.RequestAbortedException;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.event.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
@@ -39,23 +39,23 @@ import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
  */
 public abstract class HttpExecutionWrapper<T> {
 	@LogFormat("{remoteAddress}: {message}, after {durationMillis}ms")
-	public static class ConnectTimeoutEvent extends Event {}
+	public static class ConnectTimeoutEvent extends Alert {}
 	@LogFormat("{message} connecting to {remoteAddress}")
-	public static class ConnectFailedEvent extends Event {}
+	public static class ConnectFailedEvent extends Alert {}
 	@LogFormat("Failed to obtain a connection from pool after {durationMillis}ms")
-	public static class ConnectPoolTimeoutEvent extends Event {}
+	public static class ConnectPoolTimeoutEvent extends Alert {}
 	@LogFormat("Request failed {statusCode} {reasonPhrase} - headers: {responseHeaders}")
-	public static class RequestFailedEvent extends Event {}
+	public static class RequestFailedEvent extends Alert {}
 	@LogFormat("HTTP request failed after {durationMillis}ms: {message}")
-	public static class SocketTimeoutEvent extends Event {}
+	public static class SocketTimeoutEvent extends Alert {}
 	@LogFormat("HTTP request failed after {durationMillis}ms (initial {statusLine} response): {message}")
-	public static class SocketTimeoutAfterHeadersEvent extends Event {}
+	public static class SocketTimeoutAfterHeadersEvent extends Alert {}
 	@LogFormat("{message}, after {durationMillis}ms")
-	public static class ConnectionClosedEvent extends Event {}
+	public static class ConnectionClosedEvent extends Alert {}
 	@LogFormat("HTTP request failed: {message}")
-	public static class HttpFailedEvent extends Event {}
+	public static class HttpFailedEvent extends Alert {}
 	@LogFormat("Unknown host {unknownHost}")
-	public static class UnknownHostEvent extends Event {}
+	public static class UnknownHostEvent extends Alert {}
 
 	public class SockContext implements MediaContext {
 

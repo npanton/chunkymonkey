@@ -2,7 +2,7 @@ package uk.co.badgersinfoil.chunkymonkey.conformist;
 
 import java.awt.Dimension;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.event.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
@@ -27,7 +27,7 @@ public class HlsResolutionValidatingSeqParamSetConsumer implements
 		SeqParamSetConsumer {
 
 	@LogFormat("Master m3u8 manifest says RESOLUTION={m3u8Width}x{m3u8Height}, but H264 seq_parameter_set says {h264Width}x{h264Height}")
-	public static class ResolutionMissmatchEvent extends Event { }
+	public static class ResolutionMissmatchEvent extends Alert { }
 
 	private static class SeqParamSetContext implements MediaContext {
 		private SeqParamSetNalUnitContext parent;

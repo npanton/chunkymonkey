@@ -10,7 +10,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.event.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
@@ -21,7 +21,7 @@ import uk.co.badgersinfoil.chunkymonkey.ts.TransportStreamParser;
 public class HlsSegmentProcessor {
 
 	@LogFormat("Took {actualMillis}ms to download, but playback duration is {playbackMillis}ms")
-	public static class SlowDownloadEvent extends Event { }
+	public static class SlowDownloadEvent extends Alert { }
 
 	private static final float MAX_DOWNLOAD_DURATION = 0.8f;  // 80%
 

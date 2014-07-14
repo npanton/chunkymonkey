@@ -2,7 +2,7 @@ package uk.co.badgersinfoil.chunkymonkey.adts;
 
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
-import uk.co.badgersinfoil.chunkymonkey.event.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
@@ -10,7 +10,7 @@ import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 public class ValidatingAdtsFrameConsumer implements AdtsFrameConsumer {
 
 	@LogFormat("Bad sync word 0x{syncword} (expected 0xfff)")
-	public static final class BadSyncwordEvent extends Event { }
+	public static final class BadSyncwordEvent extends Alert { }
 
 	public class ValidatingADTSContext implements ADTSContext {
 		private ADTSFrame lastFrame = null;

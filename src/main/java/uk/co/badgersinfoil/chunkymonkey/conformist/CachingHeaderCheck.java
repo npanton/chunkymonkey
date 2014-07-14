@@ -10,7 +10,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.DateUtils;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
-import uk.co.badgersinfoil.chunkymonkey.event.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
@@ -18,7 +18,7 @@ import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
 public class CachingHeaderCheck implements HttpResponseChecker {
 
 	@LogFormat("Response 'Expires' in {expirySeconds} seconds, but max-age is {maxAgeSeconds} seconds ({expiresHeader}, {dateHeader})")
-	public static class ExpiresMaxAgeMissmatchEvent extends Event { }
+	public static class ExpiresMaxAgeMissmatchEvent extends Alert { }
 
 	private Reporter rep;
 	private int minMaxAge;

@@ -1,6 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
-import uk.co.badgersinfoil.chunkymonkey.event.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
@@ -13,7 +13,7 @@ import uk.co.badgersinfoil.chunkymonkey.h264.SliceType.SliceName;
 public class SliceHeader {
 
 	@LogFormat("Reordering #{reorderingNum}: Bad reordering_of_pic_nums_idc value {reorderingOfPicNumsIdc} (must be 0-3)")
-	public static class BadReorderingOfPicNumsEvent extends Event { }
+	public static class BadReorderingOfPicNumsEvent extends Alert { }
 
 	public static class RefPicListReordering {
 
