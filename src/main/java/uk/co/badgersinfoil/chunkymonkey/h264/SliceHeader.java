@@ -1,6 +1,8 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.Event;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer.NalUnitContext;
 import uk.co.badgersinfoil.chunkymonkey.h264.SliceType.SliceName;
@@ -9,6 +11,9 @@ import uk.co.badgersinfoil.chunkymonkey.h264.SliceType.SliceName;
  * TODO: currently incomplete vs. the fields present in the spec
  */
 public class SliceHeader {
+
+	@LogFormat("Reordering #{reorderingNum}: Bad reordering_of_pic_nums_idc value {reorderingOfPicNumsIdc} (must be 0-3)")
+	public static class BadReorderingOfPicNumsEvent extends Event { }
 
 	public static class RefPicListReordering {
 
@@ -39,7 +44,11 @@ public class SliceHeader {
 					do {
 						reordering_of_pic_nums_idc = bits.readUE();
 						if (reordering_of_pic_nums_idc > 3) {
-							rep.carp(ctx.getLocator(), "Reordering #%d: Bad reordering_of_pic_nums_idc value %d (must be 0-3)", count, reordering_of_pic_nums_idc);
+							new BadReorderingOfPicNumsEvent()
+								.with("reorderingNum", count)
+								.with("reorderingOfPicNumsIdc", reordering_of_pic_nums_idc)
+								.at(ctx)
+								.to(rep);
 							return false;
 						}
 						if (reordering_of_pic_nums_idc == 0 || reordering_of_pic_nums_idc == 1) {
@@ -59,7 +68,11 @@ public class SliceHeader {
 					do {
 						reordering_of_pic_nums_idc = bits.readUE();
 						if (reordering_of_pic_nums_idc > 3) {
-							rep.carp(ctx.getLocator(), "Reordering #%d: Bad reordering_of_pic_nums_idc value %d (must be 0-3)", count, reordering_of_pic_nums_idc);
+							new BadReorderingOfPicNumsEvent()
+								.with("reorderingNum", count)
+								.with("reorderingOfPicNumsIdc", reordering_of_pic_nums_idc)
+								.at(ctx)
+								.to(rep);
 							return false;
 						}
 						if (reordering_of_pic_nums_idc == 0 || reordering_of_pic_nums_idc == 1) {
