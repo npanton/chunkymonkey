@@ -2,9 +2,9 @@ package uk.co.badgersinfoil.chunkymonkey.adts;
 
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaDuration;
+import uk.co.badgersinfoil.chunkymonkey.event.Event;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.event.Reporter.Event;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 
 public class ValidatingAdtsFrameConsumer implements AdtsFrameConsumer {

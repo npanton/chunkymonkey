@@ -2,9 +2,9 @@ package uk.co.badgersinfoil.chunkymonkey.conformist;
 
 import java.awt.Dimension;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Event;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.event.Reporter.Event;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeqParamSet;
 import uk.co.badgersinfoil.chunkymonkey.h264.SeqParamSet.FrameCrop;

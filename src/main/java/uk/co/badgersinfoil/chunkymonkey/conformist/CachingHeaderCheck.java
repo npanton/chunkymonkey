@@ -10,8 +10,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.DateUtils;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Event;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.event.Reporter.Event;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
 

@@ -28,9 +28,9 @@ import org.apache.http.impl.execchain.RequestAbortedException;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Event;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.event.Reporter.Event;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 
 /**

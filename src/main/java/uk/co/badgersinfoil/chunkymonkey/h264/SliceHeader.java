@@ -1,7 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.h264;
 
+import uk.co.badgersinfoil.chunkymonkey.event.Event;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.event.Reporter.Event;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
 import uk.co.badgersinfoil.chunkymonkey.h264.NalUnitConsumer.NalUnitContext;
