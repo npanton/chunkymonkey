@@ -133,6 +133,10 @@ public class PicParamSet {
 		H264BitBuf bits = new H264BitBuf(buf);
 		picParameterSetId = bits.readUE();
 		seqParameterSetId = bits.readUE();
+		if (ctx.getH264Context().lastSeqParamSet() == null) {
+			rep.carp(ctx.getLocator(), "pic_parameter_set id=%d: no previous seq_param_set yet, on finding seq_param_set_id=%d", picParameterSetId, seqParameterSetId);
+			return false;
+		}
 		if (seqParameterSetId != ctx.getH264Context().lastSeqParamSet().seqParamSetId()) {
 			rep.carp(ctx.getLocator(), "pic_parameter_set id=%d: seq_param_set_id=%d does not match id of last seq_param_set (%d)", picParameterSetId, seqParameterSetId, ctx.getH264Context().lastSeqParamSet().seqParamSetId());
 			return false;

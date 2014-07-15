@@ -14,6 +14,8 @@ public class SliceHeader {
 
 	@LogFormat("Reordering #{reorderingNum}: Bad reordering_of_pic_nums_idc value {reorderingOfPicNumsIdc} (must be 0-3)")
 	public static class BadReorderingOfPicNumsEvent extends Alert { }
+	@LogFormat("No seq_param_set yet, unable to parse slice header")
+	public class MissingSeqParamSetAlert extends Alert { }
 
 	public static class RefPicListReordering {
 
@@ -131,6 +133,12 @@ public class SliceHeader {
 		// TODO: derive via picParameterSetId
 		H264Context hctx = ctx.getH264Context();
 		SeqParamSet seqParamSet = hctx.lastSeqParamSet();
+		if (seqParamSet == null) {
+			new MissingSeqParamSetAlert()
+				.at(ctx)
+				.to(rep);
+			return false;
+		}
 		if (seqParamSet.separateColourPlaneFlag()) {
 			colorPlaneId = bits.readBits(2);
 		}
