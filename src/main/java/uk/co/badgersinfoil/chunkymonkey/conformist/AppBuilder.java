@@ -244,7 +244,9 @@ public class AppBuilder {
 		seiNalUnitConsumer.setReporter(rep);
 		nalUnitConsumers.put(UnitType.SEI, seiNalUnitConsumer);
 		SeqParamSetNalUnitConsumer seqParamSetNalUnitConsumer = new SeqParamSetNalUnitConsumer();
-		seqParamSetNalUnitConsumer.setConsumer(new HlsResolutionValidatingSeqParamSetConsumer(rep));
+		if (hls) {
+			seqParamSetNalUnitConsumer.setConsumer(new HlsResolutionValidatingSeqParamSetConsumer(rep));
+		}
 		nalUnitConsumers.put(UnitType.SEQ_PARAMETER_SET, seqParamSetNalUnitConsumer);
 		PicParamSetNalUnitConsumer picParamSetNalUnitConsumer = new PicParamSetNalUnitConsumer();
 		picParamSetNalUnitConsumer.setReporder(rep);
