@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -26,6 +25,10 @@ import net.chilicat.m3u8.Element;
 import net.chilicat.m3u8.ParseException;
 import net.chilicat.m3u8.Playlist;
 
+/**
+ * Handle the polling for updates of the 'Media Playlist' <code>.m3u8</code>
+ * resource.
+ */
 public class HlsMediaPlaylistProcessor {
 
 	@LogFormat("ETag header is still {etag}, but Last-Modified has changed from {oldLastModified} to {newLastModified}")
@@ -37,15 +40,15 @@ public class HlsMediaPlaylistProcessor {
 	private RequestConfig config = null;
 	private Reporter rep = Reporter.NULL;
 	private HttpResponseChecker manifestResponseChecker = HttpResponseChecker.NULL;
-	private HlsSegmentProcessor segmentProcessor;
+	private HlsMediaPlaylistConsumer playlistConsumer;
 
 	public HlsMediaPlaylistProcessor(ScheduledExecutorService scheduler,
 	                                 HttpClient httpclient,
-	                                 HlsSegmentProcessor segmentProcessor)
+	                                 HlsMediaPlaylistConsumer playlistConsumer)
 	{
 		this.scheduler = scheduler;
 		this.httpclient = httpclient;
-		this.segmentProcessor = segmentProcessor;
+		this.playlistConsumer = playlistConsumer;
 	}
 
 	public void setManifestResponseChecker(HttpResponseChecker manifestResponseChecker) {
@@ -99,12 +102,12 @@ public class HlsMediaPlaylistProcessor {
 			int off = playlist.getElements().size() -3;
 			seq += off;
 			for (Element e : playlist.getElements().subList(off, off+3)) {
-				processPlaylistElement(ctx, seq, e);
+				playlistConsumer.processPlaylistElement(ctx, seq, e);
 				seq++;
 			}
 		} else {
 			for (Element e : playlist) {
-				processPlaylistElement(ctx, seq, e);
+				playlistConsumer.processPlaylistElement(ctx, seq, e);
 				seq++;
 			}
 		}
@@ -190,25 +193,6 @@ public class HlsMediaPlaylistProcessor {
 		}
 	}
 
-	private void processPlaylistElement(final HlsMediaPlaylistContext ctx,
-	                                    final int seq,
-	                                    final Element e)
-	{
-		if (ctx.running() && !ctx.haveProcessedMediaSeq(seq)) {
-			Future<Void> segmentFuture = scheduler.submit(new Callable<Void>() {
-				@Override
-				public Void call() throws Exception {
-					try {
-						segmentProcessor.processSegment(ctx, seq, e);
-					} catch (Throwable e) {
-						e.printStackTrace();
-					}
-					return null;
-				}
-			});
-			ctx.lastProcessedMediaSeq(seq);
-		}
-	}
 
 
 	public void process(HlsMediaPlaylistContext ctx) {

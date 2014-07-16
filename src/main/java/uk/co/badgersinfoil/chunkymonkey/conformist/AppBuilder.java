@@ -37,6 +37,7 @@ import uk.co.badgersinfoil.chunkymonkey.h264.SliceLayerWithoutPartitioningNalUni
 import uk.co.badgersinfoil.chunkymonkey.h264.SliceLayerWithoutPartitioningNonIdrConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.SliceLayerWithoutPartitioningNonIdrNalUnitConsumer;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor;
+import uk.co.badgersinfoil.chunkymonkey.hls.HlsMediaPlaylistConsumer;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMediaPlaylistProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsSegmentProcessor;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsTsPacketValidator;
@@ -104,7 +105,8 @@ public class AppBuilder {
 				new KeepAliveHeaderCheck(rep),
 				new ContentTypeHeaderCheck("video/MP2T", rep)
 			));
-		HlsMediaPlaylistProcessor mediaProc = new HlsMediaPlaylistProcessor(scheduledExecutor, httpclient, segProc);
+		HlsMediaPlaylistConsumer mediaConsumer = new HlsMediaPlaylistConsumer(scheduledExecutor, segProc);
+		HlsMediaPlaylistProcessor mediaProc = new HlsMediaPlaylistProcessor(scheduledExecutor, httpclient, mediaConsumer);
 		mediaProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
 			new CachingHeaderCheck(rep, 1),  // TODO: hack - duration should be derived at runtime (and > 1)
 			new CorsHeaderChecker(rep),
