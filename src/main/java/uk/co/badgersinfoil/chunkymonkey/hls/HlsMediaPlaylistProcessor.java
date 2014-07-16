@@ -1,7 +1,9 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
+import java.awt.Dimension;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -10,6 +12,8 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -21,9 +25,16 @@ import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
+import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor.BadResolutionEvent;
+import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor.MissingCodecsEvent;
+import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor.UnknownCodecEvent;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.CodecsParser;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.Rfc6381Codec;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.UnknownCodec;
 import net.chilicat.m3u8.Element;
 import net.chilicat.m3u8.ParseException;
 import net.chilicat.m3u8.Playlist;
+import net.chilicat.m3u8.PlaylistInfo;
 
 /**
  * Handle the polling for updates of the 'Media Playlist' <code>.m3u8</code>
@@ -35,20 +46,25 @@ public class HlsMediaPlaylistProcessor {
 	public static class EtagSameLastmodChangedEvent extends Alert { }
 
 	private static final long DEFAULT_RETRY_MILLIS = 5000;
+	private static final Pattern RESOLUTION = Pattern.compile("(\\d+)x(\\d+)");
+
 	private ScheduledExecutorService scheduler;
 	private HttpClient httpclient;
 	private RequestConfig config = null;
 	private Reporter rep = Reporter.NULL;
 	private HttpResponseChecker manifestResponseChecker = HttpResponseChecker.NULL;
 	private HlsMediaPlaylistConsumer playlistConsumer;
+	private CodecsParser codecsParser;
 
 	public HlsMediaPlaylistProcessor(ScheduledExecutorService scheduler,
 	                                 HttpClient httpclient,
-	                                 HlsMediaPlaylistConsumer playlistConsumer)
+	                                 HlsMediaPlaylistConsumer playlistConsumer,
+	                                 CodecsParser codecsParser)
 	{
 		this.scheduler = scheduler;
 		this.httpclient = httpclient;
 		this.playlistConsumer = playlistConsumer;
+		this.codecsParser = codecsParser;
 	}
 
 	public void setManifestResponseChecker(HttpResponseChecker manifestResponseChecker) {
@@ -328,5 +344,40 @@ public class HlsMediaPlaylistProcessor {
 	public void stop(HlsMediaPlaylistContext mctx) {
 		mctx.running(false);
 		// TODO: cancel any pending Future instances
+	}
+
+	public HlsMediaPlaylistContext createContext(HlsMasterPlaylistContext parent, URI manifest, PlaylistInfo playlistInfo) {
+		List<Rfc6381Codec> codecList = null;
+		Dimension resolution = null;
+		if (playlistInfo != null) {
+			String codecs = playlistInfo.getCodecs();
+			if (codecs == null) {
+				new MissingCodecsEvent()
+					.with("playlistUri", manifest)
+					.at(parent)
+					.to(rep);
+			} else {
+				codecList = codecsParser.parseCodecs(codecs);
+				for (Rfc6381Codec c : codecList) {
+					if (c instanceof UnknownCodec) {
+						new UnknownCodecEvent()
+							.with("codec", c)
+							.with("playlistUri", manifest)
+							.at(parent)
+							.to(rep);
+					}
+				}
+			}
+			Matcher m = RESOLUTION.matcher(playlistInfo.getResolution());
+			if (m.matches()) {
+				resolution = new Dimension(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)));
+			} else {
+				new BadResolutionEvent()
+					.with("resolution", playlistInfo.getResolution())
+					.at(parent)
+					.to(rep);
+			}
+		}
+		return new HlsMediaPlaylistContext(parent, manifest, playlistInfo, codecList, resolution);
 	}
 }

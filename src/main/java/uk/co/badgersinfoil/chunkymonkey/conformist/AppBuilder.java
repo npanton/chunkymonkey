@@ -106,7 +106,7 @@ public class AppBuilder {
 				new ContentTypeHeaderCheck("video/MP2T", rep)
 			));
 		HlsMediaPlaylistConsumer mediaConsumer = new HlsMediaPlaylistConsumer(scheduledExecutor, segProc);
-		HlsMediaPlaylistProcessor mediaProc = new HlsMediaPlaylistProcessor(scheduledExecutor, httpclient, mediaConsumer);
+		HlsMediaPlaylistProcessor mediaProc = new HlsMediaPlaylistProcessor(scheduledExecutor, httpclient, mediaConsumer, createCodecsParser());
 		mediaProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
 			new CachingHeaderCheck(rep, 1),  // TODO: hack - duration should be derived at runtime (and > 1)
 			new CorsHeaderChecker(rep),
@@ -118,7 +118,7 @@ public class AppBuilder {
 		));
 		mediaProc.setReporter(rep);
 		mediaProc.setConfig(RequestConfig.custom().setConnectTimeout(1000).build());
-		HlsMasterPlaylistProcessor masterProc = new HlsMasterPlaylistProcessor(scheduledExecutor, httpclient, mediaProc, createCodecsParser());
+		HlsMasterPlaylistProcessor masterProc = new HlsMasterPlaylistProcessor(scheduledExecutor, httpclient, mediaProc);
 		masterProc.setResponseChecker(new HttpResponseChecker.Multi(
 			new CorsHeaderChecker(rep),
 			new HttpMinVersionCheck(new ProtocolVersion("HTTP", 1, 1), rep),

@@ -3,6 +3,7 @@ package uk.co.badgersinfoil.chunkymonkey.hls;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import uk.co.badgersinfoil.chunkymonkey.rfc6381.CodecsParser;
 import net.chilicat.m3u8.Element;
 
 public class HlsMediaPlaylistConsumer {

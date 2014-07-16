@@ -42,21 +42,17 @@ public class HlsMasterPlaylistProcessor {
 	@LogFormat("Followed {redirectCount} redirect(s) to: {finalUri}")
 	public static class RedirectionEvent extends Alert {}
 
-	private static final Pattern RESOLUTION = Pattern.compile("(\\d+)x(\\d+)");
-
 	private ScheduledExecutorService scheduler;
 	private HttpClient httpclient;
 	private HlsMediaPlaylistProcessor mediaPlaylistProcessor;
 	private HttpResponseChecker responseChecker = HttpResponseChecker.NULL;
 	private Reporter rep = Reporter.NULL;
 	private RequestConfig config;
-	private CodecsParser codecsParser;
 
-	public HlsMasterPlaylistProcessor(ScheduledExecutorService scheduler, HttpClient httpclient, HlsMediaPlaylistProcessor mediaPlaylistProcessor, CodecsParser codecsParser) {
+	public HlsMasterPlaylistProcessor(ScheduledExecutorService scheduler, HttpClient httpclient, HlsMediaPlaylistProcessor mediaPlaylistProcessor) {
 		this.scheduler = scheduler;
 		this.httpclient = httpclient;
 		this.mediaPlaylistProcessor = mediaPlaylistProcessor;
-		this.codecsParser = codecsParser;
 	}
 
 	public void setReporter(Reporter rep) {
@@ -128,7 +124,7 @@ public class HlsMasterPlaylistProcessor {
 		} else {
 			// this is not a real top-level manifest, but
 			// as a special case handle it anyway,
-			HlsMediaPlaylistContext mediaCtx = createMediaPlaylistContext(ctx, ctx.getManifestLocation(), null);
+			HlsMediaPlaylistContext mediaCtx = mediaPlaylistProcessor.createContext(ctx, ctx.getManifestLocation(), null);
 			ctx.mediaContexts.put(ctx.getManifestLocation(), mediaCtx);
 			// TODO: making a second request for the same manifest now is inefficient,
 			mediaPlaylistProcessor.process(mediaCtx);
@@ -164,46 +160,10 @@ public class HlsMasterPlaylistProcessor {
 	}
 
 	private void addMediaPlaylist(HlsMasterPlaylistContext ctx, Element e) {
-		HlsMediaPlaylistContext mediaCtx = createMediaPlaylistContext(ctx, ctx.getManifestLocation().resolve(e.getURI()), e.getPlayListInfo());
+		HlsMediaPlaylistContext mediaCtx = mediaPlaylistProcessor.createContext(ctx, ctx.getManifestLocation().resolve(e.getURI()), e.getPlayListInfo());
 		ctx.mediaContexts.put(e.getURI(), mediaCtx);
 		mediaPlaylistProcessor.process(mediaCtx);
 	}
-
-	private HlsMediaPlaylistContext createMediaPlaylistContext(HlsMasterPlaylistContext ctx, URI manifest, PlaylistInfo playlistInfo) {
-		List<Rfc6381Codec> codecList = null;
-		Dimension resolution = null;
-		if (playlistInfo != null) {
-			String codecs = playlistInfo.getCodecs();
-			if (codecs == null) {
-				new MissingCodecsEvent()
-					.with("playlistUri", manifest)
-					.at(ctx)
-					.to(rep);
-			} else {
-				codecList = codecsParser.parseCodecs(codecs);
-				for (Rfc6381Codec c : codecList) {
-					if (c instanceof UnknownCodec) {
-						new UnknownCodecEvent()
-							.with("codec", c)
-							.with("playlistUri", manifest)
-							.at(ctx)
-							.to(rep);
-					}
-				}
-			}
-			Matcher m = RESOLUTION.matcher(playlistInfo.getResolution());
-			if (m.matches()) {
-				resolution = new Dimension(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)));
-			} else {
-				new BadResolutionEvent()
-					.with("resolution", playlistInfo.getResolution())
-					.at(ctx)
-					.to(rep);
-			}
-		}
-		return new HlsMediaPlaylistContext(ctx, manifest, playlistInfo, codecList, resolution);
-	}
-
 
 	private boolean isMasterPlaylist(Playlist playList) {
 		return playList.getElements().get(0).isPlayList();
