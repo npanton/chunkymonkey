@@ -118,12 +118,12 @@ public class HlsMediaPlaylistProcessor {
 			int off = playlist.getElements().size() -3;
 			seq += off;
 			for (Element e : playlist.getElements().subList(off, off+3)) {
-				playlistConsumer.processPlaylistElement(ctx, seq, e);
+				playlistConsumer.processPlaylistElement(ctx.getConsumerContext(), seq, e);
 				seq++;
 			}
 		} else {
 			for (Element e : playlist) {
-				playlistConsumer.processPlaylistElement(ctx, seq, e);
+				playlistConsumer.processPlaylistElement(ctx.getConsumerContext(), seq, e);
 				seq++;
 			}
 		}
@@ -378,6 +378,8 @@ public class HlsMediaPlaylistProcessor {
 					.to(rep);
 			}
 		}
-		return new HlsMediaPlaylistContext(parent, manifest, playlistInfo, codecList, resolution);
+		HlsMediaPlaylistContext ctx = new HlsMediaPlaylistContext(parent, manifest, playlistInfo, codecList, resolution);
+		ctx.setConsumerContext(playlistConsumer.createContext(ctx));
+		return ctx;
 	}
 }

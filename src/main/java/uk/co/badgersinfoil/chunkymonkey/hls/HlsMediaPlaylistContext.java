@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
+import uk.co.badgersinfoil.chunkymonkey.hls.HlsMediaPlaylistConsumer.HlsMediaPlaylistConsumerContext;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.Rfc6381Codec;
 import net.chilicat.m3u8.PlaylistInfo;
 
@@ -33,6 +34,7 @@ public class HlsMediaPlaylistContext implements MediaContext {
 	protected HttpCondition httpCondition = new HttpCondition();
 	private AtomicBoolean running = new AtomicBoolean(true);
 	private Dimension resolution;
+	private HlsMediaPlaylistConsumerContext consumerContext;
 
 	public HlsMediaPlaylistContext(HlsMasterPlaylistContext ctx,
 	                               URI manifest,
@@ -79,5 +81,13 @@ public class HlsMediaPlaylistContext implements MediaContext {
 	}
 	public Dimension getResolution() {
 		return resolution;
+	}
+
+	public void setConsumerContext(HlsMediaPlaylistConsumerContext consumerContext) {
+		this.consumerContext = consumerContext;
+	}
+
+	public HlsMediaPlaylistConsumerContext getConsumerContext() {
+		return consumerContext;
 	}
 }
