@@ -95,7 +95,7 @@ public class AppBuilder {
 			                   .setDefaultRequestConfig(requestConfig)
 			                   .setConnectionManager(buildConnectionManager())
 			                   .build();
-		HlsSegmentProcessor segProc = new HlsSegmentProcessor(rep, httpclient, createConsumer(rep));
+		HlsSegmentProcessor segProc = new HlsSegmentProcessor(scheduledExecutor, rep, httpclient, createConsumer(rep));
 		segProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
 				new CachingHeaderCheck(rep, 1),
 				new CorsHeaderChecker(rep),
@@ -105,7 +105,7 @@ public class AppBuilder {
 				new KeepAliveHeaderCheck(rep),
 				new ContentTypeHeaderCheck("video/MP2T", rep)
 			));
-		HlsMediaPlaylistConsumer mediaConsumer = new HlsMediaPlaylistConsumer(scheduledExecutor, segProc);
+		HlsMediaPlaylistConsumer mediaConsumer = new HlsMediaPlaylistConsumer(segProc);
 		HlsMediaPlaylistProcessor mediaProc = new HlsMediaPlaylistProcessor(scheduledExecutor, httpclient, mediaConsumer, createCodecsParser());
 		mediaProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
 			new CachingHeaderCheck(rep, 1),  // TODO: hack - duration should be derived at runtime (and > 1)

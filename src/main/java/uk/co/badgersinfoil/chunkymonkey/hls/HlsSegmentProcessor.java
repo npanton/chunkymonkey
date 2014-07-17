@@ -3,6 +3,10 @@ package uk.co.badgersinfoil.chunkymonkey.hls;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import net.chilicat.m3u8.Element;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
@@ -25,6 +29,7 @@ public class HlsSegmentProcessor {
 
 	private static final float MAX_DOWNLOAD_DURATION = 0.8f;  // 80%
 
+	private ScheduledExecutorService scheduler;
 	private HttpClient httpclient;
 	private Reporter rep = Reporter.NULL;
 	private TSPacketConsumer consumer;
@@ -46,10 +51,12 @@ public class HlsSegmentProcessor {
 		}
 	}
 
-	public HlsSegmentProcessor(Reporter rep,
+	public HlsSegmentProcessor(ScheduledExecutorService scheduler,
+	                           Reporter rep,
 	                           HttpClient httpclient,
 	                           TSPacketConsumer consumer)
 	{
+		this.scheduler = scheduler;
 		this.rep = rep;
 		this.httpclient = httpclient;
 		this.consumer = consumer;
@@ -98,6 +105,28 @@ public class HlsSegmentProcessor {
 	}
 	public RequestConfig getConfig() {
 		return config;
+	}
+
+	public void scheduleSegment(final HlsMediaPlaylistContext ctx,
+	                            final int seq,
+	                            final Element e)
+	{
+		try {
+			Future<Void> segmentFuture = scheduler.submit(new Callable<Void>() {
+				@Override
+				public Void call() throws Exception {
+					try {
+						processSegment(ctx, seq, e);
+					} catch (Throwable e) {
+						e.printStackTrace();
+					}
+					return null;
+				}
+			});
+		} catch (RejectedExecutionException ex) {
+			// assmue that our ScheduledExecutorService is in the
+			// process of being shut down, and ignore this
+		}
 	}
 
 }
