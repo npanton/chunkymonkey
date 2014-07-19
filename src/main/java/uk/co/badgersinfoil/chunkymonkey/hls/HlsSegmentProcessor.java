@@ -68,9 +68,9 @@ public class HlsSegmentProcessor {
 
 	protected void processSegment(final HlsMediaPlaylistContext ctx,
 	                              final int seq,
+	                              final URI elementUri,
 	                              final Element element)
 	{
-		URI elementUri = ctx.manifest.resolve(element.getURI());
 		final HlsSegmentTsContext segCtx = new HlsSegmentTsContext(ctx, elementUri);
 		HttpGet req = new HttpGet(elementUri);
 		if (getConfig() != null) {
@@ -109,6 +109,7 @@ public class HlsSegmentProcessor {
 
 	public void scheduleSegment(final HlsMediaPlaylistContext ctx,
 	                            final int seq,
+	                            final URI elementUri,
 	                            final Element e)
 	{
 		try {
@@ -116,7 +117,7 @@ public class HlsSegmentProcessor {
 				@Override
 				public Void call() throws Exception {
 					try {
-						processSegment(ctx, seq, e);
+						processSegment(ctx, seq, elementUri, e);
 					} catch (Throwable e) {
 						e.printStackTrace();
 					}

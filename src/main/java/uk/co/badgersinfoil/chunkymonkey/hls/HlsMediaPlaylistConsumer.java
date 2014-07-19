@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.hls;
 
+import java.net.URI;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import net.chilicat.m3u8.Element;
@@ -31,7 +32,8 @@ public class HlsMediaPlaylistConsumer {
 	                                   final Element e)
 	{
 		if (ctx.parent.running() && !ctx.parent.haveProcessedMediaSeq(seq)) {
-			segmentProcessor.scheduleSegment(ctx.parent, seq, e);
+			URI elementUri = ctx.parent.manifest.resolve(e.getURI());
+			segmentProcessor.scheduleSegment(ctx.parent, seq, elementUri, e);
 			ctx.parent.lastProcessedMediaSeq(seq);
 		}
 	}
