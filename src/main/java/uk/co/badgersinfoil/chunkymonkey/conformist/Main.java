@@ -13,8 +13,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
-import org.eclipse.jetty.server.Server;
-import uk.co.badgersinfoil.chunkymonkey.conformist.api.ServerBuilder;
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStreamContext;
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStreamProcessor;
 import uk.co.badgersinfoil.chunkymonkey.event.AnsiConsoleReporter;
@@ -68,9 +66,7 @@ public class Main {
 				HlsMasterPlaylistProcessor processor = b.buildSingle(scheduledExecutor, rep);
 				HlsMasterPlaylistContext ctx = processor.createContext(uri);
 				if (timeLimit == null) {
-					Server server = ServerBuilder.create(ctx).build();
 					processor.start(ctx);
-					server.start();
 					while (true) {
 						Thread.sleep(10_000);
 					}
