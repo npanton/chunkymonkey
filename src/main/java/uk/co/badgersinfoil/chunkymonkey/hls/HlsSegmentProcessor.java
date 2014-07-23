@@ -16,6 +16,7 @@ import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
+import uk.co.badgersinfoil.chunkymonkey.event.Perf;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
@@ -26,6 +27,8 @@ public class HlsSegmentProcessor {
 
 	@LogFormat("Took {actualMillis}ms to download, but playback duration is {playbackMillis}ms")
 	public static class SlowDownloadEvent extends Alert { }
+
+	public static class HlsSegmentLoadPerf extends Perf { }
 
 	private static final float MAX_DOWNLOAD_DURATION = 0.8f;  // 80%
 
@@ -97,6 +100,11 @@ public class HlsSegmentProcessor {
 			}
 		}.execute(httpclient, req, segCtx, stat);
 		ctx.segmentStats.add(stat);
+		new HlsSegmentLoadPerf()
+			.with("endState", stat.getEndState())
+			.with("durationMillis", stat.getDurationMillis())
+			.at(segCtx)
+			.to(rep);
 	}
 
 	public void setConfig(RequestConfig config) {

@@ -24,6 +24,7 @@ import uk.co.badgersinfoil.chunkymonkey.adts.ValidatingAdtsFrameConsumer;
 import uk.co.badgersinfoil.chunkymonkey.conformist.CachingHeaderCheck.ExpiresMaxAgeMissmatchEvent;
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStreamProcessor;
 import uk.co.badgersinfoil.chunkymonkey.event.FilterReporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Perf;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.h264.H264PesConsumer;
 import uk.co.badgersinfoil.chunkymonkey.h264.NALUnit.UnitType;
@@ -276,8 +277,12 @@ public class AppBuilder {
 	public FilterReporter createFilter(Reporter rep) {
 		return new FilterReporter(rep,
 			not(anyOf(
+				// ExpiresMaxAgeMissmatch triggers often, is not currently high impact, and we can't do much about it in the short term
 				instanceOf(ExpiresMaxAgeMissmatchEvent.class),
-				instanceOf(EtagSameLastmodChangedEvent.class)
+				// ExpiresMaxAgeMissmatch triggers often, is not currently high impact, and we can't do much about it in the short term
+				instanceOf(EtagSameLastmodChangedEvent.class),
+				// Don't log performance events to the console
+				instanceOf(Perf.class)
 			))
 		);
 	}

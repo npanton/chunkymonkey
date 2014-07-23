@@ -22,6 +22,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.event.Alert;
+import uk.co.badgersinfoil.chunkymonkey.event.Perf;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
@@ -45,7 +46,8 @@ public class HlsMediaPlaylistProcessor {
 	@LogFormat("ETag header is still {etag}, but Last-Modified has changed from {oldLastModified} to {newLastModified}")
 	public static class EtagSameLastmodChangedEvent extends Alert { }
 
-	private static final long DEFAULT_RETRY_MILLIS = 5000;
+	public static class HlsMediaPlaylistLoadPerf extends Perf { }
+
 	private static final Pattern RESOLUTION = Pattern.compile("(\\d+)x(\\d+)");
 
 	private ScheduledExecutorService scheduler;
@@ -184,6 +186,11 @@ public class HlsMediaPlaylistProcessor {
 			}
 		}.execute(httpclient, req, ctx, stat);
 		ctx.playlistStats.add(stat);
+		new HlsMediaPlaylistLoadPerf()
+			.with("endState", stat.getEndState())
+			.with("durationMillis", stat.getDurationMillis())
+			.at(ctx)
+			.to(rep);
 	}
 
 
