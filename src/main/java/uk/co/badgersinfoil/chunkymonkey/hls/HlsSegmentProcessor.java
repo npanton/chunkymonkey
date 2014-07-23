@@ -67,7 +67,6 @@ public class HlsSegmentProcessor {
 	}
 
 	protected void processSegment(final HlsMediaPlaylistContext ctx,
-	                              final int seq,
 	                              final URI elementUri,
 	                              final Element element)
 	{
@@ -108,7 +107,6 @@ public class HlsSegmentProcessor {
 	}
 
 	public void scheduleSegment(final HlsMediaPlaylistContext ctx,
-	                            final int seq,
 	                            final URI elementUri,
 	                            final Element e)
 	{
@@ -117,7 +115,7 @@ public class HlsSegmentProcessor {
 				@Override
 				public Void call() throws Exception {
 					try {
-						processSegment(ctx, seq, elementUri, e);
+						processSegment(ctx, elementUri, e);
 					} catch (Throwable e) {
 						e.printStackTrace();
 					}

@@ -106,6 +106,7 @@ public class AppBuilder {
 				new ContentTypeHeaderCheck("video/MP2T", rep)
 			));
 		HlsMediaPlaylistConsumer mediaConsumer = new HlsMediaPlaylistConsumer(segProc);
+		mediaConsumer.setReporter(rep);
 		HlsMediaPlaylistProcessor mediaProc = new HlsMediaPlaylistProcessor(scheduledExecutor, httpclient, mediaConsumer, createCodecsParser());
 		mediaProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
 			new CachingHeaderCheck(rep, 1),  // TODO: hack - duration should be derived at runtime (and > 1)

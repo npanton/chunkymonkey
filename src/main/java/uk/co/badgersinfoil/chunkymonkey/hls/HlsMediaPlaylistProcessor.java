@@ -73,61 +73,15 @@ public class HlsMediaPlaylistProcessor {
 
 	private void process(final HlsMediaPlaylistContext ctx, final Playlist playlist, HttpResponse resp) {
 		long now = System.currentTimeMillis();
-		if (ctx.lastMediaSequence != null) {
-			int seqEnd = playlist.getMediaSequenceNumber()+playlist.getElements().size()-1;
-			if (ctx.haveProcessedMediaSeq(seqEnd)) {
-				if (ctx.lastTargetDuration != null) {
-					final long missedUpdates = 2; // number of target-durations overdue before warning
-					long maxDelayMillis = ctx.lastTargetDuration * 1000 * (1 + missedUpdates + ctx.lastMediaSequenceEndChangeProblems*ctx.lastMediaSequenceEndChangeProblems);
-					long delay = now - ctx.lastMediaSequenceEndChange;
-					if (delay > maxDelayMillis) {
-						List<Header> headers = findAllHeaders(resp, "Date", "Cache-Control", "Age");
-						if (headers.isEmpty()) {
-							rep.carp(ctx.getLocator(),
-							         "No additional segments in %d milliseconds",
-							         delay);
-						} else {
-							rep.carp(ctx.getLocator(),
-							         "No additional segments in %d milliseconds; response included: %s",
-							         delay,
-							         headers);
-
-						}
-						ctx.lastMediaSequenceEndChangeProblems++;
-					}
-				}
-			} else {
-				ctx.lastMediaSequenceEndChange = now;
-				ctx.lastMediaSequenceEndChangeProblems = 0;
-			}
-		} else {
-			ctx.lastMediaSequenceEndChange = now;
-			ctx.lastMediaSequenceEndChangeProblems = 0;
-		}
-		ctx.lastMediaSequence = playlist.getMediaSequenceNumber();
-		if (ctx.lastTargetDuration != null && ctx.lastTargetDuration != playlist.getTargetDuration()) {
-			rep.carp(ctx.getLocator(), "EXT-X-TARGETDURATION changed? %d became %d", ctx.lastTargetDuration, playlist.getTargetDuration());
-		}
-		ctx.lastTargetDuration = (long)playlist.getTargetDuration();
-		checkDurations(ctx, rep, playlist);
+		playlistConsumer.onPlaylistHeader(ctx.getConsumerContext(), playlist);
+		ctx.refreshInterval = playlist.getTargetDuration() * 1000;
 		if (ctx.firstLoad == 0) {
 			ctx.firstLoad = now;
 		}
-		int seq = playlist.getMediaSequenceNumber();
-		if (ctx.startup && playlist.getElements().size() > 3) {
-			int off = playlist.getElements().size() -3;
-			seq += off;
-			for (Element e : playlist.getElements().subList(off, off+3)) {
-				playlistConsumer.processPlaylistElement(ctx.getConsumerContext(), seq, e);
-				seq++;
-			}
-		} else {
-			for (Element e : playlist) {
-				playlistConsumer.processPlaylistElement(ctx.getConsumerContext(), seq, e);
-				seq++;
-			}
+		for (Element e : playlist) {
+			playlistConsumer.onPlaylistElement(ctx.getConsumerContext(), e);
 		}
-		ctx.startup = false;
+		playlistConsumer.onPlaylistEnd(ctx.getConsumerContext());
 	}
 
 	private static List<Header> findAllHeaders(HttpResponse resp, String... names) {
@@ -140,16 +94,10 @@ public class HlsMediaPlaylistProcessor {
 
 	private void scheduleNextRefresh(final HlsMediaPlaylistContext ctx,
 			long now) {
-		long durationMillis;
-		if (ctx.lastTargetDuration == null) {
-			durationMillis = DEFAULT_RETRY_MILLIS;
-		} else {
-			durationMillis = ctx.lastTargetDuration * 1000;
-		}
 		// try to keep things to the implied schedule, rather than
 		// falling behind a little bit, each iteration,
-		long adjustment = (now - ctx.firstLoad) % durationMillis;
-		long delay = durationMillis - adjustment;
+		long adjustment = (now - ctx.firstLoad) % ctx.refreshInterval;
+		long delay = ctx.refreshInterval - adjustment;
 		// scheduleAtFixedRate() would be a good fit were it not that
 		// we couldn't handle EXT-X-TARGETDURATION changing,
 		trySchedule(new Callable<Void>() {
@@ -180,37 +128,6 @@ public class HlsMediaPlaylistProcessor {
 		}
 	}
 
-	/**
-	 * Report if any element has a duration more than 1 second different
-	 * than the playlist's specified EXT-X-TARGETDURATION.
-	 */
-	private void checkDurations(final HlsMediaPlaylistContext ctx, Reporter rep, Playlist playlist) {
-		Element firstProblemElement = null;
-		int problemCount = 0;
-		int seq = playlist.getMediaSequenceNumber();
-		for (Element element : playlist) {
-			if (!ctx.haveProcessedMediaSeq(seq)) {
-				int diff = element.getDuration() - playlist.getTargetDuration();
-				// TODO: HLS spec allows for element durations to be
-				//       smaller than the target, but my current use
-				//       requires exact agreement -- make this check
-				//       configurable / pluggable
-				if (diff != 0) {
-					if (firstProblemElement == null) {
-						firstProblemElement = element;
-					}
-					problemCount++;
-				}
-			}
-			seq++;
-		}
-		if (problemCount > 0) {
-			rep.carp(ctx.getLocator(), "%d new element(s) with duration different to EXT-X-TARGETDURATION=%d, first being %dsecond duration of %s", problemCount, playlist.getTargetDuration(), firstProblemElement.getDuration(), firstProblemElement.getURI());
-		}
-	}
-
-
-
 	public void process(HlsMediaPlaylistContext ctx) {
 		try {
 			requestManifest(ctx);
@@ -223,7 +140,6 @@ public class HlsMediaPlaylistProcessor {
 	}
 
 	private void scheduleRetry(final HlsMediaPlaylistContext ctx) {
-		long delay = ctx.lastTargetDuration == null ? DEFAULT_RETRY_MILLIS : ctx.lastTargetDuration * 1000 / 2;
 		trySchedule(new Callable<Void>() {
 			@Override
 			public Void call() throws Exception {
@@ -234,7 +150,7 @@ public class HlsMediaPlaylistProcessor {
 				}
 				return null;
 			}
-		}, delay, TimeUnit.MILLISECONDS);
+		}, ctx.refreshInterval, TimeUnit.MILLISECONDS);
 	}
 
 	private void requestManifest(final HlsMediaPlaylistContext ctx) throws IOException, ParseException {
@@ -254,7 +170,6 @@ public class HlsMediaPlaylistProcessor {
 				if (resp.getStatusLine().getStatusCode() != 302) {
 					checkCacheValidators(ctx, resp);
 				}
-				checkAge(ctx, resp);
 				InputStream stream = resp.getEntity().getContent();
 				try {
 					Playlist playlist = Playlist.parse(stream);
@@ -324,21 +239,6 @@ public class HlsMediaPlaylistProcessor {
 
 	public void setReporter(Reporter rep) {
 		this.rep = rep;
-	}
-
-	private void checkAge(final HlsMediaPlaylistContext ctx,
-	                      final CloseableHttpResponse resp)
-	{
-		if (resp.containsHeader("Age") && ctx.lastTargetDuration != null) {
-			try {
-				long age = Long.parseLong(resp.getLastHeader("Age").getValue());
-				if (age > ctx.lastTargetDuration) {
-					rep.carp(ctx.getLocator(), "Response header %s suggests response is stale, given EXT-X-TARGETDURATION=%d", resp.getLastHeader("Age"), ctx.lastTargetDuration);
-				}
-			} catch (NumberFormatException e) {
-				// ignore
-			}
-		}
 	}
 
 	public void stop(HlsMediaPlaylistContext mctx) {

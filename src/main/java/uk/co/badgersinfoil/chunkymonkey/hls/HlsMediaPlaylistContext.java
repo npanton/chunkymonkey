@@ -15,12 +15,10 @@ import net.chilicat.m3u8.PlaylistInfo;
 
 public class HlsMediaPlaylistContext implements MediaContext {
 
+	private static final long DEFAULT_REFRESH_INTERVAL = 5000;
+
 	private HlsMasterPlaylistContext ctx;
 	public URI manifest;
-	public Long lastTargetDuration = null;
-	public Integer lastMediaSequence = null;
-	private AtomicInteger lastProcessedMediaSeq = new AtomicInteger();
-	public boolean startup = true;
 	public long lastMediaSequenceEndChange;
 	private PlaylistInfo playlistInfo;
 	public long firstLoad;
@@ -35,6 +33,7 @@ public class HlsMediaPlaylistContext implements MediaContext {
 	private AtomicBoolean running = new AtomicBoolean(true);
 	private Dimension resolution;
 	private HlsMediaPlaylistConsumerContext consumerContext;
+	public long refreshInterval = DEFAULT_REFRESH_INTERVAL;
 
 	public HlsMediaPlaylistContext(HlsMasterPlaylistContext ctx,
 	                               URI manifest,
@@ -49,10 +48,6 @@ public class HlsMediaPlaylistContext implements MediaContext {
 		this.resolution = resolution;
 	}
 
-	public boolean haveProcessedMediaSeq(int seq) {
-		return lastProcessedMediaSeq() >= seq;
-	}
-
 	public PlaylistInfo getPlaylistInfo() {
 		return playlistInfo;
 	}
@@ -61,12 +56,6 @@ public class HlsMediaPlaylistContext implements MediaContext {
 		return Collections.unmodifiableList(codecList);
 	}
 
-	public void lastProcessedMediaSeq(int seq) {
-		lastProcessedMediaSeq.set(seq);
-	}
-	public int lastProcessedMediaSeq() {
-		return lastProcessedMediaSeq.get();
-	}
 
 	@Override
 	public Locator getLocator() {
