@@ -275,14 +275,16 @@ public class HlsMediaPlaylistProcessor {
 					}
 				}
 			}
-			Matcher m = RESOLUTION.matcher(playlistInfo.getResolution());
-			if (m.matches()) {
-				resolution = new Dimension(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)));
-			} else {
-				new BadResolutionEvent()
-					.with("resolution", playlistInfo.getResolution())
-					.at(parent)
-					.to(rep);
+			if (playlistInfo.getResolution() != null) {
+				Matcher m = RESOLUTION.matcher(playlistInfo.getResolution());
+				if (m.matches()) {
+					resolution = new Dimension(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)));
+				} else {
+					new BadResolutionEvent()
+						.with("resolution", playlistInfo.getResolution())
+						.at(parent)
+						.to(rep);
+				}
 			}
 		}
 		HlsMediaPlaylistContext ctx = new HlsMediaPlaylistContext(parent, manifest, playlistInfo, codecList, resolution);
