@@ -84,8 +84,8 @@ public class HlsMediaPlaylistConsumer {
 		// than the playlist's specified EXT-X-TARGETDURATION.
 		if (ctx.lastTargetDuration != null && ctx.lastTargetDuration != e.getDuration()) {
 			new ElementDurationMismatchEvent()
-				.with("oldTargetDuration", ctx.lastTargetDuration)
-				.with("newTargetDuration", e.getDuration())
+				.with("targetDuration", ctx.lastTargetDuration)
+				.with("elementDuration", e.getDuration())
 				.at(ctx)
 				.to(rep);
 		}
