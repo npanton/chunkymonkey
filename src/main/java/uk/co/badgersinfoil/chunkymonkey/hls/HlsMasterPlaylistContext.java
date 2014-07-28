@@ -7,11 +7,37 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
-import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import net.chilicat.m3u8.Playlist;
 
 public class HlsMasterPlaylistContext implements MediaContext {
 
+	public static class MasterManifestLocator implements Locator {
+
+		private Locator parent;
+		private URI uri;
+
+		public MasterManifestLocator(Locator parent, URI uri) {
+			this.parent = parent;
+			this.uri = uri;
+		}
+
+		public URI getUri() {
+			return uri;
+		}
+
+		@Override
+		public Locator getParent() {
+			return parent;
+		}
+		public String toString() {
+			if (parent == null) {
+				return "Master manifest "+uri.toString();
+			}
+			return "Master manifest "+uri.toString()+"\n  at "+parent.toString();
+		}
+	}
+
+	private MediaContext parent;
 	private URI manifest;
 	public Future<Void> topLevelManifestFuture;
 	public Playlist lastTopLevel;
@@ -21,7 +47,8 @@ public class HlsMasterPlaylistContext implements MediaContext {
 	public HttpCondition httpCondition = new HttpCondition();
 	private AtomicBoolean running = new AtomicBoolean(true);
 
-	public HlsMasterPlaylistContext(URI manifest) {
+	public HlsMasterPlaylistContext(MediaContext parent, URI manifest) {
+		this.parent = parent;
 		this.manifest = manifest;
 	}
 
@@ -47,7 +74,7 @@ public class HlsMasterPlaylistContext implements MediaContext {
 
 	@Override
 	public Locator getLocator() {
-		return new URILocator(getManifestLocation());
+		return new MasterManifestLocator(parent.getLocator(), getManifestLocation());
 	}
 
 	public boolean running() {

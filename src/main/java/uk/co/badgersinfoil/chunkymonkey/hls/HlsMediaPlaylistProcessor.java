@@ -24,7 +24,6 @@ import org.apache.http.client.protocol.HttpClientContext;
 import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Perf;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor.BadResolutionEvent;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor.MissingCodecsEvent;
@@ -134,7 +133,7 @@ public class HlsMediaPlaylistProcessor {
 		try {
 			requestManifest(ctx);
 		} catch (Exception e) {
-			rep.carp(new URILocator(ctx.manifest), "Loading media manifest failed: %s", e.toString());
+			rep.carp(ctx.getLocator(), "Loading media manifest failed: %s", e.toString());
 			scheduleRetry(ctx);
 			return;
 		}

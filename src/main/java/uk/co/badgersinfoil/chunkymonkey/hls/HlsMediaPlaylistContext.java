@@ -8,12 +8,37 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
-import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMediaPlaylistConsumer.HlsMediaPlaylistConsumerContext;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.Rfc6381Codec;
 import net.chilicat.m3u8.PlaylistInfo;
 
 public class HlsMediaPlaylistContext implements MediaContext {
+
+	public static class MediaManifestLocator implements Locator {
+
+		private Locator parent;
+		private URI uri;
+
+		public MediaManifestLocator(Locator parent, URI uri) {
+			this.parent = parent;
+			this.uri = uri;
+		}
+
+		public URI getUri() {
+			return uri;
+		}
+
+		@Override
+		public Locator getParent() {
+			return parent;
+		}
+		public String toString() {
+			if (parent == null) {
+				return "Media manifest "+uri.toString();
+			}
+			return "Media manifest "+uri.toString()+"\n  at "+parent.toString();
+		}
+	}
 
 	private static final long DEFAULT_REFRESH_INTERVAL = 5000;
 
@@ -59,7 +84,7 @@ public class HlsMediaPlaylistContext implements MediaContext {
 
 	@Override
 	public Locator getLocator() {
-		return new URILocator(manifest, ctx.getLocator());
+		return new MediaManifestLocator(ctx.getLocator(), manifest);
 	}
 
 	public boolean running() {

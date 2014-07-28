@@ -11,25 +11,20 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import net.chilicat.m3u8.Element;
 import net.chilicat.m3u8.ParseException;
 import net.chilicat.m3u8.Playlist;
-import net.chilicat.m3u8.PlaylistInfo;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIUtils;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.event.Alert;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
-import uk.co.badgersinfoil.chunkymonkey.rfc6381.CodecsParser;
-import uk.co.badgersinfoil.chunkymonkey.rfc6381.Rfc6381Codec;
-import uk.co.badgersinfoil.chunkymonkey.rfc6381.UnknownCodec;
 
 public class HlsMasterPlaylistProcessor {
 
@@ -41,6 +36,32 @@ public class HlsMasterPlaylistProcessor {
 	public static class BadResolutionEvent extends Alert {}
 	@LogFormat("Followed {redirectCount} redirect(s) to: {finalUri}")
 	public static class RedirectionEvent extends Alert {}
+
+	public static class MasterManifestLocator implements Locator {
+
+		private Locator parent;
+		private URI uri;
+
+		public MasterManifestLocator(Locator parent, URI uri) {
+			this.parent = parent;
+			this.uri = uri;
+		}
+
+		public URI getUri() {
+			return uri;
+		}
+
+		@Override
+		public Locator getParent() {
+			return parent;
+		}
+		public String toString() {
+			if (parent == null) {
+				return "Master manifest "+uri.toString();
+			}
+			return "Master manifest "+uri.toString()+"\n  at "+parent.toString();
+		}
+	}
 
 	private ScheduledExecutorService scheduler;
 	private HttpClient httpclient;
@@ -59,8 +80,8 @@ public class HlsMasterPlaylistProcessor {
 		this.rep = rep;
 	}
 
-	public HlsMasterPlaylistContext createContext(URI manifest) {
-		return new HlsMasterPlaylistContext(manifest);
+	public HlsMasterPlaylistContext createContext(MediaContext parent, URI manifest) {
+		return new HlsMasterPlaylistContext(parent, manifest);
 	}
 
 	public void setResponseChecker(HttpResponseChecker responseChecker) {
@@ -175,7 +196,6 @@ public class HlsMasterPlaylistProcessor {
 		if (config != null) {
 			req.setConfig(config);
 		}
-		final URILocator loc = new URILocator(ctx.getManifestLocation());
 		HttpStat stat = new HttpStat();
 		return new HttpExecutionWrapper<Playlist>(rep) {
 			@Override

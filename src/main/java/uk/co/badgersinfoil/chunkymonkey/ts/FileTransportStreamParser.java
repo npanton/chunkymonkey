@@ -9,9 +9,30 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
-import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 
 public class FileTransportStreamParser {
+
+	public static class FileLocator implements Locator {
+
+		private Locator parent;
+		private File file;
+
+		public FileLocator(File file) {
+			this.file = file;
+		}
+
+		@Override
+		public Locator getParent() {
+			return parent;
+		}
+
+		public String toString() {
+			if (parent == null) {
+				return file.getPath();
+			}
+			return "File "+file.getPath()+"\n  at "+parent.toString();
+		}
+	}
 
 	public static class FileContext implements MediaContext {
 
@@ -28,7 +49,7 @@ public class FileTransportStreamParser {
 
 		@Override
 		public Locator getLocator() {
-			return new TSPacketLocator(new URILocator(currentFile.toURI()), packetNo);
+			return new TSPacketLocator(new FileLocator(currentFile), packetNo);
 		}
 	}
 

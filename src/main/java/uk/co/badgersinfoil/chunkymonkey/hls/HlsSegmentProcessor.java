@@ -18,12 +18,44 @@ import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Perf;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacketConsumer;
 import uk.co.badgersinfoil.chunkymonkey.ts.TransportStreamParser;
 
 public class HlsSegmentProcessor {
+
+	public static class HlsSegmentLocator implements Locator {
+
+		private Locator parent;
+		private URI uri;
+		private long mediaSequence;
+
+		public HlsSegmentLocator(Locator parent, URI uri, long mediaSequence) {
+			this.parent = parent;
+			this.uri = uri;
+			this.mediaSequence = mediaSequence;
+		}
+
+		public URI getUri() {
+			return uri;
+		}
+
+		public long getMediaSequence() {
+			return mediaSequence;
+		}
+
+		@Override
+		public Locator getParent() {
+			return parent;
+		}
+
+		public String toString() {
+			if (parent == null) {
+				return uri.toString();
+			}
+			return "HLS Segment "+mediaSequence+" "+uri.toString()+"\n  at "+parent.toString();
+		}
+	}
 
 	@LogFormat("Took {actualMillis}ms to download, but playback duration is {playbackMillis}ms")
 	public static class SlowDownloadEvent extends Alert { }
@@ -42,15 +74,17 @@ public class HlsSegmentProcessor {
 	public  static class HlsSegmentTsContext implements MediaContext {
 		public HlsMediaPlaylistContext ctx;
 		private URI elementUri;
+		private long mediaSequence;
 
-		public HlsSegmentTsContext(HlsMediaPlaylistContext ctx, URI elementUri) {
+		public HlsSegmentTsContext(HlsMediaPlaylistContext ctx, URI elementUri, long mediaSequence) {
 			this.ctx = ctx;
 			this.elementUri = elementUri;
+			this.mediaSequence = mediaSequence;
 		}
 
 		@Override
 		public Locator getLocator() {
-			return new URILocator(elementUri, ctx.getLocator());
+			return new HlsSegmentLocator(ctx.getLocator(), elementUri, mediaSequence);
 		}
 	}
 
@@ -73,7 +107,7 @@ public class HlsSegmentProcessor {
 	                              final URI elementUri,
 	                              final Element element)
 	{
-		final HlsSegmentTsContext segCtx = new HlsSegmentTsContext(ctx, elementUri);
+		final HlsSegmentTsContext segCtx = new HlsSegmentTsContext(ctx, elementUri, element.getMediaSequence());
 		HttpGet req = new HttpGet(elementUri);
 		if (getConfig() != null) {
 			req.setConfig(getConfig());

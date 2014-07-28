@@ -8,9 +8,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import net.chilicat.m3u8.Element;
 import net.chilicat.m3u8.PlaylistInfo;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.MasterPlaylistComparator.PlaylistComparisonResult;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
-import uk.co.badgersinfoil.chunkymonkey.event.URILocator;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistContext;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor;
 
@@ -29,13 +29,13 @@ public class HlsRedundantStreamProcessor {
 		this.rep = rep;
 	}
 
-	public HlsRedundantStreamContext createContext(URI... manifests) {
+	public HlsRedundantStreamContext createContext(MediaContext parent, URI... manifests) {
 		if (manifests.length < 2) {
 			throw new IllegalArgumentException("expected at least 2 manifests, got " + manifests.length);
 		}
-		HlsRedundantStreamContext ctx = new HlsRedundantStreamContext();
+		HlsRedundantStreamContext ctx = new HlsRedundantStreamContext(parent);
 		for (URI uri : manifests) {
-			ctx.addStream(masterPlaylistProcessor.createContext(uri));
+			ctx.addStream(masterPlaylistProcessor.createContext(ctx, uri));
 		}
 		return ctx;
 	}
@@ -82,10 +82,10 @@ public class HlsRedundantStreamProcessor {
 	{
 		PlaylistComparisonResult res = masterPlaylistComparator.compare(ctx, stream1.lastTopLevel, stream2.lastTopLevel);
 		if (!res.getIn1Only().isEmpty()) {
-			rep.carp(new URILocator(stream1.getManifestLocation()), "Master manifest entries not specified by partner: %s", playlistInfos(res.getIn1Only()));
+			rep.carp(stream1.getLocator(), "Master manifest entries not specified by partner: %s", playlistInfos(res.getIn1Only()));
 		}
 		if (!res.getIn2Only().isEmpty()) {
-			rep.carp(new URILocator(stream2.getManifestLocation()), "Master manifest entries not specified by partner: %s", playlistInfos(res.getIn2Only()));
+			rep.carp(stream2.getLocator(), "Master manifest entries not specified by partner: %s", playlistInfos(res.getIn2Only()));
 		}
 
 	}

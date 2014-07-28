@@ -13,10 +13,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
+import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStreamContext;
 import uk.co.badgersinfoil.chunkymonkey.conformist.redundancy.HlsRedundantStreamProcessor;
 import uk.co.badgersinfoil.chunkymonkey.event.AnsiConsoleReporter;
 import uk.co.badgersinfoil.chunkymonkey.event.ConsoleReporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistContext;
 import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor;
@@ -49,9 +51,27 @@ public class Main {
 		m.run();
 	}
 
+	/**
+	 * This is a hack to stop NullPointerExceptions in
+	 * {@link MediaContext#toString()} implementations that unconditionally
+	 * do {@code this.getParent().toString()}.
+	 */
+	private static class RootContext implements MediaContext {
+		@Override
+		public Locator getLocator() {
+			return null;
+		}
+
+		@Override
+		public String toString() {
+			return "";
+		}
+	}
+
 	private void run() throws Exception {
 		ResourceLeakDetector.setEnabled(false);
 
+		RootContext rootCtx = new RootContext();
 		AppBuilder b = new AppBuilder();
 		if (userAgent != null) {
 			b.setUserAgent(userAgent);
@@ -64,7 +84,7 @@ public class Main {
 				// assume HTTP means HLS,
 				b.hls(true);
 				HlsMasterPlaylistProcessor processor = b.buildSingle(scheduledExecutor, rep);
-				HlsMasterPlaylistContext ctx = processor.createContext(uri);
+				HlsMasterPlaylistContext ctx = processor.createContext(rootCtx, uri);
 				if (timeLimit == null) {
 					processor.start(ctx);
 					while (true) {
@@ -93,7 +113,7 @@ public class Main {
 			HlsRedundantStreamProcessor processor = b.buildRedundant(scheduledExecutor, rep);
 			URI uri1 = new URI(urls.get(0));
 			URI uri2 = new URI(urls.get(1));
-			HlsRedundantStreamContext ctx = processor.createContext(uri1, uri2);
+			HlsRedundantStreamContext ctx = processor.createContext(rootCtx, uri1, uri2);
 			processor.start(ctx);
 		} else {
 			System.err.println("wrong number of arguments, "+urls.size()+", expected 1 or 2.");
