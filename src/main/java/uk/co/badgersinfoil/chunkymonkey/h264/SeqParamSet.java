@@ -99,9 +99,19 @@ public class SeqParamSet {
 		}
 
 		public StringBuilder toString(StringBuilder b) {
-			return b.append(" cpbCntMinus1=").append(cpbCntMinus1())
-			        .append(" bitRateScale=").append(bitRateScale())
-			        .append(" cpbSizeScale=").append(cpbSizeScale());
+			b.append(" cpbCntMinus1=").append(cpbCntMinus1())
+			 .append(" bitRateScale=").append(bitRateScale())
+			 .append(" cpbSizeScale=").append(cpbSizeScale());
+			for(int schedSelIdx=0; schedSelIdx<=cpbCntMinus1; schedSelIdx++) {
+				b.append(" bitRateValueMinus1["+schedSelIdx+"]=").append(bitRateValueMinus1[schedSelIdx]);
+				b.append(" cpbSizeValueMinus1["+schedSelIdx+"]=").append(cpbSizeValueMinus1[schedSelIdx]);
+				b.append(" cbrFlag["+schedSelIdx+"]=").append(cbrFlag[schedSelIdx]);
+			}
+			b.append(" initialCpbRemovalDelayLengthMinus1=").append(initialCpbRemovalDelayLengthMinus1);
+			b.append(" cpbRemovalDelayLengthMinus1=").append(cpbRemovalDelayLengthMinus1);
+			b.append(" dpbOutputDelayLengthMinus1=").append(dpbOutputDelayLengthMinus1);
+			b.append(" timeOffsetLength=").append(timeOffsetLength);
+			return b;
 		}
 	}
 	public static class TimingInfo {
