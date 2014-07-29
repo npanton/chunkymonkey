@@ -45,8 +45,8 @@ public class ValidatingPesConsumer implements PESConsumer {
 			if (payload.ptsDdsFlags().isDtsPresent()) {
 				if (vCtx.lastDts != null && vCtx.lastDts.isValid() && payload.dts().isValid()) {
 					long diff = payload.dts().getTs() - vCtx.lastDts.getTs();
-					if (diff < 0) {
-						rep.carp(vCtx.getLocator(), "DTS went backwards (wraparound?): %s -> %s", vCtx.lastDts, payload.dts());
+					if (diff < 0 && !isWrapLikely(diff)) {
+						rep.carp(vCtx.getLocator(), "DTS went backwards: %s -> %s", vCtx.lastDts, payload.dts());
 					} else if (diff == 0) {
 						rep.carp(vCtx.getLocator(), "DTS failed to advance: %s", payload.dts());
 					}
@@ -54,6 +54,12 @@ public class ValidatingPesConsumer implements PESConsumer {
 				vCtx.lastDts = payload.dts();
 			}
 		}
+	}
+
+	private boolean isWrapLikely(long dtsDiff) {
+		final long ONE_SECOND = 90_000;  // DTS @ 90kHz
+		final int DTS_BITS = 33;
+		return dtsDiff < 0 && (ONE_SECOND - 1L<<DTS_BITS) > dtsDiff;
 	}
 
 	@Override
