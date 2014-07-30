@@ -15,6 +15,12 @@ public class TSPacketValidator implements TSPacketConsumer {
 	public static class PcrWentBackwardsAlert extends Alert { }
 	@LogFormat("PCR base did not increase: {pcr}")
 	public static class PcrStuckAlert extends Alert { }
+	@LogFormat("PCR interval greater than 100ms maximum: {pcrIntervalTicks}ticks ({thisPcr} to {lastPcr})")
+	public static class PcrIntervalAlert extends Alert { }
+	@LogFormat("Adaptation field too long: {adaptionFieldSize} bytes")
+	public static class AdaptionFieldSizeAlert extends Alert { }
+	@LogFormat("Adaptation field too long given packet content also preset: {adaptionFieldSize} bytes")
+	public static class AdaptionFieldSizeVsContentAlert extends Alert { }
 
 	public class TSPacketValidatorContext implements MediaContext {
 		private MediaContext parentContext;
@@ -69,7 +75,12 @@ public class TSPacketValidator implements TSPacketConsumer {
 						.at(vctx)
 						.to(rep);
 				} else if (diff > PCR_MAX_INTERVAL_TICKS) {
-//					rep.carp(packet.getLocator(), "PCR interval greater than 100ms maximum: %dticks (%s to %s)", diff, pcr.toSexidecimalString(), lastPCR.toSexidecimalString());
+					new PcrIntervalAlert()
+						.with("pcrIntervalTicks", diff)
+						.with("thisPcr", pcr.toSexidecimalString())
+						.with("lastPcr", lastPCR.toSexidecimalString())
+						.at(vctx)
+						.to(rep);
 				}
 			}
 			vctx.lastPCRs.put(packet.PID(), pcr);
@@ -87,9 +98,15 @@ public class TSPacketValidator implements TSPacketConsumer {
 		if (packet.adaptionControl().adaptionFieldPresent()) {
 			int adaptationLen = packet.getAdaptationField().length();
 			if (adaptationLen > ADAPTATION_FIELD_MAX_LENGTH) {
-				rep.carp(vctx.getLocator(), "Adaptation field too long: %d bytes", adaptationLen);
+				new AdaptionFieldSizeAlert()
+					.with("adaptionFieldSize", adaptationLen)
+					.at(vctx)
+					.to(rep);
 			} else if (packet.adaptionControl().contentPresent() && adaptationLen > ADAPTATION_FIELD_WITH_CONTENT_MAX_LENGTH) {
-//				rep.carp(vctx.getLocator(), "Adaptation field too long given content also preset: %d bytes", adaptationLen);
+				new AdaptionFieldSizeVsContentAlert()
+					.with("adaptionFieldSize", adaptationLen)
+					.at(vctx)
+					.to(rep);
 			}
 		}
 	}
