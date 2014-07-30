@@ -107,7 +107,6 @@ public class Main {
 				FileTransportStreamParser parser = new FileTransportStreamParser(consumer);
 				FileTransportStreamParser.FileContext ctx = parser.createContext();
 				parser.parse(ctx, new File(uri.getPath()));
-				return;
 			}
 		} else if (urls.size() == 2) {
 			HlsRedundantStreamProcessor processor = b.buildRedundant(scheduledExecutor, rep);
@@ -118,5 +117,6 @@ public class Main {
 		} else {
 			System.err.println("wrong number of arguments, "+urls.size()+", expected 1 or 2.");
 		}
+		rep.close();
 	}
 }

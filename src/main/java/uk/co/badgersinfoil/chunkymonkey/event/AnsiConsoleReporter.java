@@ -1,5 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.event;
 
+import java.io.IOException;
+
 public class AnsiConsoleReporter implements Reporter {
 
 	private EventFormatter formatter = new EventFormatter();
@@ -36,5 +38,10 @@ public class AnsiConsoleReporter implements Reporter {
 		System.err.print("\033[39m");
 		System.err.println(formatter.format(event, logFormat));
 		System.err.println("\033[37m  at "+event.locator()+"\033[39m");
+	}
+
+
+	@Override
+	public void close() throws IOException {
 	}
 }

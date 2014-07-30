@@ -1,5 +1,6 @@
 package uk.co.badgersinfoil.chunkymonkey.event;
 
+import java.io.IOException;
 import org.hamcrest.Matcher;
 
 public class FilterReporter implements Reporter {
@@ -28,5 +29,13 @@ public class FilterReporter implements Reporter {
 	public void carp(Locator locator, String format, Object... values) {
 		// no way to perform filtering
 		delegate.carp(locator, format, values);
+	}
+
+	/**
+	 * Closes the delegate Reporter instance given at construction time.
+	 */
+	@Override
+	public void close() throws IOException {
+		delegate.close();
 	}
 }

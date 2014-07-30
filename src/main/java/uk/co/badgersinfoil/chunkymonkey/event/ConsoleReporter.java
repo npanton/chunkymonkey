@@ -1,5 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.event;
 
+import java.io.IOException;
+
 public class ConsoleReporter implements Reporter {
 
 	private EventFormatter formatter = new EventFormatter();
@@ -34,5 +36,9 @@ public class ConsoleReporter implements Reporter {
 		System.err.print(String.format("%tF %tT: ", ts, ts));
 		System.err.println(formatter.format(event, logFormat));
 		System.err.println("  at "+event.locator());
+	}
+
+	@Override
+	public void close() throws IOException {
 	}
 }
