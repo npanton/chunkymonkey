@@ -78,7 +78,7 @@ public class HlsMediaPlaylistContext implements MediaContext {
 	}
 
 	public List<Rfc6381Codec> getCodecList() {
-		return Collections.unmodifiableList(codecList);
+		return codecList==null ? null : Collections.unmodifiableList(codecList);
 	}
 
 
