@@ -56,6 +56,10 @@ public class TransportStreamParser {
 			consumer.packet(pctx.consumerContext, packet);
 			pctx.packetNo++;
 		}
+	}
+
+	public void end(MediaContext ctx) {
+		TransportStreamParserContext pctx = (TransportStreamParserContext)ctx;
 		consumer.end(pctx.consumerContext);
 	}
 

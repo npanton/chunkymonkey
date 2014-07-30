@@ -75,6 +75,8 @@ public class HlsSegmentProcessor {
 		public HlsMediaPlaylistContext ctx;
 		private URI elementUri;
 		private long mediaSequence;
+		protected TransportStreamParser parser;
+		protected MediaContext parseCtx;
 
 		public HlsSegmentTsContext(HlsMediaPlaylistContext ctx, URI elementUri, long mediaSequence) {
 			this.ctx = ctx;
@@ -118,9 +120,13 @@ public class HlsSegmentProcessor {
 			protected Void handleResponse(HttpClientContext context, CloseableHttpResponse resp, HttpStat stat) throws IOException {
 				manifestResponseChecker.check(segCtx, resp, context);
 				InputStream stream = resp.getEntity().getContent();
-				TransportStreamParser parser = new TransportStreamParser(consumer);
-				MediaContext parseCtx = parser.createContext(segCtx);
-				parser.parse(parseCtx, stream);
+				if (segCtx.parser == null) {
+					segCtx.parser = new TransportStreamParser(consumer);
+					segCtx.parseCtx = segCtx.parser.createContext(segCtx);
+//TODO:				} else if (element.isDiscontinuity()) {
+//					segCtx.parser.end(segCtx.parseCtx);
+				}
+				segCtx.parser.parse(segCtx.parseCtx, stream);
 				stat.end();
 				long expectedDurationMillis = element.getDuration() * 1000;
 				if (stat.getDurationMillis() > expectedDurationMillis * MAX_DOWNLOAD_DURATION) {
@@ -147,6 +153,8 @@ public class HlsSegmentProcessor {
 	public RequestConfig getConfig() {
 		return config;
 	}
+
+// TODO	public void end(ctx) { ... }
 
 	public void scheduleSegment(final HlsMediaPlaylistContext ctx,
 	                            final URI elementUri,
