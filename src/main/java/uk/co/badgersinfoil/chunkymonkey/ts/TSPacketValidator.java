@@ -3,11 +3,18 @@ package uk.co.badgersinfoil.chunkymonkey.ts;
 import java.util.HashMap;
 import java.util.Map;
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.ts.TSPacket.ProgramClockReference;
 
 public class TSPacketValidator implements TSPacketConsumer {
+
+	@LogFormat("PCR base went backwards {tickDiff}ticks: {thisPcr} (was {lastPcr})")
+	public static class PcrWentBackwardsAlert extends Alert { }
+	@LogFormat("PCR base did not increase: {pcr}")
+	public static class PcrStuckAlert extends Alert { }
 
 	public class TSPacketValidatorContext implements MediaContext {
 		private MediaContext parentContext;
@@ -41,24 +48,39 @@ public class TSPacketValidator implements TSPacketConsumer {
 		checkAdaptationFieldLength(vctx, packet);
 	}
 
-	private static final int PCR_MAX_INTERVAL_NANOS = 100000;
+	private static final int PCR_MAX_INTERVAL_TICKS = 9000; // 100ms @90kHz
 
 	private void checkPCR(TSPacketValidatorContext vctx, TSPacket packet) {
 		if (packet.adaptionControl().adaptionFieldPresent() && packet.getAdaptationField().pcrFlag()) {
 			ProgramClockReference pcr = packet.getAdaptationField().pcr();
 			if (vctx.lastPCRs.containsKey(packet.PID())) {
 				ProgramClockReference lastPCR = vctx.lastPCRs.get(packet.PID());
-				long diff = pcr.toNanoseconds() - lastPCR.toNanoseconds();
-				if (diff < 0) {
-					rep.carp(vctx.getLocator(), "PCR went backwards %dms (wraparound?): %s (was %s)", diff/1000, pcr, lastPCR);
+				long diff = pcr.getPcrBase() - lastPCR.getPcrBase();
+				if (diff < 0 && !isWrapLikely(diff)) {
+					new PcrWentBackwardsAlert()
+						.with("tickDiff", diff)
+						.with("thisPcr", pcr)
+						.with("lastPcr", lastPCR)
+						.at(vctx)
+						.to(rep);
 				} else if (diff == 0) {
-					rep.carp(vctx.getLocator(), "PCR did not increase: %s", pcr);
-				} else if (diff > PCR_MAX_INTERVAL_NANOS) {
-//					rep.carp(packet.getLocator(), "PCR interval greater than 100ms maximum: %dms (%s to %s)", diff/1000, pcr.toSexidecimalString(), lastPCR.toSexidecimalString());
+					new PcrStuckAlert()
+						.with("pcr", pcr)
+						.at(vctx)
+						.to(rep);
+				} else if (diff > PCR_MAX_INTERVAL_TICKS) {
+//					rep.carp(packet.getLocator(), "PCR interval greater than 100ms maximum: %dticks (%s to %s)", diff, pcr.toSexidecimalString(), lastPCR.toSexidecimalString());
 				}
 			}
 			vctx.lastPCRs.put(packet.PID(), pcr);
 		}
+	}
+
+	private boolean isWrapLikely(long pcrBaseDiff) {
+		// TODO: better to build wrap-logic into MediaTimestamp?
+		final long ONE_SECOND = 90_000;  // DTS @ 90kHz
+		final int DTS_BITS = 33;
+		return pcrBaseDiff < 0 && (ONE_SECOND - 1L<<DTS_BITS) > pcrBaseDiff;
 	}
 
 	private void checkAdaptationFieldLength(TSPacketValidatorContext vctx, TSPacket packet) {
