@@ -44,6 +44,8 @@ public class HlsMediaPlaylistProcessor {
 
 	@LogFormat("ETag header is still {etag}, but Last-Modified has changed from {oldLastModified} to {newLastModified}")
 	public static class EtagSameLastmodChangedEvent extends Alert { }
+	@LogFormat("Last-Modified header is still {lastModified}, but ETag has changed from {oldEtag} to {newEtag}")
+	public static class LastmodSameEtagChangedAlert extends Alert { }
 
 	public static class HlsMediaPlaylistLoadPerf extends Perf { }
 
@@ -201,11 +203,12 @@ public class HlsMediaPlaylistProcessor {
 		boolean etagMatch = resp.containsHeader("ETag") && resp.getLastHeader("ETag").getValue().equals(ctx.httpCondition.getLastETag());
 		if (lastModMatch != etagMatch) {
 			if (lastModMatch) {
-				rep.carp(ctx.getLocator(),
-				         "Last-Modified header is still %s, but ETag has changed from %s to %s",
-				         ctx.httpCondition.getLastLastModified(),
-				         ctx.httpCondition.getLastETag(),
-				         resp.getLastHeader("ETag").getValue());
+				new LastmodSameEtagChangedAlert()
+					.with("lastModified", ctx.httpCondition.getLastLastModified())
+					.with("oldEtag", ctx.httpCondition.getLastETag())
+					.with("newEtag", resp.getLastHeader("ETag").getValue())
+					.at(ctx)
+					.to(rep);
 			} else {
 				new EtagSameLastmodChangedEvent()
 					.with("etag", ctx.httpCondition.getLastETag())
