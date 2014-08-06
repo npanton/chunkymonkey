@@ -95,6 +95,7 @@ public class AppBuilder {
 			                   .addInterceptorFirst(new ResponseContentEncoding())
 			                   .setDefaultRequestConfig(requestConfig)
 			                   .setConnectionManager(buildConnectionManager())
+			                   .useSystemProperties()
 			                   .build();
 		HlsSegmentProcessor segProc = new HlsSegmentProcessor(scheduledExecutor, rep, httpclient, createConsumer(rep));
 		segProc.setManifestResponseChecker(new HttpResponseChecker.Multi(
