@@ -7,12 +7,15 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+
 import net.chilicat.m3u8.Element;
+
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
+
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
 import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Locator;
@@ -49,20 +52,24 @@ public class HlsSegmentProcessor {
 			return parent;
 		}
 
+		@Override
 		public String toString() {
 			if (parent == null) {
 				return uri.toString();
 			}
-			return "HLS Segment "+mediaSequence+" "+uri.toString()+"\n  at "+parent.toString();
+			return "HLS Segment " + mediaSequence + " " + uri.toString() + "\n  at " + parent.toString();
 		}
 	}
 
 	@LogFormat("Took {actualMillis}ms to download, but playback duration is {playbackMillis}ms")
-	public static class SlowDownloadEvent extends Alert { }
+	public static class SlowDownloadEvent extends Alert {
+	}
 
-	public static class HlsSegmentLoadPerf extends Perf { }
+	@LogFormat("")
+	public static class HlsSegmentLoadPerf extends Perf {
+	}
 
-	private static final float MAX_DOWNLOAD_DURATION = 0.8f;  // 80%
+	private static final float MAX_DOWNLOAD_DURATION = 0.8f; // 80%
 
 	private ScheduledExecutorService scheduler;
 	private HttpClient httpclient;
@@ -71,7 +78,7 @@ public class HlsSegmentProcessor {
 	private HttpResponseChecker manifestResponseChecker = HttpResponseChecker.NULL;
 	private RequestConfig config;
 
-	public  static class HlsSegmentTsContext implements MediaContext {
+	public static class HlsSegmentTsContext implements MediaContext {
 		public HlsMediaPlaylistContext ctx;
 		private URI elementUri;
 		private long mediaSequence;
@@ -90,11 +97,7 @@ public class HlsSegmentProcessor {
 		}
 	}
 
-	public HlsSegmentProcessor(ScheduledExecutorService scheduler,
-	                           Reporter rep,
-	                           HttpClient httpclient,
-	                           TSPacketConsumer consumer)
-	{
+	public HlsSegmentProcessor(ScheduledExecutorService scheduler, Reporter rep, HttpClient httpclient, TSPacketConsumer consumer) {
 		this.scheduler = scheduler;
 		this.rep = rep;
 		this.httpclient = httpclient;
@@ -105,10 +108,7 @@ public class HlsSegmentProcessor {
 		this.manifestResponseChecker = manifestResponseChecker;
 	}
 
-	protected void processSegment(final HlsMediaPlaylistContext ctx,
-	                              final URI elementUri,
-	                              final Element element)
-	{
+	protected void processSegment(final HlsMediaPlaylistContext ctx, final URI elementUri, final Element element) {
 		final HlsSegmentTsContext segCtx = new HlsSegmentTsContext(ctx, elementUri, element.getMediaSequence());
 		HttpGet req = new HttpGet(elementUri);
 		if (getConfig() != null) {
@@ -123,43 +123,33 @@ public class HlsSegmentProcessor {
 				if (segCtx.parser == null) {
 					segCtx.parser = new TransportStreamParser(consumer);
 					segCtx.parseCtx = segCtx.parser.createContext(segCtx);
-//TODO:				} else if (element.isDiscontinuity()) {
-//					segCtx.parser.end(segCtx.parseCtx);
+					// TODO: } else if (element.isDiscontinuity()) {
+					// segCtx.parser.end(segCtx.parseCtx);
 				}
 				segCtx.parser.parse(segCtx.parseCtx, stream);
 				stat.end();
 				long expectedDurationMillis = element.getDuration() * 1000;
 				if (stat.getDurationMillis() > expectedDurationMillis * MAX_DOWNLOAD_DURATION) {
-					new SlowDownloadEvent()
-						.with("actualMillis", stat.getDurationMillis())
-						.with("playbackMillis", expectedDurationMillis)
-						.at(segCtx)
-						.to(rep);
+					new SlowDownloadEvent().with("actualMillis", stat.getDurationMillis()).with("playbackMillis", expectedDurationMillis).at(segCtx).to(rep);
 				}
 				return null;
 			}
 		}.execute(httpclient, req, segCtx, stat);
 		ctx.segmentStats.add(stat);
-		new HlsSegmentLoadPerf()
-			.with("endState", stat.getEndState())
-			.with("durationMillis", stat.getDurationMillis())
-			.at(segCtx)
-			.to(rep);
+		new HlsSegmentLoadPerf().with("endState", stat.getEndState()).with("durationMillis", stat.getDurationMillis()).at(segCtx).to(rep);
 	}
 
 	public void setConfig(RequestConfig config) {
 		this.config = config;
 	}
+
 	public RequestConfig getConfig() {
 		return config;
 	}
 
-// TODO	public void end(ctx) { ... }
+	// TODO public void end(ctx) { ... }
 
-	public void scheduleSegment(final HlsMediaPlaylistContext ctx,
-	                            final URI elementUri,
-	                            final Element e)
-	{
+	public void scheduleSegment(final HlsMediaPlaylistContext ctx, final URI elementUri, final Element e) {
 		try {
 			Future<Void> segmentFuture = scheduler.submit(new Callable<Void>() {
 				@Override

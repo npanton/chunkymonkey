@@ -14,6 +14,12 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import net.chilicat.m3u8.Element;
+import net.chilicat.m3u8.ParseException;
+import net.chilicat.m3u8.Playlist;
+import net.chilicat.m3u8.PlaylistInfo;
+
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -21,6 +27,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
+
 import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Perf;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
@@ -31,10 +38,6 @@ import uk.co.badgersinfoil.chunkymonkey.hls.HlsMasterPlaylistProcessor.UnknownCo
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.CodecsParser;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.Rfc6381Codec;
 import uk.co.badgersinfoil.chunkymonkey.rfc6381.UnknownCodec;
-import net.chilicat.m3u8.Element;
-import net.chilicat.m3u8.ParseException;
-import net.chilicat.m3u8.Playlist;
-import net.chilicat.m3u8.PlaylistInfo;
 
 /**
  * Handle the polling for updates of the 'Media Playlist' <code>.m3u8</code>
@@ -43,11 +46,16 @@ import net.chilicat.m3u8.PlaylistInfo;
 public class HlsMediaPlaylistProcessor {
 
 	@LogFormat("ETag header is still {etag}, but Last-Modified has changed from {oldLastModified} to {newLastModified}")
-	public static class EtagSameLastmodChangedEvent extends Alert { }
-	@LogFormat("Last-Modified header is still {lastModified}, but ETag has changed from {oldEtag} to {newEtag}")
-	public static class LastmodSameEtagChangedAlert extends Alert { }
+	public static class EtagSameLastmodChangedEvent extends Alert {
+	}
 
-	public static class HlsMediaPlaylistLoadPerf extends Perf { }
+	@LogFormat("Last-Modified header is still {lastModified}, but ETag has changed from {oldEtag} to {newEtag}")
+	public static class LastmodSameEtagChangedAlert extends Alert {
+	}
+
+	@LogFormat("")
+	public static class HlsMediaPlaylistLoadPerf extends Perf {
+	}
 
 	private static final Pattern RESOLUTION = Pattern.compile("(\\d+)x(\\d+)");
 
@@ -59,11 +67,7 @@ public class HlsMediaPlaylistProcessor {
 	private HlsMediaPlaylistConsumer playlistConsumer;
 	private CodecsParser codecsParser;
 
-	public HlsMediaPlaylistProcessor(ScheduledExecutorService scheduler,
-	                                 HttpClient httpclient,
-	                                 HlsMediaPlaylistConsumer playlistConsumer,
-	                                 CodecsParser codecsParser)
-	{
+	public HlsMediaPlaylistProcessor(ScheduledExecutorService scheduler, HttpClient httpclient, HlsMediaPlaylistConsumer playlistConsumer, CodecsParser codecsParser) {
 		this.scheduler = scheduler;
 		this.httpclient = httpclient;
 		this.playlistConsumer = playlistConsumer;
@@ -95,8 +99,7 @@ public class HlsMediaPlaylistProcessor {
 		return result;
 	}
 
-	private void scheduleNextRefresh(final HlsMediaPlaylistContext ctx,
-			long now) {
+	private void scheduleNextRefresh(final HlsMediaPlaylistContext ctx, long now) {
 		// try to keep things to the implied schedule, rather than
 		// falling behind a little bit, each iteration,
 		long adjustment = (now - ctx.firstLoad) % ctx.refreshInterval;
@@ -187,56 +190,32 @@ public class HlsMediaPlaylistProcessor {
 			}
 		}.execute(httpclient, req, ctx, stat);
 		ctx.playlistStats.add(stat);
-		new HlsMediaPlaylistLoadPerf()
-			.with("endState", stat.getEndState())
-			.with("durationMillis", stat.getDurationMillis())
-			.at(ctx)
-			.to(rep);
+		new HlsMediaPlaylistLoadPerf().with("endState", stat.getEndState()).with("durationMillis", stat.getDurationMillis()).at(ctx).to(rep);
 	}
 
-
-	private void checkCacheValidators(HlsMediaPlaylistContext ctx,
-	                                  CloseableHttpResponse resp)
-	{
+	private void checkCacheValidators(HlsMediaPlaylistContext ctx, CloseableHttpResponse resp) {
 		// TODO: check should be 'less then or equals'
 		boolean lastModMatch = resp.containsHeader("Last-Modified") && resp.getLastHeader("Last-Modified").getValue().equals(ctx.httpCondition.getLastLastModified());
 		boolean etagMatch = resp.containsHeader("ETag") && resp.getLastHeader("ETag").getValue().equals(ctx.httpCondition.getLastETag());
 		if (lastModMatch != etagMatch) {
 			if (lastModMatch) {
-				new LastmodSameEtagChangedAlert()
-					.with("lastModified", ctx.httpCondition.getLastLastModified())
-					.with("oldEtag", ctx.httpCondition.getLastETag())
-					.with("newEtag", resp.getLastHeader("ETag").getValue())
-					.at(ctx)
-					.to(rep);
+				new LastmodSameEtagChangedAlert().with("lastModified", ctx.httpCondition.getLastLastModified()).with("oldEtag", ctx.httpCondition.getLastETag())
+						.with("newEtag", resp.getLastHeader("ETag").getValue()).at(ctx).to(rep);
 			} else {
-				new EtagSameLastmodChangedEvent()
-					.with("etag", ctx.httpCondition.getLastETag())
-					.with("oldLastModified", ctx.httpCondition.getLastLastModified())
-					.with("newLastModified", resp.getLastHeader("Last-Modified").getValue())
-					.at(ctx)
-					.to(rep);
+				new EtagSameLastmodChangedEvent().with("etag", ctx.httpCondition.getLastETag()).with("oldLastModified", ctx.httpCondition.getLastLastModified())
+						.with("newLastModified", resp.getLastHeader("Last-Modified").getValue()).at(ctx).to(rep);
 			}
 		} else if (lastModMatch) {
-			rep.carp(ctx.getLocator(),
-			         "Last-Modified header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)",
-			         resp.getStatusLine(),
-			         resp.getLastHeader("Last-Modified").getValue(),
-			         ctx.httpCondition.getLastLastModified()
-			         );
+			rep.carp(ctx.getLocator(), "Last-Modified header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)", resp.getStatusLine(), resp
+					.getLastHeader("Last-Modified").getValue(), ctx.httpCondition.getLastLastModified());
 		} else if (etagMatch) {
-			rep.carp(ctx.getLocator(),
-			         "ETag header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)",
-			         resp.getStatusLine(),
-			         resp.getLastHeader("ETag").getValue(),
-			         ctx.httpCondition.getLastETag()
-			         );
+			rep.carp(ctx.getLocator(), "ETag header suggests we should have seen a '302 Not Modified', but we got '%s' (this response %s, prev response %s)", resp.getStatusLine(),
+					resp.getLastHeader("ETag").getValue(), ctx.httpCondition.getLastETag());
 		}
 	}
 
 	/**
-	 * Returns the current request config, or null if defaults are to be
-	 * used
+	 * Returns the current request config, or null if defaults are to be used
 	 */
 	public RequestConfig getConfig() {
 		return config;
@@ -261,19 +240,12 @@ public class HlsMediaPlaylistProcessor {
 		if (playlistInfo != null) {
 			String codecs = playlistInfo.getCodecs();
 			if (codecs == null) {
-				new MissingCodecsEvent()
-					.with("playlistUri", manifest)
-					.at(parent)
-					.to(rep);
+				new MissingCodecsEvent().with("playlistUri", manifest).at(parent).to(rep);
 			} else {
 				codecList = codecsParser.parseCodecs(codecs);
 				for (Rfc6381Codec c : codecList) {
 					if (c instanceof UnknownCodec) {
-						new UnknownCodecEvent()
-							.with("codec", c)
-							.with("playlistUri", manifest)
-							.at(parent)
-							.to(rep);
+						new UnknownCodecEvent().with("codec", c).with("playlistUri", manifest).at(parent).to(rep);
 					}
 				}
 			}
@@ -282,10 +254,7 @@ public class HlsMediaPlaylistProcessor {
 				if (m.matches()) {
 					resolution = new Dimension(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)));
 				} else {
-					new BadResolutionEvent()
-						.with("resolution", playlistInfo.getResolution())
-						.at(parent)
-						.to(rep);
+					new BadResolutionEvent().with("resolution", playlistInfo.getResolution()).at(parent).to(rep);
 				}
 			}
 		}

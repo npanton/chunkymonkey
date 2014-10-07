@@ -5,31 +5,36 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.protocol.HttpClientContext;
+
 import uk.co.badgersinfoil.chunkymonkey.MediaContext;
+import uk.co.badgersinfoil.chunkymonkey.event.Alert;
 import uk.co.badgersinfoil.chunkymonkey.event.Reporter;
+import uk.co.badgersinfoil.chunkymonkey.event.Reporter.LogFormat;
 import uk.co.badgersinfoil.chunkymonkey.hls.HttpResponseChecker;
 
 public class CorsHeaderChecker implements HttpResponseChecker {
+	@LogFormat("Missing CORS Header {missingHeader}")
+	public static final class CorsHeaderCheckerMissingEvent extends Alert {
+	}
+
+	@LogFormat("Headers Not to Spec {headerName} {allowHeaders}")
+	public static final class CorsHeaderCheckerNotToSpecEvent extends Alert {
+	}
 
 	private static final Set<String> EXPECTED_ALLOW_HEADERS = new HashSet<>();
 	static {
-		Collections.addAll(EXPECTED_ALLOW_HEADERS,
-			"origin", "range", "accept-encoding", "referer"
-		);
+		Collections.addAll(EXPECTED_ALLOW_HEADERS, "origin", "range", "accept-encoding", "referer");
 	}
 	private static final Set<String> EXPECTED_EXPOSE_HEADERS = new HashSet<>();
 	static {
-		Collections.addAll(EXPECTED_EXPOSE_HEADERS,
-			"server", "range", "content-length", "content-range"
-		);
+		Collections.addAll(EXPECTED_EXPOSE_HEADERS, "server", "range", "content-length", "content-range");
 	}
 	private static final Set<String> EXPECTED_ALLOW_METHODS = new HashSet<>();
 	static {
-		Collections.addAll(EXPECTED_ALLOW_METHODS,
-			"get", "head", "options"
-		);
+		Collections.addAll(EXPECTED_ALLOW_METHODS, "get", "head", "options");
 	}
 	private static final Set<String> EXPECTED_ALLOW_ORIGIN = Collections.singleton("*");
 
@@ -47,7 +52,10 @@ public class CorsHeaderChecker implements HttpResponseChecker {
 		checkHeaderElements(mctx, resp, "Access-Control-Allow-Methods", EXPECTED_ALLOW_METHODS, missing);
 		checkHeaderElements(mctx, resp, "Access-Control-Allow-Origin", EXPECTED_ALLOW_ORIGIN, missing);
 		if (!missing.isEmpty()) {
-			rep.carp(mctx.getLocator(), "Missing CORS headers: %s", missing);
+
+			new CorsHeaderCheckerMissingEvent().with("missingHeader", missing).at(mctx).to(rep);
+
+			// rep.carp(mctx.getLocator(), "Missing CORS headers: %s", missing);
 		}
 	}
 
@@ -55,7 +63,9 @@ public class CorsHeaderChecker implements HttpResponseChecker {
 		if (resp.containsHeader(headerName)) {
 			Set<String> allowHeaders = HeaderUtil.getMergedHeaderElements(resp, headerName);
 			if (!expectedElements.equals(allowHeaders)) {
-				rep.carp(mctx.getLocator(), "%s header values not to spec: ", headerName, allowHeaders);
+				new CorsHeaderCheckerNotToSpecEvent().with("headerName", headerName).with("allowHeaders", allowHeaders).at(mctx).to(rep);
+				// rep.carp(mctx.getLocator(), "%s header values not to spec: ",
+				// headerName, allowHeaders);
 			}
 		} else {
 			missing.add(headerName);

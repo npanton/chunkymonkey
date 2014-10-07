@@ -1,6 +1,7 @@
 package uk.co.badgersinfoil.chunkymonkey.conformist;
 
 import java.io.IOException;
+
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpResponseInterceptor;
@@ -15,12 +16,9 @@ public class ContentLengthSnarfer implements HttpResponseInterceptor {
 	public static final String ORIGINAL_CONTENT_LENGTH = "original.content-length";
 
 	@Override
-	public void process(HttpResponse response, HttpContext context)
-			throws HttpException, IOException
-	{
+	public void process(HttpResponse response, HttpContext context) throws HttpException, IOException {
 		if (response.containsHeader("Content-Length")) {
-			context.setAttribute(ORIGINAL_CONTENT_LENGTH,
-			                     response.getLastHeader("Content-Length"));
+			context.setAttribute(ORIGINAL_CONTENT_LENGTH, response.getLastHeader("Content-Length"));
 		}
 	}
 }
