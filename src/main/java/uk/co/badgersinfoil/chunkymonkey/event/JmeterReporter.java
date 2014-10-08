@@ -48,6 +48,7 @@ public class JmeterReporter implements Reporter {
 		attributes.put("locator", event.locator());
 		attributes.put("message", formatter.format(event, logFormat));
 		attributes.put("event_name", toEventName(event));
+		attributes.put("event_kind", event.getClass().getSuperclass());
 
 		Locator loc = event.locator();
 		while (loc != null) {
